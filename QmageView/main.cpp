@@ -23,6 +23,7 @@ Window:: Window()
     filepath = QString("");
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
+    btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
 }
 
 void
@@ -306,7 +307,6 @@ Window:: getOptimumScale(QPixmap pixmap)
     float scale;
     int img_width = pixmap.width();
     int img_height = pixmap.height();
-    int btnboxwidth = frame->width();
     int max_width = screen_width - (2*btnboxwidth + 2*offset_x);
     int max_height = screen_height - (offset_y + offset_x + 4+32); // 32 for statusbar with buttons
     if ((img_width > max_width) || (img_height > max_height)) {
@@ -324,7 +324,6 @@ Window:: getOptimumScale(QPixmap pixmap)
 void
 Window:: adjustWindowSize(bool animation)
 {
-    int btnboxwidth = frame->width();
     if (animation) {
         waitFor(30);        // Wait little to let Label resize and get correct width height
         resize(image->width() + 2*btnboxwidth + 4, 
@@ -373,6 +372,7 @@ Window:: closeEvent(QCloseEvent *ev)
 {
     settings.setValue("OffsetX", geometry().x()-x());
     settings.setValue("OffsetY", geometry().y()-y());
+    settings.setValue("BtnBoxWidth", frame->width());
     QMainWindow::closeEvent(ev);
 }
 

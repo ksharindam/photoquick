@@ -23,7 +23,7 @@ public:
     //Variables declaration
     Image *image;
     QSettings settings;
-    int screen_width, screen_height, offset_x, offset_y;
+    int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;
     QString filepath;
 private:
