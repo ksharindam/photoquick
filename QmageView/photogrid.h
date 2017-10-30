@@ -1,3 +1,6 @@
+/*
+This file is a part of qmageview program, which is GPLv3 licensed
+*/
 #ifndef PHOTOGRID_H
 #define PHOTOGRID_H
 

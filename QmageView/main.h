@@ -1,4 +1,6 @@
 /*
+This file is a part of qmageview program, which is GPLv3 licensed
+
 This holds the declaration of top level objects
 */
 #ifndef MAIN_H

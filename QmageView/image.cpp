@@ -1,3 +1,6 @@
+/*
+This file is a part of qmageview program, which is GPLv3 licensed
+*/
 #include "image.h"
 #include <QSizePolicy>
 #include <QTransform>
