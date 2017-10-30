@@ -5,7 +5,6 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include "exif.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QImageReader>
 #include <QPainter>
 #include <QPen>
 
@@ -33,8 +32,7 @@ GridDialog:: addPhoto()
 {
     QString filepath = QFileDialog::getOpenFileName(this, "Open Image");           
     if (filepath.isEmpty()) return;
-    QImageReader image_reader(filepath);
-    QPixmap pm = QPixmap::fromImageReader(&image_reader);
+    QPixmap pm = loadImage(filepath);
     if (not pm.isNull()) {
         Thumbnail *thumbnail = new Thumbnail(pm, frame);
         verticalLayout->addWidget(thumbnail);

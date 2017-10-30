@@ -6,6 +6,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QTransform>
 #include <QPainter>
 #include <QRect>
+#include <cmath>
 
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
@@ -119,7 +120,6 @@ Image:: mouseReleaseEvent(QMouseEvent *)
     mouse_pressed = false;
     topleft = p1;
     btmright = p2;
-    //print(self.p1.x(), self.p1.y(), self.p2.x()/self.scale, self.p2.y()/self.scale)
 }
 
 void
@@ -133,16 +133,16 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
         QPoint new_p1 = topleft + moved;
         p1 = QPoint(max(0, new_p1.x()), max(0, new_p1.y()));
         if (lock_crop_ratio) {
-            if (imgAspect>boxAspect) p1.setX(p2.x() - (p2.y()-p1.y()+1)*boxAspect -1);
-            if (imgAspect<boxAspect) p1.setY(p2.y() - (p2.x()-p1.x()+1)/boxAspect -1);
+            if (imgAspect>boxAspect) p1.setX(round(p2.x() - (p2.y()-p1.y()+1)*boxAspect -1));
+            if (imgAspect<boxAspect) p1.setY(round(p2.y() - (p2.x()-p1.x()+1)/boxAspect -1));
         }
     }
     else if (clk_area == 2) { // Bottom right corner is clicked
         QPoint new_p2 = btmright + moved;
         p2 = QPoint(min(last_pt.x(), new_p2.x()), min(last_pt.y(), new_p2.y()));
         if (lock_crop_ratio) {
-            if (imgAspect>boxAspect) p2.setX(p1.x() + (p2.y()-p1.y()+1)*boxAspect -1);
-            if (imgAspect<boxAspect) p2.setY(p1.y() + (p2.x()-p1.x()+1)/boxAspect -1);
+            if (imgAspect>boxAspect) p2.setX(round(p1.x() + (p2.y()-p1.y()+1)*boxAspect -1));
+            if (imgAspect<boxAspect) p2.setY(round(p1.y() + (p2.x()-p1.x()+1)/boxAspect -1));
         }
     }
     else if (clk_area == 3) { // clicked inside cropbox but none of the corner selected.
@@ -201,8 +201,8 @@ void
 Image:: cropImage()
 {
     int w, h;
-    w = (btmright.x()-topleft.x()+1)/scaleW;
-    h = (btmright.y()-topleft.y()+1)/scaleH;
-    QPixmap pm = pic.copy(topleft.x()/scaleW, topleft.y()/scaleH, w, h);
+    w = round((btmright.x()-topleft.x()+1)/scaleW);
+    h = round((btmright.y()-topleft.y()+1)/scaleH);
+    QPixmap pm = pic.copy(round(topleft.x()/scaleW), round(topleft.y()/scaleH), w, h);
     setImage(pm);
 }

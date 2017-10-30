@@ -159,7 +159,7 @@ Window:: cropImage()
         spinWidth->setRange(0.1, 9.9);
         spinWidth->setSingleStep(0.1);
         spinWidth->setDecimals(1);
-        spinWidth->setMaximumWidth(40);
+        spinWidth->setMaximumWidth(44);
         spinWidth->setValue(3.5);
         spinWidth->setEnabled(false);
         statusbar->addPermanentWidget(spinWidth);
@@ -169,7 +169,7 @@ Window:: cropImage()
         spinHeight->setRange(0.1, 9.9);
         spinHeight->setSingleStep(0.1);
         spinHeight->setDecimals(1);
-        spinHeight->setMaximumWidth(40);
+        spinHeight->setMaximumWidth(44);
         spinHeight->setValue(4.5);
         spinHeight->setEnabled(false);
         statusbar->addPermanentWidget(spinHeight);
@@ -345,8 +345,8 @@ Window:: updateStatus()
 {
     int width, height;
     if (image->crop_mode) {
-        width = (image->p2.x() - image->p1.x() + 1)/image->scaleW;
-        height = (image->p2.y() - image->p1.y() + 1)/image->scaleH;
+        width = round((image->p2.x() - image->p1.x() + 1)/image->scaleW);
+        height = round((image->p2.y() - image->p1.y() + 1)/image->scaleH);
     }
     else {
         width = image->pic.width();
