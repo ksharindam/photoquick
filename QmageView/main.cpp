@@ -437,15 +437,17 @@ int main(int argc, char *argv[])
     app.setOrganizationName("QmageView");
     app.setApplicationName("QmageView");
     Window *win = new Window();
-    if (argc > 1) { // TODO : path existance check
+    win->show();
+    if (argc > 1) {
         QString path = QString::fromUtf8(argv[1]);
-        win->openImage(path);
+        QFileInfo fileinfo(path);
+        if (fileinfo.exists())
+            win->openImage(path);
     }
     else {
         QPixmap pm = QPixmap(":/images/nidhi.jpg");
         win->image->setImage(pm);
         win->adjustWindowSize();
     }
-    win->show();
     return app.exec();
 }
