@@ -114,9 +114,11 @@ Window:: saveFile()
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
     if (not filepath.isEmpty()) {
         int quality = -1;
-        /*if sel_filter=='JPEG Images (*.jpg *.jpeg)':
-            val, ok = QInputDialog.getInt(self, "Set Quality", "Set Image Quality (%) :", 75, 10, 100)
-            if ok : quality = val*/
+        if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
+            bool ok;
+            int val = QInputDialog::getInt(this, "Set Quality", "Set Image Quality (%) :", 75, 10, 100, 1, &ok);
+            if (ok) quality = val;
+        }
         if (image->animation)
             pm = image->movie()->currentPixmap();
         else
