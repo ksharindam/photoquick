@@ -82,7 +82,8 @@ Window:: openFile()
 void
 Window:: openImage(QString filepath)
 {
-    if (filepath.endsWith(".gif")) { // For gif animations
+    QImageReader img_reader(filepath);
+    if (QString::fromUtf8(img_reader.format()).compare("gif")==0) { // For gif animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
         if (anim->isValid()) {
           if (image->animation) image->movie()->deleteLater(); // Delete prev animation
