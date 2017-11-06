@@ -328,6 +328,7 @@ Window:: getOptimumScale(QPixmap pixmap)
 void
 Window:: adjustWindowSize(bool animation)
 {
+    if (isMaximized()) return;
     if (animation) {
         waitFor(30);        // Wait little to let Label resize and get correct width height
         resize(image->width() + 2*btnboxwidth + 4, 

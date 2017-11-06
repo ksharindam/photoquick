@@ -25,6 +25,10 @@ qmake
 make -j4  
 ```
 
+**Runtime Dependencies**
+* libqtcore4
+* libqtgui4
+* libqt4-svg
 ### Install
 To install just copy the binary to /usr/local/bin folder (or run this command).  
 `sudo install qmageview /usr/local/bin`  
