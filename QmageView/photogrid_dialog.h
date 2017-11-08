@@ -32,6 +32,7 @@ public:
     QGridLayout *gridLayout;
     QFrame *frame;
     QVBoxLayout *verticalLayout;
+    QPushButton *configureBtn;
     QPushButton *addPhotoBtn;
     QSpacerItem *verticalSpacer;
     QScrollArea *scrollArea;
@@ -55,6 +56,11 @@ public:
         verticalLayout = new QVBoxLayout(frame);
         verticalLayout->setContentsMargins(2, 2, 2, 2);
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
+        configureBtn = new QPushButton(frame);
+        configureBtn->setObjectName(QString::fromUtf8("configureBtn"));
+
+        verticalLayout->addWidget(configureBtn);
+
         addPhotoBtn = new QPushButton(frame);
         addPhotoBtn->setObjectName(QString::fromUtf8("addPhotoBtn"));
 
@@ -101,6 +107,7 @@ public:
     void retranslateUi(QDialog *GridDialog)
     {
         GridDialog->setWindowTitle(QApplication::translate("GridDialog", "Create Photo Grid", 0, QApplication::UnicodeUTF8));
+        configureBtn->setText(QApplication::translate("GridDialog", "Configure", 0, QApplication::UnicodeUTF8));
         addPhotoBtn->setText(QApplication::translate("GridDialog", "Add Photo", 0, QApplication::UnicodeUTF8));
         helpBtn->setText(QApplication::translate("GridDialog", "Help", 0, QApplication::UnicodeUTF8));
     } // retranslateUi

@@ -5,6 +5,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #define PHOTOGRID_H
 
 #include "photogrid_dialog.h"
+#include "gridsetup_dialog.h"
 #include <QLabel>
 #include <QMouseEvent>
 
@@ -48,7 +49,8 @@ public:
     void createFinalGrid();
     // Variables
     //float scale;
-    int paperW, paperH, W, H, cols, rows, spacingX, spacingY;
+    int DPI, paperW, paperH, W, H, cols, rows;
+    float scale, spacingX, spacingY;
     QList<QRect> boxes;
     QMap<int, QPixmap> pixmap_dict;
     QPixmap photo, photo_grid;
@@ -67,8 +69,17 @@ public:
     GridPaper *gridPaper;
     ThumbnailGroup *thumbnailGr;
 public slots:
+    void configure();
     void addPhoto();
     void showHelp();
+};
+
+class GridSetupDialog : public QDialog, public Ui_GridSetupDialog
+{
+public:
+    GridSetupDialog(QWidget *parent);
+    void accept();
+    int W, H, DPI, rows, cols, paperW, paperH;
 };
 
 // Static functions

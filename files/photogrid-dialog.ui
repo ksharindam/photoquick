@@ -33,6 +33,13 @@
        <number>2</number>
       </property>
       <item>
+       <widget class="QPushButton" name="configureBtn">
+        <property name="text">
+         <string>Configure</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="addPhotoBtn">
         <property name="text">
          <string>Add Photo</string>

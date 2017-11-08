@@ -7,6 +7,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QMessageBox>
 #include <QPainter>
 #include <QPen>
+#include <QDesktopWidget>
 
 GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
 {
@@ -22,9 +23,26 @@ GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
     thumbnail->select(true);
     QObject::connect(thumbnail, SIGNAL(clicked(QPixmap)), gridPaper, SLOT(setPhoto(QPixmap)));
     thumbnailGr->append(thumbnail);
+    QObject::connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
     QObject::connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
     QObject::connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
     gridPaper->photo = pixmap;
+}
+
+void
+GridDialog:: configure()
+{
+    GridSetupDialog *dialog = new GridSetupDialog(this);
+    if ( dialog->exec()==QDialog::Accepted ) {
+        gridPaper->paperW = dialog->paperW;
+        gridPaper->paperH = dialog->paperH;
+        gridPaper->rows = dialog->rows;
+        gridPaper->cols = dialog->cols;
+        gridPaper->W = dialog->W;
+        gridPaper->H = dialog->H;
+        gridPaper->DPI = dialog->DPI;
+        gridPaper->setupGrid();
+    }
 }
 
 void
@@ -110,38 +128,41 @@ ThumbnailGroup:: selectThumbnail(QPixmap)
     qobject_cast<Thumbnail*>(sender())->select(true);
 }
 
-
+// GridPaper class methods
 GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
-    //scale = 1.0;
-    setupGrid();
-}
-
-void
-GridPaper:: setupGrid()
-{
+    DPI = 300;
     paperW = 1800;
     paperH = 1200;
     W = 413;
     H = 531;
     cols = 4;
     rows = 2;           // total no. of columns and rows
-    spacingX = (paperW-cols*W)/(cols+1);
-    spacingY = (paperH-rows*H)/(rows+1);
+    setupGrid();
+}
+
+void
+GridPaper:: setupGrid()
+{
+    boxes.clear();
+    spacingX = (paperW-cols*W)/float(cols+1);
+    spacingY = (paperH-rows*H)/float(rows+1);
     // Setup Foreground Grid
-    int w = W/2;
-    int h = H/2;
-    int spacing_x = spacingX/2;
-    int spacing_y = spacingY/2;
+    float screenDPI = QApplication::desktop()->logicalDpiX();
+    scale = screenDPI/DPI;
+    float w = W*scale;
+    float h = H*scale;
+    float spacing_x = spacingX*scale;
+    float spacing_y = spacingY*scale;
     for (int i=0; i<cols*rows; ++i) {
         int row = i/cols;            // Position of the box as row & col
         int col = i%cols;
         QRect box = QRect(spacing_x+col*(spacing_x+w), spacing_y+row*(spacing_y+h), w-1, h-1);
         boxes << box;
     }
-    QPixmap fg = QPixmap(paperW/2, paperH/2);
+    QPixmap fg = QPixmap(paperW*scale, paperH*scale);
     fg.fill();
     QPainter painter(&fg);
     foreach (QRect box, boxes)
@@ -172,13 +193,12 @@ GridPaper:: mouseMoveEvent(QMouseEvent *ev)
 void
 GridPaper:: mousePressEvent(QMouseEvent *ev)
 {
-    QPixmap blank_pm(W/2, H/2);
+    QPixmap blank_pm(W*scale, H*scale);
     blank_pm.fill();
     foreach (QRect box, boxes) {
         if (box.contains(ev->pos())) {
             QPoint topleft = box.topLeft();
-            //print(topleft.x(), topleft.y())
-            QPixmap pm = photo.scaled(W/2, H/2, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            QPixmap pm = photo.scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             QPixmap bg = *(pixmap());
             QPainter painter(&bg);
             painter.drawPixmap(topleft, blank_pm); // Erase older image by placing blank image over it
@@ -205,6 +225,42 @@ GridPaper:: createFinalGrid()
         painter.drawPixmap(topleft, pm);
     }
     painter.end();
+}
+
+// GridSetupDialog class functions
+GridSetupDialog:: GridSetupDialog(QWidget *parent) : QDialog(parent)
+{
+    setupUi(this);
+}
+
+void
+GridSetupDialog:: accept()
+{
+    QList<float> units;
+    units << 1 << 1/2.54 << 1/25.4 ;
+    DPI = spinDPI->value();
+    float unit_mult = units[paperSizeUnit->currentIndex()];
+    int paper_w = spinPaperWidth->value()*unit_mult*DPI;
+    int paper_h = spinPaperHeight->value()*unit_mult*DPI;
+    W = spinPhotoWidth->value()*DPI/2.54;
+    H = spinPhotoHeight->value()*DPI/2.54;
+    int rows1 = paper_h/H;
+    int cols1 = paper_w/W;
+    int rows2 = paper_w/H;
+    int cols2 = paper_h/W;
+    if (rows1*cols1 >= rows2*cols2) {
+        paperW = paper_w;
+        paperH = paper_h;
+        rows = rows1;
+        cols = cols1;
+    }
+    else {
+        paperW = paper_h;
+        paperH = paper_w;
+        rows = rows2;
+        cols = cols2;
+    }
+    QDialog::accept();
 }
 
 // Static functions
