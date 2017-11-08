@@ -79,7 +79,7 @@ public:
         spinPhotoWidth->setAlignment(Qt::AlignCenter);
         spinPhotoWidth->setDecimals(1);
         spinPhotoWidth->setMinimum(1);
-        spinPhotoWidth->setSingleStep(0.5);
+        spinPhotoWidth->setSingleStep(0.1);
         spinPhotoWidth->setValue(3.5);
 
         gridLayout->addWidget(spinPhotoWidth, 2, 1, 1, 1);
@@ -109,7 +109,7 @@ public:
         spinPhotoHeight->setAlignment(Qt::AlignCenter);
         spinPhotoHeight->setDecimals(1);
         spinPhotoHeight->setMinimum(1);
-        spinPhotoHeight->setSingleStep(0.5);
+        spinPhotoHeight->setSingleStep(0.1);
         spinPhotoHeight->setValue(4.5);
 
         gridLayout->addWidget(spinPhotoHeight, 2, 3, 1, 1);

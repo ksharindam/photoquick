@@ -25,6 +25,7 @@ GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
     thumbnailGr->append(thumbnail);
     QObject::connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
     QObject::connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
+    QObject::connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
     QObject::connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
     gridPaper->photo = pixmap;
 }
@@ -133,6 +134,7 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
+    add_border = true;
     DPI = 300;
     paperW = 1800;
     paperH = 1200;
@@ -178,6 +180,22 @@ GridPaper:: setPhoto(QPixmap pixmap)
 }
 
 void
+GridPaper:: toggleBorder(bool ok)
+{
+    add_border = ok;
+    QPixmap grid = *(pixmap());
+    QPainter painter(&grid);
+    foreach (int index, pixmap_dict.keys()) {
+        QPoint topleft = boxes[index].topLeft();
+        QPixmap pm = pixmap_dict.value(index).scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.drawPixmap(topleft, pm);
+        if (ok) painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
+    }
+    painter.end();
+    setPixmap(grid);
+}
+
+void
 GridPaper:: mouseMoveEvent(QMouseEvent *ev)
 {
     // Change cursor whenever cursor comes over a box
@@ -203,6 +221,8 @@ GridPaper:: mousePressEvent(QMouseEvent *ev)
             QPainter painter(&bg);
             painter.drawPixmap(topleft, blank_pm); // Erase older image by placing blank image over it
             painter.drawPixmap(topleft, pm);
+            if (add_border)
+                painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
             painter.end();
             setPixmap(bg);
             pixmap_dict[boxes.indexOf(box)] = photo;
@@ -223,6 +243,8 @@ GridPaper:: createFinalGrid()
         QPoint topleft = QPoint(spacingX+col*(spacingX+W), spacingY+row*(spacingY+H));
         QPixmap pm = pixmap_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         painter.drawPixmap(topleft, pm);
+        if (add_border)
+            painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
     }
     painter.end();
 }

@@ -51,11 +51,13 @@ public:
     //float scale;
     int DPI, paperW, paperH, W, H, cols, rows;
     float scale, spacingX, spacingY;
+    bool add_border;
     QList<QRect> boxes;
     QMap<int, QPixmap> pixmap_dict;
     QPixmap photo, photo_grid;
 public slots:
     void setPhoto(QPixmap pixmap);
+    void toggleBorder(bool ok);
 };
 
 // The dialog to create the grid

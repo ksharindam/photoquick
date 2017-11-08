@@ -13,6 +13,7 @@
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QButtonGroup>
+#include <QtGui/QCheckBox>
 #include <QtGui/QDialog>
 #include <QtGui/QDialogButtonBox>
 #include <QtGui/QFrame>
@@ -32,13 +33,14 @@ public:
     QGridLayout *gridLayout;
     QFrame *frame;
     QVBoxLayout *verticalLayout;
-    QPushButton *configureBtn;
     QPushButton *addPhotoBtn;
     QSpacerItem *verticalSpacer;
-    QScrollArea *scrollArea;
-    QWidget *scrollAreaWidgetContents;
+    QCheckBox *checkAddBorder;
     QDialogButtonBox *buttonBox;
     QPushButton *helpBtn;
+    QPushButton *configureBtn;
+    QScrollArea *scrollArea;
+    QWidget *scrollAreaWidgetContents;
 
     void setupUi(QDialog *GridDialog)
     {
@@ -56,11 +58,6 @@ public:
         verticalLayout = new QVBoxLayout(frame);
         verticalLayout->setContentsMargins(2, 2, 2, 2);
         verticalLayout->setObjectName(QString::fromUtf8("verticalLayout"));
-        configureBtn = new QPushButton(frame);
-        configureBtn->setObjectName(QString::fromUtf8("configureBtn"));
-
-        verticalLayout->addWidget(configureBtn);
-
         addPhotoBtn = new QPushButton(frame);
         addPhotoBtn->setObjectName(QString::fromUtf8("addPhotoBtn"));
 
@@ -73,6 +70,29 @@ public:
 
         gridLayout->addWidget(frame, 0, 0, 1, 1);
 
+        checkAddBorder = new QCheckBox(GridDialog);
+        checkAddBorder->setObjectName(QString::fromUtf8("checkAddBorder"));
+        checkAddBorder->setChecked(true);
+
+        gridLayout->addWidget(checkAddBorder, 2, 2, 1, 1);
+
+        buttonBox = new QDialogButtonBox(GridDialog);
+        buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
+        buttonBox->setOrientation(Qt::Horizontal);
+        buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Ok);
+
+        gridLayout->addWidget(buttonBox, 2, 3, 1, 1);
+
+        helpBtn = new QPushButton(GridDialog);
+        helpBtn->setObjectName(QString::fromUtf8("helpBtn"));
+
+        gridLayout->addWidget(helpBtn, 2, 0, 1, 1);
+
+        configureBtn = new QPushButton(GridDialog);
+        configureBtn->setObjectName(QString::fromUtf8("configureBtn"));
+
+        gridLayout->addWidget(configureBtn, 2, 1, 1, 1);
+
         scrollArea = new QScrollArea(GridDialog);
         scrollArea->setObjectName(QString::fromUtf8("scrollArea"));
         scrollArea->setWidgetResizable(true);
@@ -82,19 +102,7 @@ public:
         scrollAreaWidgetContents->setGeometry(QRect(0, 0, 561, 431));
         scrollArea->setWidget(scrollAreaWidgetContents);
 
-        gridLayout->addWidget(scrollArea, 0, 1, 1, 1);
-
-        buttonBox = new QDialogButtonBox(GridDialog);
-        buttonBox->setObjectName(QString::fromUtf8("buttonBox"));
-        buttonBox->setOrientation(Qt::Horizontal);
-        buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Ok);
-
-        gridLayout->addWidget(buttonBox, 2, 1, 1, 1);
-
-        helpBtn = new QPushButton(GridDialog);
-        helpBtn->setObjectName(QString::fromUtf8("helpBtn"));
-
-        gridLayout->addWidget(helpBtn, 2, 0, 1, 1);
+        gridLayout->addWidget(scrollArea, 0, 1, 1, 3);
 
 
         retranslateUi(GridDialog);
@@ -107,9 +115,10 @@ public:
     void retranslateUi(QDialog *GridDialog)
     {
         GridDialog->setWindowTitle(QApplication::translate("GridDialog", "Create Photo Grid", 0, QApplication::UnicodeUTF8));
-        configureBtn->setText(QApplication::translate("GridDialog", "Configure", 0, QApplication::UnicodeUTF8));
         addPhotoBtn->setText(QApplication::translate("GridDialog", "Add Photo", 0, QApplication::UnicodeUTF8));
+        checkAddBorder->setText(QApplication::translate("GridDialog", "Add Border", 0, QApplication::UnicodeUTF8));
         helpBtn->setText(QApplication::translate("GridDialog", "Help", 0, QApplication::UnicodeUTF8));
+        configureBtn->setText(QApplication::translate("GridDialog", "Configure", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };

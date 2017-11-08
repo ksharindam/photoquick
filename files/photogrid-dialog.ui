@@ -33,13 +33,6 @@
        <number>2</number>
       </property>
       <item>
-       <widget class="QPushButton" name="configureBtn">
-        <property name="text">
-         <string>Configure</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="addPhotoBtn">
         <property name="text">
          <string>Add Photo</string>
@@ -62,7 +55,41 @@
      </layout>
     </widget>
    </item>
-   <item row="0" column="1">
+   <item row="2" column="2">
+    <widget class="QCheckBox" name="checkAddBorder">
+     <property name="text">
+      <string>Add Border</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QPushButton" name="helpBtn">
+     <property name="text">
+      <string>Help</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QPushButton" name="configureBtn">
+     <property name="text">
+      <string>Configure</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="3">
     <widget class="QScrollArea" name="scrollArea">
      <property name="widgetResizable">
       <bool>true</bool>
@@ -80,23 +107,6 @@
        </rect>
       </property>
      </widget>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QPushButton" name="helpBtn">
-     <property name="text">
-      <string>Help</string>
-     </property>
     </widget>
    </item>
   </layout>
