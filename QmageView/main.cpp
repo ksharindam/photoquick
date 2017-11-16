@@ -23,7 +23,7 @@ Window:: Window()
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    filepath = QString("");
+    filepath = QString("nidhi.jpg");
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
     btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
@@ -73,7 +73,8 @@ Window:: connectSignals()
 void
 Window:: openFile()
 {
-    QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif);;JPEG Images (*.jpg *.jpeg);;All Files (*)";
+    QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
+                         "PNG Images (*.png);;SVG Images (*.svg);;All Files (*)";
     QString filepath = QFileDialog::getOpenFileName(this, "Open Image", this->filepath, filefilter); 
     if (filepath.isEmpty()) return;
     openImage(filepath);
@@ -110,7 +111,9 @@ void
 Window:: saveFile()
 {
     QPixmap pm;
-    QString filefilter = QString("Image files (*.jpg *.png *.jpeg);;JPEG Images (*.jpg *.jpeg)");
+    QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
+                                 "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
+                                 "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
     if (not filepath.isEmpty()) {
         int quality = -1;
