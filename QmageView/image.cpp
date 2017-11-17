@@ -8,8 +8,8 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QRect>
 #include <cmath>
 
-#define min(a,b) (((a)<(b))?(a):(b))
-#define max(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 
 Image:: Image(QWidget *parent) : QLabel(parent)
@@ -131,7 +131,7 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
 
     if (clk_area == 1) { // Top left corner is clicked
         QPoint new_p1 = topleft + moved;
-        p1 = QPoint(max(0, new_p1.x()), max(0, new_p1.y()));
+        p1 = QPoint(MAX(0, new_p1.x()), MAX(0, new_p1.y()));
         if (lock_crop_ratio) {
             if (imgAspect>boxAspect) p1.setX(round(p2.x() - (p2.y()-p1.y()+1)*boxAspect -1));
             if (imgAspect<boxAspect) p1.setY(round(p2.y() - (p2.x()-p1.x()+1)/boxAspect -1));
@@ -139,7 +139,7 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
     }
     else if (clk_area == 2) { // Bottom right corner is clicked
         QPoint new_p2 = btmright + moved;
-        p2 = QPoint(min(last_pt.x(), new_p2.x()), min(last_pt.y(), new_p2.y()));
+        p2 = QPoint(MIN(last_pt.x(), new_p2.x()), MIN(last_pt.y(), new_p2.y()));
         if (lock_crop_ratio) {
             if (imgAspect>boxAspect) p2.setX(round(p1.x() + (p2.y()-p1.y()+1)*boxAspect -1));
             if (imgAspect<boxAspect) p2.setY(round(p1.y() + (p2.x()-p1.x()+1)/boxAspect -1));
@@ -151,8 +151,8 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
         max_dx = last_pt.x()-btmright.x();
         min_dy = -topleft.y();
         max_dy = last_pt.y()-btmright.y();
-        dx = (moved.x() < 0) ? max(moved.x(), min_dx) : min(moved.x(), max_dx);
-        dy = (moved.y() < 0) ? max(moved.y(), min_dy) : min(moved.y(), max_dy);
+        dx = (moved.x() < 0) ? MAX(moved.x(), min_dx) : MIN(moved.x(), max_dx);
+        dy = (moved.y() < 0) ? MAX(moved.y(), min_dy) : MIN(moved.y(), max_dy);
         p1 = topleft + QPoint(dx, dy);
         p2 = btmright + QPoint(dx, dy);
     }
