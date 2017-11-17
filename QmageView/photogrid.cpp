@@ -49,7 +49,8 @@ GridDialog:: configure()
 void
 GridDialog:: addPhoto()
 {
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image");           
+    QString filefilter = "JPEG Images (*.jpg *jpeg);;PNG Images (*.png);;All Files (*)";
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", "", filefilter);           
     if (filepath.isEmpty()) return;
     QPixmap pm = loadImage(filepath);
     if (not pm.isNull()) {
