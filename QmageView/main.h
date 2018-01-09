@@ -6,8 +6,8 @@ This holds the declaration of top level objects
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "mainwindow.h"
-#include "resize_dialog.h"
+#include "ui_mainwindow.h"
+#include "ui_resize_dialog.h"
 #include "image.h"
 #include "photogrid.h"
 #include <QSettings>

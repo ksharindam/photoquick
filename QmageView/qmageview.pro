@@ -3,17 +3,12 @@
 ######################################################################
 
 TEMPLATE = app
-TARGET = 
+TARGET = qmageview
 DEPENDPATH += .
 INCLUDEPATH += .
 
 # Input
-HEADERS += exif.h \
-           image.h \
-           main.h \
-           mainwindow.h \
-           photogrid.h \
-           photogrid_dialog.h \
-           resize_dialog.h
+HEADERS += exif.h image.h main.h photogrid.h
 SOURCES += exif.cpp image.cpp main.cpp photogrid.cpp
 RESOURCES += resources.qrc
+FORMS += mainwindow.ui resize_dialog.ui photogrid_dialog.ui gridsetup_dialog.ui

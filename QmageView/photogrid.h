@@ -4,8 +4,8 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #ifndef PHOTOGRID_H
 #define PHOTOGRID_H
 
-#include "photogrid_dialog.h"
-#include "gridsetup_dialog.h"
+#include "ui_photogrid_dialog.h"
+#include "ui_gridsetup_dialog.h"
 #include <QLabel>
 #include <QMouseEvent>
 
