@@ -55,7 +55,7 @@ Image:: showScaled()
 void
 Image:: rotate(int degree)
 {
-    QTransform transform = QTransform();
+    QTransform transform;
     transform.rotate(degree);
     pic = pic.transformed(transform);
     showScaled();
