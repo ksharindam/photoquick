@@ -12,3 +12,8 @@ HEADERS += exif.h image.h main.h photogrid.h
 SOURCES += exif.cpp image.cpp main.cpp photogrid.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui resize_dialog.ui photogrid_dialog.ui gridsetup_dialog.ui
+
+# install
+INSTALLS += target
+target.path = /usr/local/bin
+

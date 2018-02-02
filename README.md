@@ -25,16 +25,17 @@ qmake
 make -j4  
 ```
 
+To install run ...  
+`sudo make install`  
+
+To uninstall, run ...  
+`sudo make uninstall`  
+
 **Runtime Dependencies**
 * libqtcore4
 * libqtgui4
 * libqt4-svg
-### Install
-To install just copy the binary to /usr/local/bin folder (or run this command).  
-`sudo install qmageview /usr/local/bin`  
 
-To uninstall run...  
-`sudo rm /usr/local/bin/qmageview`  
 
 ### Usage
 To run this program...
