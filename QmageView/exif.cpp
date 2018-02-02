@@ -20,7 +20,7 @@ rint8u readByte(QFile &file){
 //--------------------------------------------------------------------------
 // Parse the marker stream until SOS or EOI is seen;
 //--------------------------------------------------------------------------
-int Exif::readJpegSections(QFile &file, int *Orientation){
+int Exif::getExifOrientation(QFile &file, int *Orientation){
     QByteArray *data;
     rint8u a;
 
@@ -310,9 +310,9 @@ int Exif::processEXIF(QByteArray *data, int itemlen, int *Orientation){
 
 
     // Check the EXIF header component
-    if(data->left(6) == "Exif\0\0"){
+    /*if(data->left(6) == "Exif\0\0"){
         qDebug() << data->left(4);
-    }
+    }*/
 
     if(data->mid(6,2) == "II"){ // Exif section in Intel order
         //qDebug() << data->mid(6,2);
@@ -349,15 +349,3 @@ int Exif::processEXIF(QByteArray *data, int itemlen, int *Orientation){
     return 0;
 }
 
-int Exif::readJpegFile(QFile &file, int *Orientation){
-    readJpegSections(file, Orientation);
-
-    return 0;
-}
-
-
-
-int Exif::getExifOrientation(QFile &file, int *Orientation){
-    readJpegFile(file, Orientation);
-    return 0;
-}

@@ -42,14 +42,7 @@ typedef          char rint8;
 typedef unsigned int  rint32u;
 
 
-#include <stdlib.h>
-
-#include <QtGlobal>
 #include <QFile>
-#include <QList>
-#include <QDebug>
-#include <QByteArray>
-#include <QList>
 #include <QByteArray>
 
 
@@ -58,8 +51,6 @@ public:
     Exif();
     ~Exif();
     int getExifOrientation(QFile &file, int *Orientation);
-    int readJpegFile(QFile &file, int *Orientation);
-    int readJpegSections(QFile &file, int *Orientation);
     int processEXIF(QByteArray *barr, int itemlen, int *Orientation);
     int processEXIFDir(const char *dirStart, const char *offsetBase, rint32u size, rint32u nesting, int MotorolaOrder, int *numOrientations, int *Orientation);
 };

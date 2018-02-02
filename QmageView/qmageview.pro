@@ -7,6 +7,13 @@ TARGET = qmageview
 DEPENDPATH += .
 INCLUDEPATH += .
 
+# build dir
+MOC_DIR = build
+RCC_DIR = build
+UI_DIR = build
+OBJECTS_DIR = build
+mytarget.commands += $${QMAKE_MKDIR} build
+
 # Input
 HEADERS += exif.h image.h main.h photogrid.h
 SOURCES += exif.cpp image.cpp main.cpp photogrid.cpp
