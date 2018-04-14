@@ -48,7 +48,6 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void createFinalGrid();
     // Variables
-    //float scale;
     int DPI, paperW, paperH, W, H, cols, rows;
     float scale, spacingX, spacingY;
     bool add_border;

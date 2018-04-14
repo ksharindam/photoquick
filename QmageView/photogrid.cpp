@@ -8,6 +8,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QPainter>
 #include <QPen>
 #include <QDesktopWidget>
+#include <QSettings>
 
 GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
 {
@@ -136,13 +137,14 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
     add_border = true;
-    DPI = 300;
-    paperW = 1800;
-    paperH = 1200;
-    W = 413;
-    H = 531;
-    cols = 4;
-    rows = 2;           // total no. of columns and rows
+    QSettings settings(this);
+    DPI = settings.value("DPI", 300).toInt();
+    paperW = settings.value("PaperWidth", 1800).toInt();
+    paperH = settings.value("PaperHeight", 1200).toInt();
+    W = settings.value("ImageWidth", 413).toInt();
+    H = settings.value("ImageHeight", 531).toInt();
+    cols = settings.value("Cols", 4).toInt();
+    rows = settings.value("Rows", 2).toInt();           // total no. of columns and rows
     setupGrid();
 }
 
@@ -283,6 +285,14 @@ GridSetupDialog:: accept()
         rows = rows2;
         cols = cols2;
     }
+    QSettings settings(this);
+    settings.setValue("DPI", DPI);
+    settings.setValue("PaperWidth", paperW);
+    settings.setValue("PaperHeight", paperH);
+    settings.setValue("ImageWidth", W);
+    settings.setValue("ImageHeight", H);
+    settings.setValue("Rows", rows);
+    settings.setValue("Cols", cols);
     QDialog::accept();
 }
 

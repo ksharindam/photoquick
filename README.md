@@ -4,11 +4,11 @@ A simple image viewer with some useful features (written in qt4).
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
 This can ..  
- * Resize
- * Crop in particular ratio
- * Rotate
- * Create photo grid for printing
- * Add Border
+ * Resize  
+ * Crop in particular ratio  
+ * Rotate  
+ * Create photo grid for printing  
+ * Add Border  
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 N.B - You can use the python version of this program [pypicview](https://github.com/ksharindam/pypicview)
@@ -31,14 +31,14 @@ To install run ...
 To uninstall, run ...  
 `sudo make uninstall`  
 
-**Runtime Dependencies**
-* libqtcore4
-* libqtgui4
-* libqt4-svg
+**Runtime Dependencies**  
+* libqtcore4  
+* libqtgui4  
+* libqt4-svg  
 
 
 ### Usage
-To run this program...
+To run this program...  
 `qmageview`
 
 To open image.jpg with it...  
