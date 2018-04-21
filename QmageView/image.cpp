@@ -134,7 +134,7 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
         p1 = QPoint(MAX(0, new_p1.x()), MAX(0, new_p1.y()));
         if (lock_crop_ratio) {
             if (imgAspect>boxAspect) p1.setX(round(p2.x() - (p2.y()-p1.y()+1)*boxAspect -1));
-            if (imgAspect<boxAspect) p1.setY(round(p2.y() - (p2.x()-p1.x()+1)/boxAspect -1));
+            else p1.setY(round(p2.y() - (p2.x()-p1.x()+1)/boxAspect -1));
         }
     }
     else if (clk_area == 2) { // Bottom right corner is clicked
@@ -142,7 +142,7 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
         p2 = QPoint(MIN(last_pt.x(), new_p2.x()), MIN(last_pt.y(), new_p2.y()));
         if (lock_crop_ratio) {
             if (imgAspect>boxAspect) p2.setX(round(p1.x() + (p2.y()-p1.y()+1)*boxAspect -1));
-            if (imgAspect<boxAspect) p2.setY(round(p1.y() + (p2.x()-p1.x()+1)/boxAspect -1));
+            else p2.setY(round(p1.y() + (p2.x()-p1.x()+1)/boxAspect -1));
         }
     }
     else if (clk_area == 3) { // clicked inside cropbox but none of the corner selected.
