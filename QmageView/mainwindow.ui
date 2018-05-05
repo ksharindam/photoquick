@@ -41,11 +41,15 @@
        </property>
        <item>
         <widget class="QPushButton" name="openBtn">
+         <property name="toolTip">
+          <string>Open Image
+ [Ctrl+O]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/open.png</normaloff>:/images/open.png</iconset>
          </property>
          <property name="iconSize">
@@ -58,11 +62,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="saveBtn">
+         <property name="toolTip">
+          <string>Save Image
+ [Ctrl+S]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/save.png</normaloff>:/images/save.png</iconset>
          </property>
          <property name="iconSize">
@@ -75,11 +83,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="resizeBtn">
+         <property name="toolTip">
+          <string>Resize
+[Ctrl+R]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/resize.png</normaloff>:/images/resize.png</iconset>
          </property>
          <property name="iconSize">
@@ -92,11 +104,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="cropBtn">
+         <property name="toolTip">
+          <string>Crop Image
+ [Ctrl+X]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/crop.png</normaloff>:/images/crop.png</iconset>
          </property>
          <property name="iconSize">
@@ -109,11 +125,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="addBorderBtn">
+         <property name="toolTip">
+          <string>Add Border
+ [Ctrl+B]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/addborder.png</normaloff>:/images/addborder.png</iconset>
          </property>
          <property name="iconSize">
@@ -126,11 +146,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="photoGridBtn">
+         <property name="toolTip">
+          <string>Create Photo Grid
+ [Ctrl+G]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/creategrid.png</normaloff>:/images/creategrid.png</iconset>
          </property>
          <property name="iconSize">
@@ -156,11 +180,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="quitBtn">
+         <property name="toolTip">
+          <string>Quit
+[Esc]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
          </property>
          <property name="iconSize">
@@ -205,11 +233,15 @@
        </property>
        <item>
         <widget class="QPushButton" name="prevBtn">
+         <property name="toolTip">
+          <string>Previous Image
+ [Left]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/prev.png</normaloff>:/images/prev.png</iconset>
          </property>
          <property name="iconSize">
@@ -222,11 +254,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="nextBtn">
+         <property name="toolTip">
+          <string>Next Image
+ [Right]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/next.png</normaloff>:/images/next.png</iconset>
          </property>
          <property name="iconSize">
@@ -239,11 +275,14 @@
        </item>
        <item>
         <widget class="QPushButton" name="zoomInBtn">
+         <property name="toolTip">
+          <string>Zoom In (+)</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/zoomin.png</normaloff>:/images/zoomin.png</iconset>
          </property>
          <property name="iconSize">
@@ -256,11 +295,14 @@
        </item>
        <item>
         <widget class="QPushButton" name="zoomOutBtn">
+         <property name="toolTip">
+          <string>Zoom Out (-)</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/zoomout.png</normaloff>:/images/zoomout.png</iconset>
          </property>
          <property name="iconSize">
@@ -273,11 +315,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="origSizeBtn">
+         <property name="toolTip">
+          <string>Original Size
+ [ 1 ]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/originalsize.png</normaloff>:/images/originalsize.png</iconset>
          </property>
          <property name="iconSize">
@@ -290,11 +336,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="rotateLeftBtn">
+         <property name="toolTip">
+          <string>Rotate Left
+ [Ctrl+Left]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/rotateleft.png</normaloff>:/images/rotateleft.png</iconset>
          </property>
          <property name="iconSize">
@@ -307,11 +357,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="rotateRightBtn">
+         <property name="toolTip">
+          <string>Rotate Right
+ [Ctrl+Right]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/rotateright.png</normaloff>:/images/rotateright.png</iconset>
          </property>
          <property name="iconSize">
@@ -337,11 +391,15 @@
        </item>
        <item>
         <widget class="QPushButton" name="slideShowBtn">
+         <property name="toolTip">
+          <string>Play Slide Show
+ [Space]</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset resource="../QmageView/resources.qrc">
+          <iconset resource="resources.qrc">
            <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
          </property>
          <property name="iconSize">
@@ -363,7 +421,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="../QmageView/resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

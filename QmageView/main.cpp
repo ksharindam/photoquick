@@ -441,8 +441,8 @@ float roundOff(float num, int dec)
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    app.setOrganizationName("QmageView");
-    app.setApplicationName("QmageView");
+    app.setOrganizationName("qmageview");
+    app.setApplicationName("qmageview");
     Window *win = new Window();
     win->show();
     if (argc > 1) {
