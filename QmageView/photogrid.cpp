@@ -310,15 +310,16 @@ QPixmap loadImage(QString filename)
     file.close();
     delete exif;
     // rotate if required
-    if (orientation!=0) {
-        QTransform transform;
-        if (orientation==6)
+    QTransform transform;
+    switch (orientation) {
+        case 6:
             return pm.transformed(transform.rotate(90));
-        else if (orientation==3)
+        case 3:
             return pm.transformed(transform.rotate(180));
-        else if (orientation==8)
+        case 8:
             return pm.transformed(transform.rotate(270));
+        default:
+            return pm;
     }
-    return pm;
 }
 
