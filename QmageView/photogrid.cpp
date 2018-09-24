@@ -9,6 +9,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QPen>
 #include <QDesktopWidget>
 #include <QSettings>
+//#include <QDebug>
 
 GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
 {
@@ -302,13 +303,17 @@ QPixmap loadImage(QString filename)
     QPixmap pm(filename);
     if (pm.isNull()) return pm;
     // Get image orientation
-    int orientation = 0;
+    int size, orientation = 0;
     QFile file(filename);
     file.open(QIODevice::ReadOnly);
-    Exif *exif = new Exif();
-    exif->getExifOrientation(file, &orientation);
+    size = file.size() < 65536 ? file.size() : 65536;  // load maximum of 64 kB
+    char* buffer = new char[size];
+    file.read(buffer, size);
+    easyexif::EXIFInfo info;
+    info.parseFrom((uchar*)buffer, size);
+    orientation = info.Orientation;
     file.close();
-    delete exif;
+    delete buffer;
     // rotate if required
     QTransform transform;
     switch (orientation) {
