@@ -29,7 +29,7 @@ Window:: Window()
     setupUi(this);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    image = new Image(this);
+    image = new Image(this, scrollArea);
     layout->addWidget(image);
     slideShowBtn->setCheckable(true);
     timer = new QTimer(this);

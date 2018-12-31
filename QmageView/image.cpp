@@ -12,8 +12,10 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 
-Image:: Image(QWidget *parent) : QLabel(parent)
+Image:: Image(QWidget *parent, QScrollArea *scrollArea) : QLabel(parent)
 {
+    vScrollbar = scrollArea->verticalScrollBar();
+    hScrollbar = scrollArea->horizontalScrollBar();
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
     mouse_pressed = false;
@@ -97,9 +99,12 @@ Image:: enableCropMode(bool enable)
 void
 Image:: mousePressEvent(QMouseEvent *ev)
 {
-    if (not crop_mode) return;
-    mouse_pressed = true;
     clk_pos = ev->pos();
+    clk_global = ev->globalPos();
+    v_scrollbar_pos = vScrollbar->value();
+    h_scrollbar_pos = hScrollbar->value();
+    mouse_pressed = true;
+    if (not crop_mode) return;
     p1 = QPoint(topleft); // Save initial pos of cropbox
     p2 = QPoint(btmright);
     // Determine which position is clicked
@@ -116,8 +121,8 @@ Image:: mousePressEvent(QMouseEvent *ev)
 void
 Image:: mouseReleaseEvent(QMouseEvent *)
 {
-    if (not crop_mode) return;
     mouse_pressed = false;
+    if (not crop_mode) return;
     topleft = p1;
     btmright = p2;
 }
@@ -125,7 +130,14 @@ Image:: mouseReleaseEvent(QMouseEvent *)
 void
 Image:: mouseMoveEvent(QMouseEvent *ev)
 {
-    if (not (mouse_pressed and crop_mode)) return;
+    if (not mouse_pressed) return;
+    if (not crop_mode) {
+        // Handle click and drag to scroll
+        vScrollbar->setValue(v_scrollbar_pos + clk_global.y() - ev->globalY());
+        hScrollbar->setValue(h_scrollbar_pos + clk_global.x() - ev->globalX());
+        return;
+    }
+    // Handle crop mode
     QPoint moved = ev->pos() - clk_pos;
     float boxAspect = crop_width/crop_height;
 

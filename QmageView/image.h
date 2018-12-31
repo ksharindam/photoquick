@@ -12,6 +12,8 @@ Image Label Object to display the image.
 #include <QPixmap>
 #include <QPoint>
 #include <QMouseEvent>
+#include <QScrollArea>
+#include <QScrollBar>
 
 QT_BEGIN_NAMESPACE
 
@@ -20,7 +22,7 @@ class Image : public QLabel
 {
     Q_OBJECT
 public:
-    Image(QWidget *parent);
+    Image(QWidget *parent, QScrollArea *scrollArea);
     void setAnimation(QMovie *anim);
     void setImage(QPixmap pixmap);
     void showScaled();
@@ -43,6 +45,10 @@ private:
     float crop_width, crop_height, imgAspect;
     QPixmap pm_tmp;
     QPoint topleft, btmright, last_pt, clk_pos;
+    // Click and drag handling variables
+    int v_scrollbar_pos, h_scrollbar_pos;
+    QPoint clk_global;
+    QScrollBar *vScrollbar, *hScrollbar;
 private slots:
     void lockCropRatio(bool checked);
     void setCropWidth(double value);
