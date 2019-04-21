@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2016-2018 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2016-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -17,6 +17,7 @@
 ...........................................................................
 */
 #include "main.h"
+#include "quality_dialog.h"
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QFileInfo>
@@ -125,24 +126,26 @@ Window:: openImage(QString filepath)
 void
 Window:: saveFile()
 {
-    QPixmap pm;
     QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
                                  "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
     if (not filepath.isEmpty()) {
-        int quality = -1;
-        if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
-            bool ok;
-            int val = QInputDialog::getInt(this, "Set Quality", "Set Image Quality (%) :", 75, 10, 100, 1, &ok);
-            if (ok) quality = val;
-        }
+        QPixmap pm;
         if (image->animation)
             pm = image->movie()->currentPixmap();
         else
             pm = image->pic;
-        if (not pm.isNull())
-            pm.save(filepath, NULL, quality);
+        if (pm.isNull()) return;
+        int quality = -1;
+        if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
+            QualityDialog *dlg = new QualityDialog(this, pm);
+            if (dlg->exec()==QDialog::Accepted){
+				quality = dlg->qualitySpin->value();
+            }
+            else return;
+        }
+        pm.save(filepath, NULL, quality);
     }
 }
 
