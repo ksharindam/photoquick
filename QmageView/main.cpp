@@ -17,7 +17,8 @@
 ...........................................................................
 */
 #include "main.h"
-#include "quality_dialog.h"
+#include "dialogs.h"
+#include "photogrid.h"
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QFileInfo>
@@ -404,40 +405,6 @@ Window:: closeEvent(QCloseEvent *ev)
     QMainWindow::closeEvent(ev);
 }
 
-// ResizeDialog object to get required image size
-ResizeDialog:: ResizeDialog(QWidget *parent, int img_width, int img_height) : QDialog(parent)
-{
-    setupUi(this);
-    frame->hide();
-    resize(353, 200);
-    QIntValidator validator(this);
-    widthEdit->setValidator(&validator);
-    heightEdit->setValidator(&validator);
-    spinWidth->setValue(img_width*2.54/300);
-    spinHeight->setValue(img_height*2.54/300);
-    QObject::connect(checkBox, SIGNAL(toggled(bool)), this, SLOT(toggleAdvanced(bool)));
-    QObject::connect(spinWidth, SIGNAL(valueChanged(double)), this, SLOT(onValueChange(double)));
-    QObject::connect(spinHeight, SIGNAL(valueChanged(double)), this, SLOT(onValueChange(double)));
-    QObject::connect(spinDPI, SIGNAL(valueChanged(int)), this, SLOT(onValueChange(int)));
-    widthEdit->setFocus();
-}
-
-void
-ResizeDialog:: toggleAdvanced(bool checked)
-{
-    if (checked)
-        frame->show();
-    else
-        frame->hide();
-}
-
-void
-ResizeDialog:: onValueChange(int)
-{
-    int DPI = spinDPI->value();
-    widthEdit->setText( QString::number(round(DPI * spinWidth->value()/2.54)));
-    heightEdit->setText( QString::number(round(DPI * spinHeight->value()/2.54)));
-}
 
 // Static functions
 void waitFor(int millisec)

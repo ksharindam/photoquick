@@ -1,16 +1,14 @@
-#include "quality_dialog.h"
-#include <QCheckBox>
-#include <QDialogButtonBox>
-#include <QGridLayout>
+#include "dialogs.h"
 #include <QBuffer>
 #include <QByteArray>
+#include <cmath>
 
-
+// Dialog to set JPG image quality for saving
 QualityDialog:: QualityDialog(QWidget *parent, QPixmap &pm) : QDialog(parent), pixmap(pm)
 {
 	timer = new QTimer(this);
 	timer->setSingleShot(true);
-	timer->setInterval(1000);
+	timer->setInterval(800);
     QLabel *qualityLabel = new QLabel("Set Image Quality (%):", this);
     qualitySpin = new QSpinBox(this);
     qualitySpin->setAlignment(Qt::AlignHCenter);
@@ -39,7 +37,7 @@ QualityDialog:: toggleCheckSize(bool checked)
         sizeLabel->show();
         connect(qualitySpin, SIGNAL(valueChanged(int)), timer, SLOT(start()));
         connect(timer, SIGNAL(timeout()), this, SLOT(checkFileSize()));
-        timer->start();
+        checkFileSize();
     }
     else {
         timer->stop();
@@ -61,4 +59,40 @@ QualityDialog:: checkFileSize()
 	buffer.close();
 	QString text = "Size : %1 KB";
 	sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
+}
+
+
+// ResizeDialog object to get required image size
+ResizeDialog:: ResizeDialog(QWidget *parent, int img_width, int img_height) : QDialog(parent)
+{
+    setupUi(this);
+    frame->hide();
+    resize(353, 200);
+    QIntValidator validator(this);
+    widthEdit->setValidator(&validator);
+    heightEdit->setValidator(&validator);
+    spinWidth->setValue(img_width*2.54/300);
+    spinHeight->setValue(img_height*2.54/300);
+    QObject::connect(checkBox, SIGNAL(toggled(bool)), this, SLOT(toggleAdvanced(bool)));
+    QObject::connect(spinWidth, SIGNAL(valueChanged(double)), this, SLOT(onValueChange(double)));
+    QObject::connect(spinHeight, SIGNAL(valueChanged(double)), this, SLOT(onValueChange(double)));
+    QObject::connect(spinDPI, SIGNAL(valueChanged(int)), this, SLOT(onValueChange(int)));
+    widthEdit->setFocus();
+}
+
+void
+ResizeDialog:: toggleAdvanced(bool checked)
+{
+    if (checked)
+        frame->show();
+    else
+        frame->hide();
+}
+
+void
+ResizeDialog:: onValueChange(int)
+{
+    int DPI = spinDPI->value();
+    widthEdit->setText( QString::number(round(DPI * spinWidth->value()/2.54)));
+    heightEdit->setText( QString::number(round(DPI * spinHeight->value()/2.54)));
 }

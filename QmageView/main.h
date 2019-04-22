@@ -7,9 +7,7 @@ This holds the declaration of top level objects
 #define MAIN_H
 
 #include "ui_mainwindow.h"
-#include "ui_resize_dialog.h"
 #include "image.h"
-#include "photogrid.h"
 #include <QSettings>
 #include <QTimer>
 
@@ -23,10 +21,10 @@ public:
     void openImage(QString filename);
     void adjustWindowSize(bool animation=false);
     //Variables declaration
-    Image *image;
+    Image *image;       // Canvas Widget
     QSettings settings;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
-    QTimer *timer;
+    QTimer *timer;      // Slideshow timer
     QString filepath;
 private:
     void connectSignals();
@@ -52,17 +50,6 @@ public slots:
     void playSlideShow(bool checked);
     void updateStatus();
 
-};
-
-class ResizeDialog : public QDialog, public Ui_ResizeDialog
-{
-    Q_OBJECT
-public:
-    ResizeDialog(QWidget *parent, int img_width, int img_height);
-public slots:
-    void toggleAdvanced(bool checked);
-    void onValueChange(int value);
-    void onValueChange(double value) {onValueChange(int(value));}
 };
 
 void waitFor(int millisec);
