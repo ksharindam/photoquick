@@ -1,21 +1,22 @@
 <RCC>
-<qresource>
-<file>images/nidhi.jpg</file>
-<file>images/prev.png</file>
-<file>images/next.png</file>
-<file>images/play.png</file>
-<file>images/pause.png</file>
-<file>images/quit.png</file>
-<file>images/crop.png</file>
-<file>images/addborder.png</file>
-<file>images/creategrid.png</file>
-<file>images/open.png</file>
-<file>images/save.png</file>
-<file>images/zoomin.png</file>
-<file>images/zoomout.png</file>
-<file>images/originalsize.png</file>
-<file>images/resize.png</file>
-<file>images/rotateleft.png</file>
-<file>images/rotateright.png</file>
-</qresource>
+  <qresource>
+    <file>images/effects.png</file>
+    <file>images/nidhi.jpg</file>
+    <file>images/prev.png</file>
+    <file>images/next.png</file>
+    <file>images/play.png</file>
+    <file>images/pause.png</file>
+    <file>images/quit.png</file>
+    <file>images/crop.png</file>
+    <file>images/addborder.png</file>
+    <file>images/creategrid.png</file>
+    <file>images/open.png</file>
+    <file>images/save.png</file>
+    <file>images/zoomin.png</file>
+    <file>images/zoomout.png</file>
+    <file>images/originalsize.png</file>
+    <file>images/resize.png</file>
+    <file>images/rotateleft.png</file>
+    <file>images/rotateright.png</file>
+  </qresource>
 </RCC>

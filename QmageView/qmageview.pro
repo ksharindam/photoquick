@@ -16,7 +16,7 @@ mytarget.commands += $${QMAKE_MKDIR} build
 
 # Input
 HEADERS += exif.h image.h main.h photogrid.h dialogs.h
-SOURCES += exif.cpp image.cpp main.cpp photogrid.cpp dialogs.cpp
+SOURCES += exif.cpp image.cpp main.cpp photogrid.cpp dialogs.cpp filters.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui resize_dialog.ui photogrid_dialog.ui gridsetup_dialog.ui
 

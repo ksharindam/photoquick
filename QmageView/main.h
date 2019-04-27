@@ -40,6 +40,9 @@ public slots:
     void cancelCropping();
     void addBorder();
     void createPhotoGrid();
+    void toGrayScale();
+    void toBlacknWhite();
+    void adaptiveThresh();
     void openPrevImage();
     void openNextImage();
     void zoomInImage();

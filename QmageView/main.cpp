@@ -19,16 +19,23 @@
 #include "main.h"
 #include "dialogs.h"
 #include "photogrid.h"
+#include "filters.h"
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QFileInfo>
 #include <QPainter>
 #include <QDesktopWidget>
+#include <QMenu>
 #include <cmath>
-
+#include <QDebug>
 Window:: Window()
 {
     setupUi(this);
+    QMenu *menu = new QMenu(effectsBtn);
+    menu->addAction("GrayScale", this, SLOT(toGrayScale()));
+    menu->addAction("Simple B/W", this, SLOT(toBlacknWhite()));
+    menu->addAction("Adaptive B/W", this, SLOT(adaptiveThresh()));
+    effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     image = new Image(this, scrollArea);
@@ -251,6 +258,31 @@ Window:: createPhotoGrid()
         image->setImage(dialog->gridPaper->photo_grid);
         adjustWindowSize();
     }
+}
+
+void
+Window:: toGrayScale()
+{
+    QImage img = image->pic.toImage();
+    grayScale(img);
+    image->setImage(QPixmap::fromImage(img));
+}
+
+void
+Window:: toBlacknWhite()
+{
+    QImage img = image->pic.toImage();
+    int thresh = calcOtsuThresh(img);
+    applyThresh(img, thresh);
+    image->setImage(QPixmap::fromImage(img));
+}
+
+void
+Window:: adaptiveThresh()
+{
+    QImage img = image->pic.toImage();
+    adaptiveIntegralThresh(img);
+    image->setImage(QPixmap::fromImage(img));
 }
 
 void
