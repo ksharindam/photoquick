@@ -27,7 +27,7 @@
 #include <QDesktopWidget>
 #include <QMenu>
 #include <cmath>
-#include <QDebug>
+
 Window:: Window()
 {
     setupUi(this);
@@ -138,23 +138,22 @@ Window:: saveFile()
                                  "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
-    if (not filepath.isEmpty()) {
-        QPixmap pm;
-        if (image->animation)
-            pm = image->movie()->currentPixmap();
-        else
-            pm = image->pic;
-        if (pm.isNull()) return;
-        int quality = -1;
-        if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
-            QualityDialog *dlg = new QualityDialog(this, pm);
-            if (dlg->exec()==QDialog::Accepted){
-				quality = dlg->qualitySpin->value();
-            }
-            else return;
+    if (filepath.isEmpty()) return;
+    QPixmap pm;
+    if (image->animation)
+        pm = image->movie()->currentPixmap();
+    else
+        pm = image->pic;
+    if (pm.isNull()) return;
+    int quality = -1;
+    if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
+        QualityDialog *dlg = new QualityDialog(this, pm);
+        if (dlg->exec()==QDialog::Accepted){
+            quality = dlg->qualitySpin->value();
         }
-        pm.save(filepath, NULL, quality);
+        else return;
     }
+    pm.save(filepath, NULL, quality);
 }
 
 void

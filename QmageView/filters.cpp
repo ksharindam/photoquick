@@ -1,4 +1,5 @@
 #include "filters.h"
+//#include <chrono>
 
 void grayScale(QImage &img)
 {
@@ -24,8 +25,9 @@ int calcOtsuThresh(QImage img)
     int x, y;
     for (y = 0; y < img.height(); ++y)
     {
+        QRgb *row = (QRgb*)img.constScanLine(y);
         for (x = 0; x < img.width(); x++)
-            ++histogram[qGray(img.pixel(x,y))];
+            ++histogram[qGray(row[x])];
     }
 
     // Calculate sum
@@ -76,20 +78,20 @@ void applyThresh(QImage &img, int thresh)
     for (int y=0;y<img.height();y++) {
         QRgb* line = ((QRgb*)img.scanLine(y));
         for (int x=0;x<img.width();x++) {
-            int val = qRed(line[x]);
-            if (val>thresh)
-                line[x] = qRgba(255,255,255, 255);
+            if (qGray(line[x]) > thresh)
+                line[x] = qRgb(255,255,255);
             else
-                line[x] = qRgba(0,0,0, 255);
+                line[x] = qRgb(0,0,0);
         }
     }
 }
 
 void adaptiveIntegralThresh(QImage &img)
 {
+    //auto start = std::chrono::steady_clock::now();
     int w = img.width();
     int h = img.height();
-    // Allocate memory for imtegral image
+    // Allocate memory for integral image
     int *ptr, **intImg;
     int len = sizeof(int *) * h + sizeof(int) * w * h;
     intImg = (int **)malloc(len);
@@ -101,12 +103,13 @@ void adaptiveIntegralThresh(QImage &img)
     // Calculate integral image
     for (int y=0;y<h;++y)
     {
+        QRgb *row = (QRgb*)img.constScanLine(y);
         int sum=0;
         for (int x=0;x<w;++x)
         {
-            sum += qRed(img.pixel(x,y));
+            sum += qGray(row[x]);
             if (y==0)
-                intImg[y][x] = qRed(img.pixel(x,y));
+                intImg[y][x] = qGray(row[x]);
             else
                 intImg[y][x] = intImg[y-1][x] + sum;
         }
@@ -120,6 +123,7 @@ void adaptiveIntegralThresh(QImage &img)
     {
         y1 = ((i - s2)>0) ? (i - s2) : 0;
         y2 = ((i + s2)<h) ? (i + s2) : h-1;
+        QRgb *row = (QRgb*)img.scanLine(i);
         for (int j=0;j<w;++j)
         {
             x1 = ((j - s2)>0) ? (j - s2) : 0;
@@ -128,11 +132,14 @@ void adaptiveIntegralThresh(QImage &img)
             count = (x2 - x1)*(y2 - y1);
             sum = intImg[y2][x2] - intImg[y2][x1] - intImg[y1][x2] + intImg[y1][x1];
 
-            if ((qRed(img.pixel(j,i)) * count) < (int)(sum*(1.0 - T)))
-                img.setPixel(j,i,qRgb(0,0,0));
+            if ((qGray(row[j]) * count) < (int)(sum*(1.0 - T)) or qGray(row[j]) < 50)
+                row[j] = qRgb(0,0,0);
             else
-                img.setPixel(j,i,qRgb(255,255,255));
+                row[j] = qRgb(255,255,255);
         }
     }
     free(intImg);
+    //auto end = std::chrono::steady_clock::now();
+    //double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    //qDebug() << "Time :" << elapse;
 }
