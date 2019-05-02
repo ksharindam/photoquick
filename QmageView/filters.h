@@ -13,6 +13,6 @@ int calcOtsuThresh(QImage img);
 void applyThresh(QImage &img, int thresh);
 
 // Apply adaptive integral threshold using bradley's method
-void adaptiveIntegralThresh(QImage &img);
+void adaptiveIntegralThresh(QImage &img, float T=0.15);
 
 #endif

@@ -86,7 +86,7 @@ void applyThresh(QImage &img, int thresh)
     }
 }
 
-void adaptiveIntegralThresh(QImage &img)
+void adaptiveIntegralThresh(QImage &img, float T)
 {
     //auto start = std::chrono::steady_clock::now();
     int w = img.width();
@@ -116,7 +116,6 @@ void adaptiveIntegralThresh(QImage &img)
     }
     // Apply Bradley threshold
     int x1,y1,x2,y2, count, sum;
-    float T = 0.15;
     int s = w/16;
     int s2 = s/2;
     for (int i=0;i<h;++i)

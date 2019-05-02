@@ -40,13 +40,12 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QPushButton" name="openBtn">
+        <widget class="QToolButton" name="openBtn">
          <property name="toolTip">
-          <string>Open Image
- [Ctrl+O]</string>
+          <string>Open Image</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -61,13 +60,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="saveBtn">
+        <widget class="QToolButton" name="saveBtn">
          <property name="toolTip">
-          <string>Save Image
- [Ctrl+S]</string>
+          <string>Save Image</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -82,13 +80,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="resizeBtn">
+        <widget class="QToolButton" name="resizeBtn">
          <property name="toolTip">
-          <string>Resize
-[Ctrl+R]</string>
+          <string>Resize</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -103,13 +100,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="cropBtn">
+        <widget class="QToolButton" name="cropBtn">
          <property name="toolTip">
-          <string>Crop Image
- [Ctrl+X]</string>
+          <string>Crop</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -124,13 +120,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="addBorderBtn">
+        <widget class="QToolButton" name="addBorderBtn">
          <property name="toolTip">
-          <string>Add Border
- [Ctrl+B]</string>
+          <string>Add Border</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -145,13 +140,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="photoGridBtn">
+        <widget class="QToolButton" name="photoGridBtn">
          <property name="toolTip">
-          <string>Create Photo Grid
- [Ctrl+G]</string>
+          <string>Photo Grid</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -166,12 +160,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="effectsBtn">
+        <widget class="QToolButton" name="effectsBtn">
          <property name="toolTip">
           <string>Effects</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -179,9 +173,12 @@
          </property>
          <property name="iconSize">
           <size>
-           <width>24</width>
+           <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="popupMode">
+          <enum>QToolButton::InstantPopup</enum>
          </property>
         </widget>
        </item>
@@ -199,13 +196,13 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="quitBtn">
+        <widget class="QToolButton" name="quitBtn">
          <property name="toolTip">
           <string>Quit
 [Esc]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -216,6 +213,9 @@
            <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="shortcut">
+          <string>Esc</string>
          </property>
         </widget>
        </item>
@@ -232,7 +232,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>509</width>
+         <width>523</width>
          <height>384</height>
         </rect>
        </property>
@@ -252,13 +252,13 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QPushButton" name="prevBtn">
+        <widget class="QToolButton" name="prevBtn">
          <property name="toolTip">
-          <string>Previous Image
- [Left]</string>
+          <string>Previous
+[←]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -270,16 +270,19 @@
            <height>32</height>
           </size>
          </property>
+         <property name="shortcut">
+          <string>Left</string>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="nextBtn">
+        <widget class="QToolButton" name="nextBtn">
          <property name="toolTip">
-          <string>Next Image
- [Right]</string>
+          <string>Next
+[→]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -291,15 +294,19 @@
            <height>32</height>
           </size>
          </property>
+         <property name="shortcut">
+          <string>Right</string>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="zoomInBtn">
+        <widget class="QToolButton" name="zoomInBtn">
          <property name="toolTip">
-          <string>Zoom In (+)</string>
+          <string>Zoom In
+[+]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -311,15 +318,19 @@
            <height>32</height>
           </size>
          </property>
+         <property name="shortcut">
+          <string>+</string>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="zoomOutBtn">
+        <widget class="QToolButton" name="zoomOutBtn">
          <property name="toolTip">
-          <string>Zoom Out (-)</string>
+          <string>Zoom Out
+[-]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -331,16 +342,19 @@
            <height>32</height>
           </size>
          </property>
+         <property name="shortcut">
+          <string>-</string>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="origSizeBtn">
+        <widget class="QToolButton" name="origSizeBtn">
          <property name="toolTip">
           <string>Original Size
- [ 1 ]</string>
+[1]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -352,16 +366,18 @@
            <height>32</height>
           </size>
          </property>
+         <property name="shortcut">
+          <string>1</string>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="rotateLeftBtn">
+        <widget class="QToolButton" name="rotateLeftBtn">
          <property name="toolTip">
-          <string>Rotate Left
- [Ctrl+Left]</string>
+          <string>Rotate Left</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -376,13 +392,12 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="rotateRightBtn">
+        <widget class="QToolButton" name="rotateRightBtn">
          <property name="toolTip">
-          <string>Rotate Right
- [Ctrl+Right]</string>
+          <string>Rotate Right</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -410,13 +425,13 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="slideShowBtn">
+        <widget class="QToolButton" name="slideShowBtn">
          <property name="toolTip">
-          <string>Play Slide Show
- [Space]</string>
+          <string>Play/Pause Slide Show
+[Space]</string>
          </property>
          <property name="text">
-          <string/>
+          <string>...</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">
@@ -428,8 +443,8 @@
            <height>32</height>
           </size>
          </property>
-         <property name="checkable">
-          <bool>true</bool>
+         <property name="shortcut">
+          <string>Space</string>
          </property>
         </widget>
        </item>

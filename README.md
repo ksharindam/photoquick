@@ -9,6 +9,7 @@ This can ..
  * Rotate  
  * Create photo grid for printing  
  * Add Border  
+ * Filters (Grayscale and monochrome)  
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 N.B - You can use the python version of this program [pypicview](https://github.com/ksharindam/pypicview)
@@ -16,7 +17,7 @@ N.B - You can use the python version of this program [pypicview](https://github.
 ### Build
 To build this program, extract the source code zip.  
 Open terminal and change directory to qmageview/QmageView.  
-**Install dependencies ...**  
+**Build dependencies ...**  
  * libqt4-dev  
 
 Then run these commands to compile...  

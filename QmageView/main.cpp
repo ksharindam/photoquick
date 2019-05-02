@@ -57,41 +57,25 @@ void
 Window:: connectSignals()
 {
     // For the buttons of the left side
-    QObject::connect(openBtn, SIGNAL(clicked()), this, SLOT(openFile()));
-    QObject::connect(saveBtn, SIGNAL(clicked()), this, SLOT(saveFile()));
-    QObject::connect(resizeBtn, SIGNAL(clicked()), this, SLOT(resizeImage()));
-    QObject::connect(cropBtn, SIGNAL(clicked()), this, SLOT(cropImage()));
-    QObject::connect(addBorderBtn, SIGNAL(clicked()), this, SLOT(addBorder()));
-    QObject::connect(photoGridBtn, SIGNAL(clicked()), this, SLOT(createPhotoGrid()));
-    QObject::connect(quitBtn, SIGNAL(clicked()), this, SLOT(close()));
+    connect(openBtn, SIGNAL(clicked()), this, SLOT(openFile()));
+    connect(saveBtn, SIGNAL(clicked()), this, SLOT(saveFile()));
+    connect(resizeBtn, SIGNAL(clicked()), this, SLOT(resizeImage()));
+    connect(cropBtn, SIGNAL(clicked()), this, SLOT(cropImage()));
+    connect(addBorderBtn, SIGNAL(clicked()), this, SLOT(addBorder()));
+    connect(photoGridBtn, SIGNAL(clicked()), this, SLOT(createPhotoGrid()));
+    connect(quitBtn, SIGNAL(clicked()), this, SLOT(close()));
     // For the buttons of the right side
-    QObject::connect(prevBtn, SIGNAL(clicked()), this, SLOT(openPrevImage()));
-    QObject::connect(nextBtn, SIGNAL(clicked()), this, SLOT(openNextImage()));
-    QObject::connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomInImage()));
-    QObject::connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOutImage()));
-    QObject::connect(origSizeBtn, SIGNAL(clicked()), this, SLOT(origSizeImage()));
-    QObject::connect(rotateLeftBtn, SIGNAL(clicked()), this, SLOT(rotateLeft()));
-    QObject::connect(rotateRightBtn, SIGNAL(clicked()), this, SLOT(rotateRight()));
-    QObject::connect(slideShowBtn, SIGNAL(clicked(bool)), this, SLOT(playSlideShow(bool)));
-    QObject::connect(timer, SIGNAL(timeout()), this, SLOT(openNextImage()));
+    connect(prevBtn, SIGNAL(clicked()), this, SLOT(openPrevImage()));
+    connect(nextBtn, SIGNAL(clicked()), this, SLOT(openNextImage()));
+    connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomInImage()));
+    connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOutImage()));
+    connect(origSizeBtn, SIGNAL(clicked()), this, SLOT(origSizeImage()));
+    connect(rotateLeftBtn, SIGNAL(clicked()), this, SLOT(rotateLeft()));
+    connect(rotateRightBtn, SIGNAL(clicked()), this, SLOT(rotateRight()));
+    connect(slideShowBtn, SIGNAL(clicked(bool)), this, SLOT(playSlideShow(bool)));
+    connect(timer, SIGNAL(timeout()), this, SLOT(openNextImage()));
     // Connect other signals
-    QObject::connect(image, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
-    // Connect Shortcuts
-    openBtn->setShortcut(QString("Ctrl+O"));
-    saveBtn->setShortcut(QString("Ctrl+S"));
-    resizeBtn->setShortcut(QString("Ctrl+R"));
-    cropBtn->setShortcut(QString("Ctrl+X"));
-    addBorderBtn->setShortcut(QString("Ctrl+B"));
-    photoGridBtn->setShortcut(QString("Ctrl+G"));
-    quitBtn->setShortcut(QString("Esc"));
-    prevBtn->setShortcut(QString("Left"));
-    nextBtn->setShortcut(QString("Right"));
-    zoomInBtn->setShortcut(QString("+"));
-    zoomOutBtn->setShortcut(QString("-"));
-    origSizeBtn->setShortcut(QString("1"));
-    rotateLeftBtn->setShortcut(QString("Ctrl+Left"));
-    rotateRightBtn->setShortcut(QString("Ctrl+Right"));
-    slideShowBtn->setShortcut(QString("Space"));
+    connect(image, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
 }
 
 void
@@ -99,7 +83,7 @@ Window:: openFile()
 {
     QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
                          "PNG Images (*.png);;SVG Images (*.svg);;All Files (*)";
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", this->filepath, filefilter); 
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", this->filepath, filefilter);
     if (filepath.isEmpty()) return;
     openImage(filepath);
 }
@@ -208,15 +192,15 @@ Window:: cropImage()
         statusbar->addPermanentWidget(cropnowBtn);
         QPushButton *cropcancelBtn = new QPushButton("Cancel", statusbar);
         statusbar->addPermanentWidget(cropcancelBtn);
-        QObject::connect(lockratio, SIGNAL(toggled(bool)), labelWH, SLOT(setEnabled(bool)));
-        QObject::connect(lockratio, SIGNAL(toggled(bool)), spinWidth, SLOT(setEnabled(bool)));
-        QObject::connect(lockratio, SIGNAL(toggled(bool)), spinHeight, SLOT(setEnabled(bool)));
-        QObject::connect(lockratio, SIGNAL(toggled(bool)), image, SLOT(lockCropRatio(bool)));
-        QObject::connect(spinWidth, SIGNAL(valueChanged(double)), image, SLOT(setCropWidth(double)));
-        QObject::connect(spinHeight, SIGNAL(valueChanged(double)), image, SLOT(setCropHeight(double)));
-        QObject::connect(cropnowBtn, SIGNAL(clicked()), image, SLOT(cropImage()));
-        QObject::connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
-        QObject::connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
+        connect(lockratio, SIGNAL(toggled(bool)), labelWH, SLOT(setEnabled(bool)));
+        connect(lockratio, SIGNAL(toggled(bool)), spinWidth, SLOT(setEnabled(bool)));
+        connect(lockratio, SIGNAL(toggled(bool)), spinHeight, SLOT(setEnabled(bool)));
+        connect(lockratio, SIGNAL(toggled(bool)), image, SLOT(lockCropRatio(bool)));
+        connect(spinWidth, SIGNAL(valueChanged(double)), image, SLOT(setCropWidth(double)));
+        connect(spinHeight, SIGNAL(valueChanged(double)), image, SLOT(setCropHeight(double)));
+        connect(cropnowBtn, SIGNAL(clicked()), image, SLOT(cropImage()));
+        connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
+        connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
         crop_widgets << lockratio << labelWH << spinWidth << colon << spinHeight << cropnowBtn << cropcancelBtn;
     }
 }
@@ -386,14 +370,14 @@ Window:: adjustWindowSize(bool animation)
     if (isMaximized()) return;
     if (animation) {
         waitFor(30);        // Wait little to let Label resize and get correct width height
-        resize(image->width() + 2*btnboxwidth + 4, 
+        resize(image->width() + 2*btnboxwidth + 4,
                image->height() + 4+32);
     }
     else {
-        resize(image->pixmap()->width() + 2*btnboxwidth + 4, 
+        resize(image->pixmap()->width() + 2*btnboxwidth + 4,
                image->pixmap()->height() + 4+32);
     }
-    move((screen_width - (width() + 2*offset_x) )/2, 
+    move((screen_width - (width() + 2*offset_x) )/2,
               (screen_height - (height() + offset_x + offset_y))/2 );
 }
 
