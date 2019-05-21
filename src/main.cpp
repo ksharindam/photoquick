@@ -35,6 +35,7 @@ Window:: Window()
     menu->addAction("GrayScale", this, SLOT(toGrayScale()));
     menu->addAction("Simple B/W", this, SLOT(toBlacknWhite()));
     menu->addAction("Adaptive B/W", this, SLOT(adaptiveThresh()));
+    menu->addAction("Smooth/Blur...", this, SLOT(blur()));
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -256,7 +257,7 @@ Window:: toBlacknWhite()
 {
     QImage img = image->pic.toImage();
     int thresh = calcOtsuThresh(img);
-    applyThresh(img, thresh);
+    globalThresh(img, thresh);
     image->setImage(QPixmap::fromImage(img));
 }
 
@@ -265,6 +266,18 @@ Window:: adaptiveThresh()
 {
     QImage img = image->pic.toImage();
     adaptiveIntegralThresh(img);
+    image->setImage(QPixmap::fromImage(img));
+}
+
+void
+Window:: blur()
+{
+    bool ok;
+    int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
+                                        1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
+    if (not ok) return;
+    QImage img = image->pic.toImage();
+    boxBlur(img, radius);
     image->setImage(QPixmap::fromImage(img));
 }
 

@@ -1,5 +1,6 @@
 #include "filters.h"
-//#include <chrono>
+// #include <chrono>
+// #include <QDebug>
 
 void grayScale(QImage &img)
 {
@@ -32,7 +33,7 @@ int calcOtsuThresh(QImage img)
 
     // Calculate sum
     int sum = 0;
-    for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx) 
+    for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx)
     {
         sum += idx * histogram[idx];
     }
@@ -42,7 +43,7 @@ int calcOtsuThresh(QImage img)
     int sumB = 0;
     int q1 = 0;
     double max = 0;
-    for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx) 
+    for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx)
     {
         // q1 = Weighted Background
         q1 += histogram[idx];
@@ -56,7 +57,7 @@ int calcOtsuThresh(QImage img)
 
         sumB += (idx * histogram[idx]);
 
-        const double m1m2 = 
+        const double m1m2 =
             (double)sumB / q1 -			// Mean Background
             (double)(sum - sumB) / q2;	// Mean Forground
 
@@ -64,7 +65,7 @@ int calcOtsuThresh(QImage img)
         // If one were to multiple by q1 or q2 first, an explicit cast would be required!
         const double between = m1m2 * m1m2 * q1 * q2;
 
-        if (between > max) 
+        if (between > max)
         {
             threshold = idx;
             max = between;
@@ -73,7 +74,7 @@ int calcOtsuThresh(QImage img)
     return threshold;
 }
 
-void applyThresh(QImage &img, int thresh)
+void globalThresh(QImage &img, int thresh)
 {
     for (int y=0;y<img.height();y++) {
         QRgb* line = ((QRgb*)img.scanLine(y));
@@ -86,7 +87,8 @@ void applyThresh(QImage &img, int thresh)
     }
 }
 
-void adaptiveIntegralThresh(QImage &img, float T)
+// Apply Bradley threshold (to get desired output, tune value of T and s)
+void adaptiveIntegralThresh(QImage &img)
 {
     //auto start = std::chrono::steady_clock::now();
     int w = img.width();
@@ -116,7 +118,8 @@ void adaptiveIntegralThresh(QImage &img, float T)
     }
     // Apply Bradley threshold
     int x1,y1,x2,y2, count, sum;
-    int s = w/16;
+    float T = 0.15;
+    int s = w/32 > 16? w/32: 16;
     int s2 = s/2;
     for (int i=0;i<h;++i)
     {
@@ -131,7 +134,8 @@ void adaptiveIntegralThresh(QImage &img, float T)
             count = (x2 - x1)*(y2 - y1);
             sum = intImg[y2][x2] - intImg[y2][x1] - intImg[y1][x2] + intImg[y1][x1];
 
-            if ((qGray(row[j]) * count) < (int)(sum*(1.0 - T)) or qGray(row[j]) < 50)
+            // threshold = mean*(1 - T) , where mean = sum/count, T = around 0.15
+            if ((qGray(row[j]) * count) < (int)(sum*(1.0 - T)) )
                 row[j] = qRgb(0,0,0);
             else
                 row[j] = qRgb(255,255,255);
@@ -141,4 +145,77 @@ void adaptiveIntegralThresh(QImage &img, float T)
     //auto end = std::chrono::steady_clock::now();
     //double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
     //qDebug() << "Time :" << elapse;
+}
+
+void boxBlur(QImage &img, int r/*blur radius*/)
+{
+    // auto start = std::chrono::steady_clock::now();
+    int w = img.width();
+    int h = img.height();
+    QImage tmp = QImage(w,h,QImage::Format_ARGB32);// temporary image
+    QRgb *row, *tmp_row;
+    int x, y, sum_r,sum_g,sum_b, count;
+    // Run blur in horizontal direction
+    for (y=0; y<h; ++y)
+    {
+        row = (QRgb*)img.constScanLine(y);
+        tmp_row = (QRgb*)tmp.scanLine(y);
+        sum_r = sum_g = sum_b = 0;
+        for (x=0; x<=r; x++) {
+            sum_r += qRed(row[x]); sum_g += qGreen(row[x]); sum_b += qBlue(row[x]);
+        }
+        count = r+1;
+        tmp_row[0] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        for (x=1; x<=r; x++) {
+            sum_r += qRed(row[x+r]); sum_g += qGreen(row[x+r]); sum_b += qBlue(row[x+r]);
+            count += 1;
+            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+        for (x=r+1; x<w-r; x++) {
+            sum_r += qRed(row[x+r]) - qRed(row[x-r-1]);
+            sum_g += qGreen(row[x+r]) - qGreen(row[x-r-1]);
+            sum_b += qBlue(row[x+r]) - qBlue(row[x-r-1]);
+            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+        for (x=w-r; x<w; x++) {
+            sum_r -= qRed(row[x-r-1]); sum_g -= qGreen(row[x-r-1]); sum_b -= qBlue(row[x-r-1]);
+            count -= 1;
+            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+    }
+    // Run blur in vertical direction
+    QRgb clr, clr2;
+    for (x=0; x<w; ++x)
+    {
+        sum_r = sum_g = sum_b = 0;
+        for (y=0; y<=r; ++y) {
+            clr = ((QRgb*)tmp.constScanLine(y))[x];
+            sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
+        }
+        count = r+1;
+        ((QRgb*)img.scanLine(0))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        for (y=1; y<=r; y++) {
+            clr = ((QRgb*)tmp.constScanLine(y+r))[x];
+            sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
+            count += 1;
+            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+        for (y=r+1; y<h-r; y++) {
+            clr = ((QRgb*)tmp.constScanLine(y+r))[x];
+            clr2 = ((QRgb*)tmp.constScanLine(y-r-1))[x];
+            sum_r += qRed(clr) - qRed(clr2);
+            sum_g += qGreen(clr) - qGreen(clr2);
+            sum_b += qBlue(clr) - qBlue(clr2);
+            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+        for (y=h-r; y<h; y++) {
+            clr = ((QRgb*)tmp.constScanLine(y-r-1))[x];
+            sum_r -= qRed(clr); sum_g -= qGreen(clr); sum_b -= qBlue(clr);
+            count -= 1;
+            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        }
+    }
+    // auto end = std::chrono::steady_clock::now();
+    // double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+    // qDebug() << "Time :" << elapse;
 }

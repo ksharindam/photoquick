@@ -43,6 +43,7 @@ public slots:
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();
+    void blur();
     void openPrevImage();
     void openNextImage();
     void zoomInImage();
