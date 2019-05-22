@@ -36,6 +36,7 @@ Window:: Window()
     menu->addAction("Simple B/W", this, SLOT(toBlacknWhite()));
     menu->addAction("Adaptive B/W", this, SLOT(adaptiveThresh()));
     menu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    menu->addAction("Sharpen", this, SLOT(sharpenImage()));
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -278,6 +279,14 @@ Window:: blur()
     if (not ok) return;
     QImage img = image->pic.toImage();
     boxBlur(img, radius);
+    image->setImage(QPixmap::fromImage(img));
+}
+
+void
+Window:: sharpenImage()
+{
+    QImage img = image->pic.toImage();
+    sharpen(img);
     image->setImage(QPixmap::fromImage(img));
 }
 

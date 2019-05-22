@@ -18,4 +18,7 @@ void adaptiveIntegralThresh(QImage &img);
 // Apply Box Blur
 void boxBlur(QImage &img, int radius=1);
 
+// Sharpen by Unsharp masking
+void sharpen(QImage &img);
+
 #endif

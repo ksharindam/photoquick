@@ -219,3 +219,31 @@ void boxBlur(QImage &img, int r/*blur radius*/)
     // double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
     // qDebug() << "Time :" << elapse;
 }
+
+// Using unsharp mask
+void sharpen(QImage &img)
+{
+    QImage mask = img.copy();
+    boxBlur(mask, 1);
+    //boxBlur(mask, 1);
+    int w = img.width();
+    int h = img.height();
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row_mask = (QRgb*)mask.constScanLine(y);
+        QRgb *row = (QRgb*)img.scanLine(y);
+        for (int x=0; x<w; x++)
+        {
+            int r = qRed(row[x]) + 0.7*(qRed(row[x]) - qRed(row_mask[x]));
+            int g = qGreen(row[x]) + 0.7*(qGreen(row[x]) - qGreen(row_mask[x]));
+            int b = qBlue(row[x]) + 0.7*(qBlue(row[x]) - qBlue(row_mask[x]));
+            r = (r > 255)? 255: r;
+            g = (g > 255)? 255: g;
+            b = (b > 255)? 255: b;
+            r = (r < 0)? 0:r;
+            g = (g < 0)? 0:g;
+            b = (b < 0)? 0:b;
+            row[x] = qRgb(r, g, b);
+        }
+    }
+}
