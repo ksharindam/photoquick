@@ -21,4 +21,7 @@ void boxBlur(QImage &img, int radius=1);
 // Sharpen by Unsharp masking
 void sharpen(QImage &img);
 
+// Sigmoidal Contrast to enhance low light images
+void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
+
 #endif

@@ -1,4 +1,5 @@
 #include "filters.h"
+#include <cmath>
 // #include <chrono>
 // #include <QDebug>
 
@@ -34,9 +35,7 @@ int calcOtsuThresh(QImage img)
     // Calculate sum
     int sum = 0;
     for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx)
-    {
         sum += idx * histogram[idx];
-    }
 
     // Compute threshold
     int threshold = 0;
@@ -45,13 +44,11 @@ int calcOtsuThresh(QImage img)
     double max = 0;
     for (int idx = 0; idx < HISTOGRAM_SIZE; ++idx)
     {
-        // q1 = Weighted Background
-        q1 += histogram[idx];
+        q1 += histogram[idx]; // q1 = Weighted Background
         if (q1 == 0)
             continue;
 
-        // q2 = Weighted Forground
-        const int q2 = N - q1;
+        const int q2 = N - q1; // q2 = Weighted Forground
         if (q2 == 0)
             break;
 
@@ -225,7 +222,6 @@ void sharpen(QImage &img)
 {
     QImage mask = img.copy();
     boxBlur(mask, 1);
-    //boxBlur(mask, 1);
     int w = img.width();
     int h = img.height();
     for (int y=0; y<h; y++)
@@ -237,13 +233,37 @@ void sharpen(QImage &img)
             int r = qRed(row[x]) + 0.7*(qRed(row[x]) - qRed(row_mask[x]));
             int g = qGreen(row[x]) + 0.7*(qGreen(row[x]) - qGreen(row_mask[x]));
             int b = qBlue(row[x]) + 0.7*(qBlue(row[x]) - qBlue(row_mask[x]));
-            r = (r > 255)? 255: r;
-            g = (g > 255)? 255: g;
-            b = (b > 255)? 255: b;
-            r = (r < 0)? 0:r;
-            g = (g < 0)? 0:g;
-            b = (b < 0)? 0:b;
+            r = (r < 0)? 0: (r>255? 255:r);
+            g = (g < 0)? 0: (g>255? 255:g);
+            b = (b < 0)? 0: (b>255? 255:b);
             row[x] = qRgb(r, g, b);
+        }
+    }
+}
+
+// *******-------- Sigmoidal Contrast ---------**********
+// Sigmoidal Contrast Image to enhance low contrast image
+#define Sigmoidal(a,b,x) ( tanh((0.5*(a))*((x)-(b))) )
+
+#define ScaledSigmoidal(a,b,x) (                    \
+  (Sigmoidal((a),(b),(x))-Sigmoidal((a),(b),0.0)) / \
+  (Sigmoidal((a),(b),1.0)-Sigmoidal((a),(b),0.0)) )
+
+// midpoint => range = 0.0 -> 1.0 , default = 0.5
+// contrast => range =   1 -> 20,   default = 3
+void sigmoidalContrast(QImage &img, float midpoint)
+{
+    int w = img.width();
+    int h = img.height();
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row = (QRgb*)img.scanLine(y);
+        for (int x=0; x<w; x++) {
+            int clr = row[x];
+            int r = 255*ScaledSigmoidal(3, midpoint, qRed(clr)/255.0);
+            int g = 255*ScaledSigmoidal(3, midpoint, qGreen(clr)/255.0);
+            int b = 255*ScaledSigmoidal(3, midpoint, qBlue(clr)/255.0);
+            row[x] = qRgb(r,g,b);
         }
     }
 }

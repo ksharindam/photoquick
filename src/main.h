@@ -45,6 +45,7 @@ public slots:
     void adaptiveThresh();
     void blur();
     void sharpenImage();
+    void sigmoidContrast(); // Enhance low light images
     void openPrevImage();
     void openNextImage();
     void zoomInImage();

@@ -33,10 +33,11 @@ Window:: Window()
     setupUi(this);
     QMenu *menu = new QMenu(effectsBtn);
     menu->addAction("GrayScale", this, SLOT(toGrayScale()));
-    menu->addAction("Simple B/W", this, SLOT(toBlacknWhite()));
-    menu->addAction("Adaptive B/W", this, SLOT(adaptiveThresh()));
+    menu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
+    menu->addAction("Threshold", this, SLOT(toBlacknWhite()));
     menu->addAction("Smooth/Blur...", this, SLOT(blur()));
     menu->addAction("Sharpen", this, SLOT(sharpenImage()));
+    menu->addAction("Sigmoidal Contrast", this, SLOT(sigmoidContrast()));
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -287,6 +288,15 @@ Window:: sharpenImage()
 {
     QImage img = image->pic.toImage();
     sharpen(img);
+    image->setImage(QPixmap::fromImage(img));
+}
+
+// Enhance low light images using Sigmoidal Contrast
+void
+Window:: sigmoidContrast()
+{
+    QImage img = image->pic.toImage();
+    sigmoidalContrast(img, 0.3);
     image->setImage(QPixmap::fromImage(img));
 }
 

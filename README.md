@@ -9,7 +9,7 @@ This can ..
  * Rotate  
  * Create photo grid for printing  
  * Add Border  
- * Filters (Grayscale and monochrome)  
+ * Filters (Grayscale, Scan Page, Blur, Sharpen, Auto Contrast)  
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 N.B - You can use the python version of this program [pypicview](https://github.com/ksharindam/pypicview)
