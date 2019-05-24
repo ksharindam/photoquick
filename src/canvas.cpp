@@ -1,7 +1,7 @@
 /*
 This file is a part of qmageview program, which is GPLv3 licensed
 */
-#include "image.h"
+#include "canvas.h"
 #include <QSizePolicy>
 #include <QTransform>
 #include <QPainter>
@@ -12,7 +12,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 
-Image:: Image(QWidget *parent, QScrollArea *scrollArea) : QLabel(parent)
+Canvas:: Canvas(QWidget *parent, QScrollArea *scrollArea) : QLabel(parent)
 {
     vScrollbar = scrollArea->verticalScrollBar();
     hScrollbar = scrollArea->horizontalScrollBar();
@@ -25,7 +25,7 @@ Image:: Image(QWidget *parent, QScrollArea *scrollArea) : QLabel(parent)
 }
 
 void
-Image:: setAnimation(QMovie *anim)
+Canvas:: setAnimation(QMovie *anim)
 {
     scale = 1.0;
     pic = QPixmap();
@@ -35,7 +35,7 @@ Image:: setAnimation(QMovie *anim)
 }
 
 void
-Image:: setImage(QPixmap pix)
+Canvas:: setImage(QPixmap pix)
 {
     pic = pix;                // Save original pixmap
     showScaled();
@@ -43,7 +43,7 @@ Image:: setImage(QPixmap pix)
 }
 
 void
-Image:: showScaled()
+Canvas:: showScaled()
 {
     QPixmap pm;
     if (scale == 1.0)
@@ -55,7 +55,7 @@ Image:: showScaled()
 }
 
 void
-Image:: rotate(int degree, Qt::Axis axis)
+Canvas:: rotate(int degree, Qt::Axis axis)
 {
     QTransform transform;
     transform.rotate(degree, axis);
@@ -64,14 +64,14 @@ Image:: rotate(int degree, Qt::Axis axis)
 }
 
 void
-Image:: zoomBy(float factor)
+Canvas:: zoomBy(float factor)
 {
     scale *= factor;
     showScaled();
 }
 
 void
-Image:: enableCropMode(bool enable)
+Canvas:: enableCropMode(bool enable)
 {
     if (enable) {
         crop_mode = true;
@@ -97,7 +97,7 @@ Image:: enableCropMode(bool enable)
 }
 
 void
-Image:: mousePressEvent(QMouseEvent *ev)
+Canvas:: mousePressEvent(QMouseEvent *ev)
 {
     clk_pos = ev->pos();
     clk_global = ev->globalPos();
@@ -119,7 +119,7 @@ Image:: mousePressEvent(QMouseEvent *ev)
 }
 
 void
-Image:: mouseReleaseEvent(QMouseEvent *)
+Canvas:: mouseReleaseEvent(QMouseEvent *)
 {
     mouse_pressed = false;
     if (not crop_mode) return;
@@ -128,7 +128,7 @@ Image:: mouseReleaseEvent(QMouseEvent *)
 }
 
 void
-Image:: mouseMoveEvent(QMouseEvent *ev)
+Canvas:: mouseMoveEvent(QMouseEvent *ev)
 {
     if (not mouse_pressed) return;
     if (not crop_mode) {
@@ -173,7 +173,7 @@ Image:: mouseMoveEvent(QMouseEvent *ev)
 }
 
 void
-Image:: drawCropBox()
+Canvas:: drawCropBox()
 {
     QPixmap pm = pm_tmp.copy();
     QPixmap pm_box = pm.copy(p1.x(), p1.y(), p2.x()-p1.x(), p2.y()-p1.y());
@@ -192,25 +192,25 @@ Image:: drawCropBox()
 }
 
 void
-Image:: lockCropRatio(bool checked)
+Canvas:: lockCropRatio(bool checked)
 {
     lock_crop_ratio = checked;
 }
 
 void
-Image:: setCropWidth(double value)
+Canvas:: setCropWidth(double value)
 {
     crop_width = float(value);
 }
 
 void
-Image:: setCropHeight(double value)
+Canvas:: setCropHeight(double value)
 {
     crop_height = float(value);
 }
 
 void
-Image:: cropImage()
+Canvas:: cropImage()
 {
     int w, h;
     w = round((btmright.x()-topleft.x()+1)/scaleW);

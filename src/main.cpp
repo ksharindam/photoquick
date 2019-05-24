@@ -42,8 +42,8 @@ Window:: Window()
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    image = new Image(this, scrollArea);
-    layout->addWidget(image);
+    canvas = new Canvas(this, scrollArea);
+    layout->addWidget(canvas);
     slideShowBtn->setCheckable(true);
     timer = new QTimer(this);
     connectSignals();
@@ -79,7 +79,7 @@ Window:: connectSignals()
     connect(slideShowBtn, SIGNAL(clicked(bool)), this, SLOT(playSlideShow(bool)));
     connect(timer, SIGNAL(timeout()), this, SLOT(openNextImage()));
     // Connect other signals
-    connect(image, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
+    connect(canvas, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
 }
 
 void
@@ -99,19 +99,19 @@ Window:: openImage(QString filepath)
     if (QString::fromUtf8(img_reader.format()).compare("gif")==0) { // For gif animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
         if (anim->isValid()) {
-          if (image->animation) image->movie()->deleteLater(); // Delete prev animation
-          image->setAnimation(anim);
+          if (canvas->animation) canvas->movie()->deleteLater(); // Delete prev animation
+          canvas->setAnimation(anim);
           adjustWindowSize(true);
-          statusbar->showMessage(QString("Resolution : %1x%2").arg(image->width()).arg(image->height()));
+          statusbar->showMessage(QString("Resolution : %1x%2").arg(canvas->width()).arg(canvas->height()));
           disableButtons(true);
         }
     }
     else {                         // For static images
         QPixmap pm = loadImage(filepath);  // Returns an autorotated image
         if (pm.isNull()) return;
-        if (image->animation) image->movie()->deleteLater(); // Delete prev animation
-        image->scale = getOptimumScale(pm);
-        image->setImage(pm);
+        if (canvas->animation) canvas->movie()->deleteLater(); // Delete prev animation
+        canvas->scale = getOptimumScale(pm);
+        canvas->setImage(pm);
         adjustWindowSize();
         disableButtons(false);
     }
@@ -128,10 +128,10 @@ Window:: saveFile()
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
     if (filepath.isEmpty()) return;
     QPixmap pm;
-    if (image->animation)
-        pm = image->movie()->currentPixmap();
+    if (canvas->animation)
+        pm = canvas->movie()->currentPixmap();
     else
-        pm = image->pic;
+        pm = canvas->pic;
     if (pm.isNull()) return;
     int quality = -1;
     if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
@@ -147,28 +147,28 @@ Window:: saveFile()
 void
 Window:: resizeImage()
 {
-    ResizeDialog *dialog = new ResizeDialog(this, image->pic.width(), image->pic.height());
+    ResizeDialog *dialog = new ResizeDialog(this, canvas->pic.width(), canvas->pic.height());
     if (dialog->exec() == 1) {
         QPixmap pm;
         QString img_width = dialog->widthEdit->text();
         QString img_height = dialog->heightEdit->text();
         if ( !img_width.isEmpty() and !img_height.isEmpty() )
-            pm = image->pic.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            pm = canvas->pic.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         else if (not img_width.isEmpty())
-            pm = image->pic.scaledToWidth(img_width.toInt(), Qt::SmoothTransformation);
+            pm = canvas->pic.scaledToWidth(img_width.toInt(), Qt::SmoothTransformation);
         else if (not img_height.isEmpty())
-            pm = image->pic.scaledToHeight(img_height.toInt(), Qt::SmoothTransformation);
+            pm = canvas->pic.scaledToHeight(img_height.toInt(), Qt::SmoothTransformation);
         else
             return;
-        image->setImage(pm);
+        canvas->setImage(pm);
     }
 }
 
 void
 Window:: cropImage()
 {
-    if (not image->crop_mode) {
-        image->enableCropMode(true);
+    if (not canvas->crop_mode) {
+        canvas->enableCropMode(true);
         QCheckBox *lockratio = new QCheckBox("Lock Ratio  ", statusbar);
         statusbar->addPermanentWidget(lockratio);
         QLabel *labelWH = new QLabel("<b>W:H =</b>", statusbar);
@@ -199,10 +199,10 @@ Window:: cropImage()
         connect(lockratio, SIGNAL(toggled(bool)), labelWH, SLOT(setEnabled(bool)));
         connect(lockratio, SIGNAL(toggled(bool)), spinWidth, SLOT(setEnabled(bool)));
         connect(lockratio, SIGNAL(toggled(bool)), spinHeight, SLOT(setEnabled(bool)));
-        connect(lockratio, SIGNAL(toggled(bool)), image, SLOT(lockCropRatio(bool)));
-        connect(spinWidth, SIGNAL(valueChanged(double)), image, SLOT(setCropWidth(double)));
-        connect(spinHeight, SIGNAL(valueChanged(double)), image, SLOT(setCropHeight(double)));
-        connect(cropnowBtn, SIGNAL(clicked()), image, SLOT(cropImage()));
+        connect(lockratio, SIGNAL(toggled(bool)), canvas, SLOT(lockCropRatio(bool)));
+        connect(spinWidth, SIGNAL(valueChanged(double)), canvas, SLOT(setCropWidth(double)));
+        connect(spinHeight, SIGNAL(valueChanged(double)), canvas, SLOT(setCropHeight(double)));
+        connect(cropnowBtn, SIGNAL(clicked()), canvas, SLOT(cropImage()));
         connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
         connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
         crop_widgets << lockratio << labelWH << spinWidth << colon << spinHeight << cropnowBtn << cropcancelBtn;
@@ -212,7 +212,7 @@ Window:: cropImage()
 void
 Window:: cancelCropping()
 {
-    image->enableCropMode(false);
+    canvas->enableCropMode(false);
     while (not crop_widgets.isEmpty()) {
         QWidget *widget = crop_widgets.takeLast();
         statusbar->removeWidget(widget);
@@ -226,23 +226,23 @@ Window:: addBorder()
     bool ok;
     int width = QInputDialog::getInt(this, "Add Border", "Enter Border Width :", 2, 1, 100, 1, &ok);
     if (ok) {
-        QPainter painter(&(image->pic));
+        QPainter painter(&(canvas->pic));
         QPen pen(Qt::black);
         pen.setWidth(width);
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
-        painter.drawRect(width/2, width/2, image->pic.width()-width, image->pic.height()-width);
-        image->showScaled();
+        painter.drawRect(width/2, width/2, canvas->pic.width()-width, canvas->pic.height()-width);
+        canvas->showScaled();
     }
 }
 
 void
 Window:: createPhotoGrid()
 {
-    GridDialog *dialog = new GridDialog(image->pic, this);
+    GridDialog *dialog = new GridDialog(canvas->pic, this);
     if (dialog->exec() == 1) {
-        image->scale = getOptimumScale(dialog->gridPaper->photo_grid);
-        image->setImage(dialog->gridPaper->photo_grid);
+        canvas->scale = getOptimumScale(dialog->gridPaper->photo_grid);
+        canvas->setImage(dialog->gridPaper->photo_grid);
         adjustWindowSize();
     }
 }
@@ -250,26 +250,26 @@ Window:: createPhotoGrid()
 void
 Window:: toGrayScale()
 {
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     grayScale(img);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 void
 Window:: toBlacknWhite()
 {
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     int thresh = calcOtsuThresh(img);
     globalThresh(img, thresh);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 void
 Window:: adaptiveThresh()
 {
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     adaptiveIntegralThresh(img);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 void
@@ -279,26 +279,26 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     boxBlur(img, radius);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 void
 Window:: sharpenImage()
 {
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     sharpen(img);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 // Enhance low light images using Sigmoidal Contrast
 void
 Window:: sigmoidContrast()
 {
-    QImage img = image->pic.toImage();
+    QImage img = canvas->pic.toImage();
     sigmoidalContrast(img, 0.3);
-    image->setImage(QPixmap::fromImage(img));
+    canvas->setImage(QPixmap::fromImage(img));
 }
 
 void
@@ -336,38 +336,38 @@ Window:: openNextImage()
 void
 Window:: zoomInImage()
 {
-    image->zoomBy(6.0/5);
+    canvas->zoomBy(6.0/5);
 }
 
 void
 Window:: zoomOutImage()
 {
-    image->zoomBy(5.0/6);
+    canvas->zoomBy(5.0/6);
 }
 
 void
 Window:: origSizeImage()
 {
-    image->scale = 1.0;
-    image->showScaled();
+    canvas->scale = 1.0;
+    canvas->showScaled();
 }
 
 void
 Window:: rotateLeft()
 {
-    image->rotate(270);
+    canvas->rotate(270);
 }
 
 void
 Window:: rotateRight()
 {
-    image->rotate(90);
+    canvas->rotate(90);
 }
 
 void
 Window:: mirror()
 {
-    image->rotate(180, Qt::YAxis);
+    canvas->rotate(180, Qt::YAxis);
 }
 
 void
@@ -409,12 +409,12 @@ Window:: adjustWindowSize(bool animation)
     if (isMaximized()) return;
     if (animation) {
         waitFor(30);        // Wait little to let Label resize and get correct width height
-        resize(image->width() + 2*btnboxwidth + 4,
-               image->height() + 4+32);
+        resize(canvas->width() + 2*btnboxwidth + 4,
+               canvas->height() + 4+32);
     }
     else {
-        resize(image->pixmap()->width() + 2*btnboxwidth + 4,
-               image->pixmap()->height() + 4+32);
+        resize(canvas->pixmap()->width() + 2*btnboxwidth + 4,
+               canvas->pixmap()->height() + 4+32);
     }
     move((screen_width - (width() + 2*offset_x) )/2,
               (screen_height - (height() + offset_x + offset_y))/2 );
@@ -424,16 +424,16 @@ void
 Window:: updateStatus()
 {
     int width, height;
-    if (image->crop_mode) {
-        width = round((image->p2.x() - image->p1.x() + 1)/image->scaleW);
-        height = round((image->p2.y() - image->p1.y() + 1)/image->scaleH);
+    if (canvas->crop_mode) {
+        width = round((canvas->p2.x() - canvas->p1.x() + 1)/canvas->scaleW);
+        height = round((canvas->p2.y() - canvas->p1.y() + 1)/canvas->scaleH);
     }
     else {
-        width = image->pic.width();
-        height = image->pic.height();
+        width = canvas->pic.width();
+        height = canvas->pic.height();
     }
     QString text = "Resolution : %1x%2 , Scale : %3x";
-    statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(image->scale, 2)));
+    statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(canvas->scale, 2)));
 }
 
 void
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
     }
     else {
         QPixmap pm = QPixmap(":/images/nidhi.jpg");
-        win->image->setImage(pm);
+        win->canvas->setImage(pm);
         win->adjustWindowSize();
     }
     return app.exec();

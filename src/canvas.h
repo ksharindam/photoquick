@@ -3,8 +3,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 
 Image Label Object to display the image.
 */
-#ifndef IMAGE_H
-#define IMAGE_H
+#pragma once
 
 #include <QLabel>
 #include <QWidget>
@@ -15,14 +14,13 @@ Image Label Object to display the image.
 #include <QScrollArea>
 #include <QScrollBar>
 
-QT_BEGIN_NAMESPACE
 
 //This is the image widget responsible for displaying image
-class Image : public QLabel
+class Canvas : public QLabel
 {
     Q_OBJECT
 public:
-    Image(QWidget *parent, QScrollArea *scrollArea);
+    Canvas(QWidget *parent, QScrollArea *scrollArea);
     void setAnimation(QMovie *anim);
     void setImage(QPixmap pixmap);
     void showScaled();
@@ -58,5 +56,3 @@ signals:
     void imageUpdated();
 };
 
-QT_END_NAMESPACE
-#endif //IMAGE_H

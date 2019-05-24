@@ -1,13 +1,11 @@
 /*
 This file is a part of qmageview program, which is GPLv3 licensed
-
-This holds the declaration of top level objects
 */
 #ifndef MAIN_H
 #define MAIN_H
 
 #include "ui_mainwindow.h"
-#include "image.h"
+#include "canvas.h"
 #include <QSettings>
 #include <QTimer>
 
@@ -21,7 +19,7 @@ public:
     void openImage(QString filename);
     void adjustWindowSize(bool animation=false);
     //Variables declaration
-    Image *image;       // Canvas Widget
+    Canvas *canvas;
     QSettings settings;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
@@ -56,10 +54,10 @@ public slots:
     void mirror();
     void playSlideShow(bool checked);
     void updateStatus();
-
 };
 
 void waitFor(int millisec);
+// rounds up a number to given decimal point
 float roundOff(float num, int dec);
 
 QT_END_NAMESPACE
