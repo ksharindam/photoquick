@@ -36,6 +36,7 @@ To uninstall, run ...
 * libqtcore4  
 * libqtgui4  
 * libqt4-svg  
+* libgomp1
 
 
 ### Usage

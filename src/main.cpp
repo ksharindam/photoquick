@@ -38,6 +38,7 @@ Window:: Window()
     menu->addAction("Smooth/Blur...", this, SLOT(blur()));
     menu->addAction("Sharpen", this, SLOT(sharpenImage()));
     menu->addAction("Sigmoidal Contrast", this, SLOT(sigmoidContrast()));
+    menu->addAction("Mirror", this, SLOT(mirror()));
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -361,6 +362,12 @@ void
 Window:: rotateRight()
 {
     image->rotate(90);
+}
+
+void
+Window:: mirror()
+{
+    image->rotate(180, Qt::YAxis);
 }
 
 void

@@ -26,7 +26,7 @@ public:
     void setAnimation(QMovie *anim);
     void setImage(QPixmap pixmap);
     void showScaled();
-    void rotate(int degree);
+    void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     void zoomBy(float factor);
     void enableCropMode(bool enable);
     // Variables

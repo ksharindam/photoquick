@@ -55,10 +55,10 @@ Image:: showScaled()
 }
 
 void
-Image:: rotate(int degree)
+Image:: rotate(int degree, Qt::Axis axis)
 {
     QTransform transform;
-    transform.rotate(degree);
+    transform.rotate(degree, axis);
     pic = pic.transformed(transform);
     showScaled();
 }

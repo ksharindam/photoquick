@@ -53,6 +53,7 @@ public slots:
     void origSizeImage();
     void rotateLeft();
     void rotateRight();
+    void mirror();
     void playSlideShow(bool checked);
     void updateStatus();
 
