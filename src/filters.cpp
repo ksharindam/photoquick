@@ -255,9 +255,14 @@ void sigmoidalContrast(QImage &img, float midpoint)
 {
     int w = img.width();
     int h = img.height();
+    #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
-        QRgb *row = (QRgb*)img.scanLine(y);
+        QRgb *row;
+        #pragma omp critical
+        {
+        row = (QRgb*)img.scanLine(y); // omp critical prevents segfault
+        }
         for (int x=0; x<w; x++) {
             int clr = row[x];
             int r = 255*ScaledSigmoidal(3, midpoint, qRed(clr)/255.0);
