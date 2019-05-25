@@ -29,6 +29,7 @@ public:
     void enableCropMode(bool enable);
     // Variables
     bool crop_mode, animation;
+    bool has_alpha; // true for png image
     float scale, scaleW, scaleH;
     QPixmap pic;
     QPoint p1, p2;

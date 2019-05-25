@@ -1,3 +1,4 @@
+// this file is part of qmageview program
 #include "filters.h"
 #include <cmath>
 // #include <chrono>

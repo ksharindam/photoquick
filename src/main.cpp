@@ -115,6 +115,10 @@ Window:: openImage(QString filepath)
         adjustWindowSize();
         disableButtons(false);
     }
+    if (QString::fromUtf8(img_reader.format()).compare("png")==0)
+        canvas->has_alpha = true;
+    else
+        canvas->has_alpha = false;
     this->filepath = filepath;
     setWindowTitle(QFileInfo(filepath).fileName());
 }
@@ -135,6 +139,13 @@ Window:: saveFile()
     if (pm.isNull()) return;
     int quality = -1;
     if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
+        if (canvas->has_alpha) { // converts background to white
+            pm = QPixmap(pm.width(), pm.height());
+            pm.fill();
+            QPainter painter(&pm);
+            painter.drawPixmap(0,0, canvas->pic);
+            painter.end();
+        }
         QualityDialog *dlg = new QualityDialog(this, pm);
         if (dlg->exec()==QDialog::Accepted){
             quality = dlg->qualitySpin->value();
