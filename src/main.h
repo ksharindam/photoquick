@@ -1,15 +1,14 @@
+#pragma once
 /*
 This file is a part of qmageview program, which is GPLv3 licensed
 */
-#ifndef MAIN_H
-#define MAIN_H
 
 #include "ui_mainwindow.h"
 #include "canvas.h"
 #include <QSettings>
 #include <QTimer>
 
-QT_BEGIN_NAMESPACE
+
 class Window : public QMainWindow, Ui_MainWindow
 {
     Q_OBJECT
@@ -26,7 +25,7 @@ public:
     QString filepath;
 private:
     void connectSignals();
-    float getOptimumScale(QPixmap pixmap);
+    float getOptimumScale(QImage img);
     void disableButtons(bool disable);
     void closeEvent(QCloseEvent *ev);
     QList<QWidget *> crop_widgets;
@@ -43,7 +42,9 @@ public slots:
     void adaptiveThresh();
     void blur();
     void sharpenImage();
+    void reduceSpeckleNoise();
     void sigmoidContrast(); // Enhance low light images
+    void whiteBalance();
     void openPrevImage();
     void openNextImage();
     void zoomInImage();
@@ -60,6 +61,3 @@ void waitFor(int millisec);
 // rounds up a number to given decimal point
 float roundOff(float num, int dec);
 
-QT_END_NAMESPACE
-
-#endif // MAIN_H

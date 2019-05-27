@@ -1,6 +1,4 @@
-#ifndef DIALOGS_H
-#define DIALOGS_H
-
+#pragma once
 #include "ui_resize_dialog.h"
 #include <QPixmap>
 #include <QTimer>
@@ -10,8 +8,8 @@ class QualityDialog : public QDialog
 {
     Q_OBJECT
 public:
-    QualityDialog(QWidget *parent, QPixmap &pm);
-    QPixmap pixmap;
+    QualityDialog(QWidget *parent, QImage &img);
+    QImage image;
     QSpinBox *qualitySpin;
     QLabel *sizeLabel;
     QTimer *timer;
@@ -32,4 +30,3 @@ public slots:
     void onValueChange(double value) {onValueChange(int(value));}
 };
 
-#endif

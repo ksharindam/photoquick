@@ -28,28 +28,32 @@ void
 Canvas:: setAnimation(QMovie *anim)
 {
     scale = 1.0;
-    pic = QPixmap();
+    if (animation)
+        movie()->deleteLater();
+    else
+        image = QImage();
+    animation = true;
     setMovie(anim);
     anim->start();
-    animation = true;
 }
 
 void
-Canvas:: setImage(QPixmap pix)
+Canvas:: setImage(QImage img)
 {
-    pic = pix;                // Save original pixmap
+    if (animation) {
+        animation = false;
+        movie()->deleteLater();
+    }
+    image = img;
     showScaled();
-    animation = false;
 }
 
 void
 Canvas:: showScaled()
 {
-    QPixmap pm;
-    if (scale == 1.0)
-        pm = pic.copy();
-    else
-        pm = pic.scaledToHeight(scale*pic.height(), Qt::SmoothTransformation);
+    QPixmap pm = QPixmap::fromImage(image);
+    if (scale != 1.0)
+        pm = pm.scaledToHeight(scale*pm.height(), Qt::SmoothTransformation);
     setPixmap(pm);
     emit imageUpdated();
 }
@@ -59,7 +63,7 @@ Canvas:: rotate(int degree, Qt::Axis axis)
 {
     QTransform transform;
     transform.rotate(degree, axis);
-    pic = pic.transformed(transform);
+    image = image.transformed(transform);
     showScaled();
 }
 
@@ -76,8 +80,8 @@ Canvas:: enableCropMode(bool enable)
     if (enable) {
         crop_mode = true;
         // scaleW & scaleH give better accuracy while cropping downscaled image
-        scaleW = float(pixmap()->width())/pic.width();
-        scaleH = float(pixmap()->height())/pic.height();
+        scaleW = float(pixmap()->width())/image.width();
+        scaleH = float(pixmap()->height())/image.height();
         pm_tmp = pixmap()->copy();
         topleft = QPoint(0,0);
         btmright = QPoint(pixmap()->width()-1, pixmap()->height()-1);
@@ -87,7 +91,7 @@ Canvas:: enableCropMode(bool enable)
         crop_width = 3.5;
         crop_height = 4.5;
         lock_crop_ratio = false;
-        imgAspect = float(pic.width())/pic.height();
+        imgAspect = float(image.width())/image.height();
         drawCropBox();
     }
     else {
@@ -215,6 +219,6 @@ Canvas:: cropImage()
     int w, h;
     w = round((btmright.x()-topleft.x()+1)/scaleW);
     h = round((btmright.y()-topleft.y()+1)/scaleH);
-    QPixmap pm = pic.copy(round(topleft.x()/scaleW), round(topleft.y()/scaleH), w, h);
-    setImage(pm);
+    QImage img = image.copy(round(topleft.x()/scaleW), round(topleft.y()/scaleH), w, h);
+    setImage(img);
 }

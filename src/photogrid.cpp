@@ -11,7 +11,7 @@ This file is a part of qmageview program, which is GPLv3 licensed
 #include <QSettings>
 //#include <QDebug>
 
-GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
+GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 {
     setupUi(this);
     resize(1020, 640);
@@ -20,16 +20,16 @@ GridDialog:: GridDialog(QPixmap pixmap, QWidget *parent) : QDialog(parent)
     gridPaper = new GridPaper(this);
     layout->addWidget(gridPaper);
     thumbnailGr = new ThumbnailGroup(this);
-    Thumbnail *thumbnail = new Thumbnail(pixmap, frame);
+    Thumbnail *thumbnail = new Thumbnail(img, frame);
     verticalLayout->addWidget(thumbnail);
     thumbnail->select(true);
-    QObject::connect(thumbnail, SIGNAL(clicked(QPixmap)), gridPaper, SLOT(setPhoto(QPixmap)));
+    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
     thumbnailGr->append(thumbnail);
     QObject::connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
     QObject::connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
     QObject::connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
     QObject::connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
-    gridPaper->photo = pixmap;
+    gridPaper->photo = img;
 }
 
 void
@@ -52,13 +52,13 @@ void
 GridDialog:: addPhoto()
 {
     QString filefilter = "JPEG Images (*.jpg *jpeg);;PNG Images (*.png);;All Files (*)";
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", "", filefilter);           
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", "", filefilter);
     if (filepath.isEmpty()) return;
-    QPixmap pm = loadImage(filepath);
-    if (not pm.isNull()) {
-        Thumbnail *thumbnail = new Thumbnail(pm, frame);
+    QImage img = loadImage(filepath);
+    if (not img.isNull()) {
+        Thumbnail *thumbnail = new Thumbnail(img, frame);
         verticalLayout->addWidget(thumbnail);
-        QObject::connect(thumbnail, SIGNAL(clicked(QPixmap)), gridPaper, SLOT(setPhoto(QPixmap)));
+        QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
         thumbnailGr->append(thumbnail);
     }
 }
@@ -81,11 +81,11 @@ GridDialog:: showHelp()
 }
 
 
-Thumbnail:: Thumbnail(QPixmap pixmap, QWidget *parent) : QLabel(parent)
+Thumbnail:: Thumbnail(QImage img, QWidget *parent) : QLabel(parent)
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    photo = pixmap;
-    setPixmap(pixmap.scaledToWidth(100));
+    photo = img;
+    setPixmap(QPixmap::fromImage(img.scaledToWidth(100)));
 }
 
 void
@@ -98,17 +98,17 @@ void
 Thumbnail:: select(bool selected)
 {
     if (selected) {
-        QPixmap pm = photo.scaledToWidth(100);
-        QPainter painter(&pm);
+        QImage img = photo.scaledToWidth(100);
+        QPainter painter(&img);
         QPen pen(Qt::blue);
         pen.setWidth(4);
         painter.setPen(pen);
-        painter.drawRect(2, 2 , 100-4, pm.height()-4);
+        painter.drawRect(2, 2 , 100-4, img.height()-4);
         painter.end();
-        setPixmap(pm);
+        setPixmap(QPixmap::fromImage(img));
     }
     else
-        setPixmap(photo.scaledToWidth(100));
+        setPixmap(QPixmap::fromImage(photo.scaledToWidth(100)));
 }
 
 
@@ -120,11 +120,11 @@ void
 ThumbnailGroup:: append(Thumbnail *thumbnail)
 {
     thumbnails << thumbnail;
-    QObject::connect(thumbnail, SIGNAL(clicked(QPixmap)), this, SLOT(selectThumbnail(QPixmap)));
+    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), this, SLOT(selectThumbnail(QImage)));
 }
 
 void
-ThumbnailGroup:: selectThumbnail(QPixmap)
+ThumbnailGroup:: selectThumbnail(QImage)
 {
     for (int i=0;i<thumbnails.count();++i) {
         thumbnails[i]->select(false);
@@ -168,19 +168,19 @@ GridPaper:: setupGrid()
         QRect box = QRect(spacing_x+col*(spacing_x+w), spacing_y+row*(spacing_y+h), w-1, h-1);
         boxes << box;
     }
-    QPixmap fg = QPixmap(paperW*scale, paperH*scale);
-    fg.fill();
-    QPainter painter(&fg);
+    QPixmap pm = QPixmap(paperW*scale, paperH*scale);
+    pm.fill();
+    QPainter painter(&pm);
     foreach (QRect box, boxes)
         painter.drawRect(box);
     painter.end();
-    setPixmap(fg);
+    setPixmap(pm);
 }
 
 void
-GridPaper:: setPhoto(QPixmap pixmap)
+GridPaper:: setPhoto(QImage img)
 {
-    photo = pixmap;
+    photo = img;
 }
 
 void
@@ -189,11 +189,11 @@ GridPaper:: toggleBorder(bool ok)
     add_border = ok;
     QPixmap grid = *(pixmap());
     QPainter painter(&grid);
-    foreach (int index, pixmap_dict.keys()) {
+    foreach (int index, image_dict.keys()) {
         QPoint topleft = boxes[index].topLeft();
-        QPixmap pm = pixmap_dict.value(index).scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.drawPixmap(topleft, pm);
-        if (ok) painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
+        QImage img = image_dict.value(index).scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.drawImage(topleft, img);
+        if (ok) painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
     }
     painter.end();
     setPixmap(grid);
@@ -215,21 +215,19 @@ GridPaper:: mouseMoveEvent(QMouseEvent *ev)
 void
 GridPaper:: mousePressEvent(QMouseEvent *ev)
 {
-    QPixmap blank_pm(W*scale, H*scale);
-    blank_pm.fill();
     foreach (QRect box, boxes) {
         if (box.contains(ev->pos())) {
             QPoint topleft = box.topLeft();
-            QPixmap pm = photo.scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            QImage img = photo.scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             QPixmap bg = *(pixmap());
             QPainter painter(&bg);
-            painter.drawPixmap(topleft, blank_pm); // Erase older image by placing blank image over it
-            painter.drawPixmap(topleft, pm);
+            painter.fillRect(topleft.x(), topleft.y(), W*scale, H*scale, Qt::white);
+            painter.drawImage(topleft, img);
             if (add_border)
-                painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
+                painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
             painter.end();
             setPixmap(bg);
-            pixmap_dict[boxes.indexOf(box)] = photo;
+            image_dict[boxes.indexOf(box)] = photo;
             break;
         }
     }
@@ -238,17 +236,17 @@ GridPaper:: mousePressEvent(QMouseEvent *ev)
 void
 GridPaper:: createFinalGrid()
 {
-    photo_grid = QPixmap(paperW, paperH);
-    photo_grid.fill();
+    photo_grid = QImage(paperW, paperH, QImage::Format_ARGB32);
+    photo_grid.fill(Qt::white);
     QPainter painter(&photo_grid);
-    foreach (int index, pixmap_dict.keys()) {
+    foreach (int index, image_dict.keys()) {
         int row = index/cols;
         int col = index%cols;
         QPoint topleft = QPoint(spacingX+col*(spacingX+W), spacingY+row*(spacingY+H));
-        QPixmap pm = pixmap_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.drawPixmap(topleft, pm);
+        QImage img = image_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.drawImage(topleft, img);
         if (add_border)
-            painter.drawRect(topleft.x(), topleft.y(), pm.width()-1, pm.height()-1);
+            painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
     }
     painter.end();
 }
@@ -298,10 +296,10 @@ GridSetupDialog:: accept()
 }
 
 // Static functions
-QPixmap loadImage(QString filename)
+QImage loadImage(QString filename)
 {
-    QPixmap pm(filename);
-    if (pm.isNull()) return pm;
+    QImage img(filename);
+    if (img.isNull()) return img;
     // Get image orientation
     int size, orientation = 0;
     QFile file(filename);
@@ -318,13 +316,13 @@ QPixmap loadImage(QString filename)
     QTransform transform;
     switch (orientation) {
         case 6:
-            return pm.transformed(transform.rotate(90));
+            return img.transformed(transform.rotate(90));
         case 3:
-            return pm.transformed(transform.rotate(180));
+            return img.transformed(transform.rotate(180));
         case 8:
-            return pm.transformed(transform.rotate(270));
+            return img.transformed(transform.rotate(270));
         default:
-            return pm;
+            return img;
     }
 }
 

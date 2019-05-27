@@ -1,9 +1,9 @@
+#pragma once
 /*
 This file is a part of qmageview program, which is GPLv3 licensed
 
 Image Label Object to display the image.
 */
-#pragma once
 
 #include <QLabel>
 #include <QWidget>
@@ -22,16 +22,16 @@ class Canvas : public QLabel
 public:
     Canvas(QWidget *parent, QScrollArea *scrollArea);
     void setAnimation(QMovie *anim);
-    void setImage(QPixmap pixmap);
+    void setImage(QImage img);
     void showScaled();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     void zoomBy(float factor);
     void enableCropMode(bool enable);
     // Variables
+    QImage image;
     bool crop_mode, animation;
     bool has_alpha; // true for png image
     float scale, scaleW, scaleH;
-    QPixmap pic;
     QPoint p1, p2;
 private:
     void mousePressEvent(QMouseEvent *ev);

@@ -1,6 +1,4 @@
-#ifndef FILTERS_H
-#define FILTERS_H
-
+#pragma once
 #include <QImage>
 
 // Convert image to grayscale
@@ -24,4 +22,9 @@ void sharpen(QImage &img);
 // Sigmoidal Contrast to enhance low light images
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 
-#endif
+// Auto white balance
+void autoWhiteBalance(QImage &img);
+
+// remove speckle noise
+void despeckle(QImage &img);
+

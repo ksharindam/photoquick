@@ -32,13 +32,15 @@ Window:: Window()
 {
     setupUi(this);
     QMenu *menu = new QMenu(effectsBtn);
+    menu->addAction("Mirror", this, SLOT(mirror()));
     menu->addAction("GrayScale", this, SLOT(toGrayScale()));
     menu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     menu->addAction("Threshold", this, SLOT(toBlacknWhite()));
     menu->addAction("Smooth/Blur...", this, SLOT(blur()));
     menu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    menu->addAction("Sigmoidal Contrast", this, SLOT(sigmoidContrast()));
-    menu->addAction("Mirror", this, SLOT(mirror()));
+    menu->addAction("Reduce Noise", this, SLOT(reduceSpeckleNoise()));
+    menu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
+    menu->addAction("White Balance", this, SLOT(whiteBalance()));
     effectsBtn->setMenu(menu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -99,7 +101,6 @@ Window:: openImage(QString filepath)
     if (QString::fromUtf8(img_reader.format()).compare("gif")==0) { // For gif animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
         if (anim->isValid()) {
-          if (canvas->animation) canvas->movie()->deleteLater(); // Delete prev animation
           canvas->setAnimation(anim);
           adjustWindowSize(true);
           statusbar->showMessage(QString("Resolution : %1x%2").arg(canvas->width()).arg(canvas->height()));
@@ -107,11 +108,10 @@ Window:: openImage(QString filepath)
         }
     }
     else {                         // For static images
-        QPixmap pm = loadImage(filepath);  // Returns an autorotated image
-        if (pm.isNull()) return;
-        if (canvas->animation) canvas->movie()->deleteLater(); // Delete prev animation
-        canvas->scale = getOptimumScale(pm);
-        canvas->setImage(pm);
+        QImage img = loadImage(filepath);  // Returns an autorotated image
+        if (img.isNull()) return;
+        canvas->scale = getOptimumScale(img);
+        canvas->setImage(img);
         adjustWindowSize();
         disableButtons(false);
     }
@@ -131,47 +131,45 @@ Window:: saveFile()
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
     if (filepath.isEmpty()) return;
-    QPixmap pm;
+    QImage img = canvas->image;
     if (canvas->animation)
-        pm = canvas->movie()->currentPixmap();
-    else
-        pm = canvas->pic;
-    if (pm.isNull()) return;
+        img = canvas->movie()->currentImage();
+    if (img.isNull()) return;
     int quality = -1;
     if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
         if (canvas->has_alpha) { // converts background to white
-            pm = QPixmap(pm.width(), pm.height());
-            pm.fill();
-            QPainter painter(&pm);
-            painter.drawPixmap(0,0, canvas->pic);
+            img = QImage(img.width(), img.height(), QImage::Format_ARGB32);
+            img.fill(Qt::white);
+            QPainter painter(&img);
+            painter.drawImage(0,0, canvas->image);
             painter.end();
         }
-        QualityDialog *dlg = new QualityDialog(this, pm);
+        QualityDialog *dlg = new QualityDialog(this, img);
         if (dlg->exec()==QDialog::Accepted){
             quality = dlg->qualitySpin->value();
         }
         else return;
     }
-    pm.save(filepath, NULL, quality);
+    img.save(filepath, NULL, quality);
 }
 
 void
 Window:: resizeImage()
 {
-    ResizeDialog *dialog = new ResizeDialog(this, canvas->pic.width(), canvas->pic.height());
+    ResizeDialog *dialog = new ResizeDialog(this, canvas->image.width(), canvas->image.height());
     if (dialog->exec() == 1) {
-        QPixmap pm;
+        QImage img;
         QString img_width = dialog->widthEdit->text();
         QString img_height = dialog->heightEdit->text();
         if ( !img_width.isEmpty() and !img_height.isEmpty() )
-            pm = canvas->pic.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            img = canvas->image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         else if (not img_width.isEmpty())
-            pm = canvas->pic.scaledToWidth(img_width.toInt(), Qt::SmoothTransformation);
+            img = canvas->image.scaledToWidth(img_width.toInt(), Qt::SmoothTransformation);
         else if (not img_height.isEmpty())
-            pm = canvas->pic.scaledToHeight(img_height.toInt(), Qt::SmoothTransformation);
+            img = canvas->image.scaledToHeight(img_height.toInt(), Qt::SmoothTransformation);
         else
             return;
-        canvas->setImage(pm);
+        canvas->setImage(img);
     }
 }
 
@@ -237,12 +235,12 @@ Window:: addBorder()
     bool ok;
     int width = QInputDialog::getInt(this, "Add Border", "Enter Border Width :", 2, 1, 100, 1, &ok);
     if (ok) {
-        QPainter painter(&(canvas->pic));
+        QPainter painter(&(canvas->image));
         QPen pen(Qt::black);
         pen.setWidth(width);
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
-        painter.drawRect(width/2, width/2, canvas->pic.width()-width, canvas->pic.height()-width);
+        painter.drawRect(width/2, width/2, canvas->image.width()-width, canvas->image.height()-width);
         canvas->showScaled();
     }
 }
@@ -250,7 +248,7 @@ Window:: addBorder()
 void
 Window:: createPhotoGrid()
 {
-    GridDialog *dialog = new GridDialog(canvas->pic, this);
+    GridDialog *dialog = new GridDialog(canvas->image, this);
     if (dialog->exec() == 1) {
         canvas->scale = getOptimumScale(dialog->gridPaper->photo_grid);
         canvas->setImage(dialog->gridPaper->photo_grid);
@@ -261,26 +259,23 @@ Window:: createPhotoGrid()
 void
 Window:: toGrayScale()
 {
-    QImage img = canvas->pic.toImage();
-    grayScale(img);
-    canvas->setImage(QPixmap::fromImage(img));
+    grayScale(canvas->image);
+    canvas->showScaled();
 }
 
 void
 Window:: toBlacknWhite()
 {
-    QImage img = canvas->pic.toImage();
-    int thresh = calcOtsuThresh(img);
-    globalThresh(img, thresh);
-    canvas->setImage(QPixmap::fromImage(img));
+    int thresh = calcOtsuThresh(canvas->image);
+    globalThresh(canvas->image, thresh);
+    canvas->showScaled();
 }
 
 void
 Window:: adaptiveThresh()
 {
-    QImage img = canvas->pic.toImage();
-    adaptiveIntegralThresh(img);
-    canvas->setImage(QPixmap::fromImage(img));
+    adaptiveIntegralThresh(canvas->image);
+    canvas->showScaled();
 }
 
 void
@@ -290,26 +285,37 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    QImage img = canvas->pic.toImage();
-    boxBlur(img, radius);
-    canvas->setImage(QPixmap::fromImage(img));
+    boxBlur(canvas->image, radius);
+    canvas->showScaled();
 }
 
 void
 Window:: sharpenImage()
 {
-    QImage img = canvas->pic.toImage();
-    sharpen(img);
-    canvas->setImage(QPixmap::fromImage(img));
+    sharpen(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: reduceSpeckleNoise()
+{
+    despeckle(canvas->image);
+    canvas->showScaled();
 }
 
 // Enhance low light images using Sigmoidal Contrast
 void
 Window:: sigmoidContrast()
 {
-    QImage img = canvas->pic.toImage();
-    sigmoidalContrast(img, 0.3);
-    canvas->setImage(QPixmap::fromImage(img));
+    sigmoidalContrast(canvas->image, 0.3);
+    canvas->showScaled();
+}
+
+void
+Window:: whiteBalance()
+{
+    autoWhiteBalance(canvas->image);
+    canvas->showScaled();
 }
 
 void
@@ -395,11 +401,11 @@ Window:: playSlideShow(bool checked)
 }
 
 float
-Window:: getOptimumScale(QPixmap pixmap)
+Window:: getOptimumScale(QImage img)
 {
     float scale;
-    int img_width = pixmap.width();
-    int img_height = pixmap.height();
+    int img_width = img.width();
+    int img_height = img.height();
     int max_width = screen_width - (2*btnboxwidth + 2*offset_x);
     int max_height = screen_height - (offset_y + offset_x + 4+32); // 32 for statusbar with buttons
     if ((img_width > max_width) || (img_height > max_height)) {
@@ -440,8 +446,8 @@ Window:: updateStatus()
         height = round((canvas->p2.y() - canvas->p1.y() + 1)/canvas->scaleH);
     }
     else {
-        width = canvas->pic.width();
-        height = canvas->pic.height();
+        width = canvas->image.width();
+        height = canvas->image.height();
     }
     QString text = "Resolution : %1x%2 , Scale : %3x";
     statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(canvas->scale, 2)));
@@ -502,8 +508,8 @@ int main(int argc, char *argv[])
             win->openImage(path);
     }
     else {
-        QPixmap pm = QPixmap(":/images/nidhi.jpg");
-        win->canvas->setImage(pm);
+        QImage img = QImage(":/images/nidhi.jpg");
+        win->canvas->setImage(img);
         win->adjustWindowSize();
     }
     return app.exec();

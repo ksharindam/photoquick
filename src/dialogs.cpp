@@ -4,7 +4,7 @@
 #include <cmath>
 
 // Dialog to set JPG image quality for saving
-QualityDialog:: QualityDialog(QWidget *parent, QPixmap &pm) : QDialog(parent), pixmap(pm)
+QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
 {
 	timer = new QTimer(this);
 	timer->setSingleShot(true);
@@ -53,7 +53,7 @@ QualityDialog:: checkFileSize()
 	QByteArray bArray;
 	QBuffer buffer(&bArray);
 	buffer.open(QIODevice::WriteOnly);
-	pixmap.save(&buffer, "JPG", qualitySpin->value());
+	image.save(&buffer, "JPG", qualitySpin->value());
 	int filesize = bArray.size();
 	bArray.clear();
 	buffer.close();
