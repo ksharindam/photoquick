@@ -6,8 +6,10 @@ TEMPLATE = app
 TARGET = qmageview
 DEPENDPATH += .
 INCLUDEPATH += .
-LIBS += -lgomp
 QMAKE_CXXFLAGS = -fopenmp
+LIBS += -lgomp
+
+# CONFIG += debug
 
 # build dir
 MOC_DIR = build

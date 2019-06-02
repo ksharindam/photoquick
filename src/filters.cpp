@@ -10,9 +10,76 @@
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\
     qDebug() << "Execution Time :" << elapse;
 
+// Byte order is ARGB if big endian else BGRA
+inline bool isBigEndian()
+{
+    int i=1; return ! *((char *)&i);
+}
+
+// Expand each size of Image by certain amount of border
+QImage expandBorder(QImage img, int width)
+{
+    int w = img.width();
+    int h = img.height();
+    QImage dst = QImage(w+2*width, h+2*width, QImage::Format_ARGB32);
+    // copy all image pixels at the center
+    QRgb *row, *dstRow;
+    for (int y=0; y<h; y++) {
+        row = (QRgb*)img.constScanLine(y);
+        dstRow = (QRgb*)dst.scanLine(y+width);
+        dstRow += width;
+        memcpy(dstRow, row, w*4);
+    }
+    // duplicate first row
+    row = (QRgb*)img.constScanLine(0);
+    for (int i=0; i<width; i++) {
+        dstRow = (QRgb*)dst.scanLine(i);
+        dstRow += width;
+        memcpy(dstRow, row, w*4);
+    }
+    // duplicate last row
+    row = (QRgb*)img.constScanLine(h-1);
+    for (int i=0; i<width; i++) {
+        dstRow = (QRgb*)dst.scanLine(width+h+i);
+        dstRow += width;
+        memcpy(dstRow, row, w*4);
+    }
+    // duplicate left and right sides
+    QRgb left_clr, right_clr;
+    for (int y=0; y<h; y++) {
+        dstRow = (QRgb*)dst.scanLine(y+width);
+        left_clr = ((QRgb*)img.constScanLine(y))[0];
+        right_clr = ((QRgb*)img.constScanLine(y))[w-1];
+        for (int x=0; x<width; x++) {
+            dstRow[x] = left_clr;
+            dstRow[width+w+x] = right_clr;
+        }
+    }
+    // duplicate corner pixels
+    row = (QRgb*)img.constScanLine(0);
+    for (int y=0; y<width; y++) {
+        dstRow = (QRgb*)dst.scanLine(y);
+        for (int x=0; x<width; x++) {
+            dstRow[x] = row[0];
+            dstRow[width+w+x] = row[w-1];
+        }
+    }
+    row = (QRgb*)img.constScanLine(h-1);
+    for (int y=0; y<width; y++) {
+        dstRow = (QRgb*)dst.scanLine(width+h+y);
+        for (int x=0; x<width; x++) {
+            dstRow[x] = row[0];
+            dstRow[width+w+x] = row[w-1];
+        }
+    }
+    return dst;
+}
+
+
 //********** --------- Gray Scale Image --------- ********** //
 void grayScale(QImage &img)
 {
+    expandBorder(img, 3);
     #pragma omp parallel for
     for (int y=0;y<img.height();y++) {
         QRgb* line;
@@ -159,9 +226,84 @@ void adaptiveIntegralThresh(QImage &img)
     free(intImg);
 }
 
+
+//*********---------- Apply Convolution Matrix ---------**********//
+// Kernel Width Must Be An Odd Number
+// Image must be larger than Kernel Width
+void convolve(QImage &img, float kernel[], int width/*of kernel*/)
+{
+    int radius = width/2;
+    int w = img.width();
+    int h = img.height();
+    QImage tmp = expandBorder(img, radius);
+    int tmp_w = tmp.width();
+
+    /* Build normalized kernel */
+    float normal_kernel[width][width] = {};
+
+    float normalize = 0.0;
+    for (int i=0; i < (width*width); i++)
+        normalize += kernel[i];
+    // if (abs(normalize) == 0) normalize=1.0;
+    normalize = 1.0/normalize;
+    for (int i=0; i < (width); i++) {
+        for (int j=0; j< width; j++)
+            normal_kernel[i][j] = normalize*kernel[i*width+j];
+    }
+
+    /* Convolve image */
+    QRgb *data = (QRgb*)img.scanLine(0);
+    QRgb *tmpData = (QRgb*)tmp.constScanLine(0);
+    #pragma omp parallel for
+    for (int y=0; y < h; y++)
+    {
+        QRgb *row = data+(y*w);
+
+        for (int x=0; x < w; x++)
+        {
+            float r=0, g=0, b=0;
+		    for (int i=0; i < width; i++)
+            {
+                QRgb *tmpRow = tmpData+(tmp_w*(y+i));
+                for (int j=0; j < width; j++)
+                {
+                    QRgb clr = tmpRow[x+j];
+                    r += normal_kernel[i][j] * qRed(clr);
+                    g += normal_kernel[i][j] * qGreen(clr);
+                    b += normal_kernel[i][j] * qBlue(clr);
+                }
+            }
+            row[x] = qRgb(round(r), round(g), round(b));
+        }
+    }
+}
+
+
+//*************---------- Gaussian Blur ---------***************//
+#define PI 3.141592654
+
+void gaussianBlur(QImage &img, int radius, float sigma)
+{
+    if (sigma==0)  sigma = radius/2.0 ;
+    int kernel_width = 2*radius + 1;
+    float kernel[kernel_width*kernel_width];
+    int i=0;
+    for (int v=-radius; v <= radius; v++)
+    {
+        for (int u=-radius; u <= radius; u++)
+        {
+            double alpha = exp(-((double) u*u+v*v)/(2.0*sigma*sigma));
+            kernel[i]=alpha/(2.0*PI*sigma*sigma);
+            i++;
+        }
+    }
+    convolve(img, kernel, kernel_width);
+}
+
+
 //**********----------- Box Blur -----------*************//
 // also called mean blur
-void boxBlur(QImage &img, int r/*blur radius*/)
+void boxFilter(QImage &img, int r/*blur radius*/)
 {
     int w = img.width();
     int h = img.height();
@@ -233,13 +375,14 @@ void boxBlur(QImage &img, int r/*blur radius*/)
     }
 }
 
+
 //*************------------ Sharpen ------------****************
 // Using unsharp masking
 
 void sharpen(QImage &img)
 {
     QImage mask = img.copy();
-    boxBlur(mask, 1);
+    boxFilter(mask, 1);
     int w = img.width();
     int h = img.height();
     #pragma omp parallel for
@@ -295,7 +438,8 @@ void sigmoidalContrast(QImage &img, float midpoint)
 
 
 // ************* ------------ Auto White Balance -------------************
-// uses gray world method
+// adopted from a stackoverflow code
+
 int percentile(unsigned int histogram[], float perc, int N)
 {
     int A=0;
@@ -346,6 +490,7 @@ void autoWhiteBalance(QImage &img)
         }
     }
 }
+
 
 // ********* ---------- Despecle ---------- ***********
 // Crimmins speckle removal
@@ -418,6 +563,8 @@ void despeckle(QImage &img)
     #pragma omp parallel for
     for (int i=0; i < 4; i++) // 4 channels ARGB32 image
     {
+        if (i==0 and isBigEndian()) continue;  // skip Alpha if ARGB order
+        if (i==3 and not isBigEndian()) continue;  // BGRA order
         // allocate memory for pixels array
         uchar *pixels = (uchar*)calloc(1,length);
         uchar *buffer = (uchar*)calloc(1,length);
@@ -464,3 +611,203 @@ void despeckle(QImage &img)
 }
 
 
+// ******** ---------- Reduce Salt & Pepper noise ---------**********//
+// Edge preserving noise reduction filter.
+typedef struct
+{
+  unsigned int
+    next[9],
+    count,
+    signature;
+} MedianListNode;
+
+typedef struct
+{
+  MedianListNode *nodes;
+  int level;
+} MedianSkipList;
+
+typedef struct
+{
+  MedianSkipList
+    lists[4];
+
+  unsigned int
+    center,
+    seed,
+    signature;
+} MedianPixelList;
+
+
+void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int channel,
+                              unsigned int color)
+{
+    MedianSkipList *list;
+    int level;
+    unsigned int search, update[9];
+
+    list=pixel_list->lists+channel;
+    list->nodes[color].signature=pixel_list->signature;
+    list->nodes[color].count=1;
+    /*  Determine where it belongs in the list.
+        This loop consumes most of the time.*/
+    search=65536UL;
+    for (level=list->level; level >= 0; level--)
+    {
+        while (list->nodes[search].next[level] < color)
+            search=list->nodes[search].next[level];
+        update[level]=search;
+    }
+    /*Generate a pseudo-random level for this node.*/
+    for (level=0; ; level++)
+    {
+        pixel_list->seed=(pixel_list->seed*42893621U)+1U;
+        if ((pixel_list->seed & 0x300) != 0x300)
+            break;
+    }
+    if (level > 8)
+        level=8;
+    if (level > (list->level+2))
+        level=list->level+2;
+    /* If we're raising the list's level, link back to the root node.*/
+    while (level > list->level)
+    {
+        list->level++;
+        update[list->level]=65536U;
+    }
+    /*Link the node into the skip-list.*/
+    do
+    {
+        list->nodes[color].next[level]=list->nodes[update[level]].next[level];
+        list->nodes[update[level]].next[level]=color;
+    }
+    while (level-- > 0);
+}
+
+inline
+void InsertMedianList(MedianPixelList *pixel_list, uchar *pixel)
+{
+    for (int channel=0; channel<4; channel++) {
+        unsigned int index = (unsigned short)(pixel[channel]*257U);
+        if (pixel_list->lists[channel].nodes[index].signature == pixel_list->signature)
+            pixel_list->lists[channel].nodes[index].count++;
+        else
+            AddNodeMedianList(pixel_list,channel,index);
+    }
+}
+
+void ResetMedianList(MedianPixelList *pixel_list)
+{
+    MedianListNode *root;
+    MedianSkipList *list;
+
+    for (int channel=0; channel < 4; channel++)
+    {
+        list=pixel_list->lists+channel;
+        root=list->nodes+65536UL;
+        list->level=0;
+        for (int level=0; level < 9; level++)
+            root->next[level]=65536UL;
+    }
+    pixel_list->seed = pixel_list->signature++;
+}
+
+void DestroyMedianList(void *pixel_list)
+{
+    MedianPixelList *skiplist = (MedianPixelList *) pixel_list;
+
+    if (skiplist != (void *) NULL)
+    {
+        for (unsigned int i=0; i < 4U; i++)
+            free(skiplist->lists[i].nodes);
+    }
+    free(skiplist);
+}
+
+MedianPixelList* AllocateMedianList(const long width)
+{
+    MedianPixelList *skiplist;
+
+    skiplist = (MedianPixelList *) calloc(1,sizeof(MedianPixelList));//TODO:align to 64
+    if (skiplist != (MedianPixelList *) NULL)
+    {
+        unsigned int node_list_size = 65537U*sizeof(MedianListNode);
+
+        skiplist->center=width*width/2;
+        skiplist->signature = 0xabacadabUL; //MagickSignature;
+        for (int i=0; i < 4; i++)
+        {
+            skiplist->lists[i].nodes = (MedianListNode*) calloc(1,node_list_size);
+            if (skiplist->lists[i].nodes == (MedianListNode *) NULL)
+            {
+                DestroyMedianList(skiplist);
+                skiplist=(MedianPixelList *) NULL;
+                break;
+            }
+        }
+    }
+    return skiplist;
+}
+
+QRgb GetNonpeakMedianList(MedianPixelList *pixel_list)
+{
+    MedianSkipList *list;
+
+    unsigned long channels[4],center,color,count,previous,next;
+
+  /* Finds the median value for each of the color.*/
+    center=pixel_list->center;
+    for (int channel=0; channel < 4; channel++)
+    {
+        list=pixel_list->lists+channel;
+        color=65536L;
+        next=list->nodes[color].next[0];
+        count=0;
+        do
+        {
+            previous=color;
+            color=next;
+            next=list->nodes[color].next[0];
+            count+=list->nodes[color].count;
+        }
+        while (count <= center);
+        if ((previous == 65536L) && (next != 65536L))
+            color=next;
+        else if ((previous != 65536L) && (next == 65536L))
+            color=previous;
+        channels[channel]=color;
+    }
+    uchar pixel[4];
+    pixel[0] = channels[0]/257U;
+    pixel[1] = channels[1]/257U;
+    pixel[2] = channels[2]/257U;
+    pixel[3] = channels[3]/257U;
+    QRgb *rgb = (QRgb*)(&pixel[0]);
+    return(*rgb);
+}
+
+void reduceNoise(QImage &img, int radius)
+{
+    int w = img.width();
+    int h = img.height();
+    QImage tmp = expandBorder(img, radius);
+
+    MedianPixelList *skiplist = AllocateMedianList(2*radius+1);
+
+    for (int y=0; y < h; y++)
+    {
+        QRgb *row = (QRgb*)img.scanLine(y);
+        for (int x=0; x < w; x++)
+        {
+            ResetMedianList(skiplist);
+            for (int i=y-radius; i <= y+radius; i++)
+            {
+                QRgb *tmpRow = (QRgb*)tmp.constScanLine(i+radius);
+                for (int j=x-radius; j<=x+radius; j++)
+                    InsertMedianList(skiplist, (uchar*)&tmpRow[j+radius]);
+            }
+            row[x] = GetNonpeakMedianList(skiplist);
+        }
+    }
+    DestroyMedianList(skiplist);
+}

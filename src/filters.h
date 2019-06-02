@@ -13,8 +13,14 @@ void globalThresh(QImage &img, int thresh);
 // Apply adaptive integral threshold using bradley's method
 void adaptiveIntegralThresh(QImage &img);
 
+// Apply Convolution Matrix
+void convolve(QImage &img, float kernel[], int kernel_width);
+
+// Gaussian Blur
+void gaussianBlur(QImage &img, int radius=1, float sigma=0);
+
 // Apply Box Blur
-void boxBlur(QImage &img, int radius=1);
+void boxFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
 void sharpen(QImage &img);
@@ -25,6 +31,8 @@ void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 // Auto white balance
 void autoWhiteBalance(QImage &img);
 
-// remove speckle noise
+// remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
 
+// Remove salt and pepper noise
+void reduceNoise(QImage &img, int radius=1);

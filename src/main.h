@@ -43,6 +43,7 @@ public slots:
     void blur();
     void sharpenImage();
     void reduceSpeckleNoise();
+    void reduceImageNoise();
     void sigmoidContrast(); // Enhance low light images
     void whiteBalance();
     void openPrevImage();

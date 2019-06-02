@@ -36,9 +36,10 @@ Window:: Window()
     menu->addAction("GrayScale", this, SLOT(toGrayScale()));
     menu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     menu->addAction("Threshold", this, SLOT(toBlacknWhite()));
-    menu->addAction("Smooth/Blur...", this, SLOT(blur()));
     menu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    menu->addAction("Reduce Noise", this, SLOT(reduceSpeckleNoise()));
+    menu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    menu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
+    menu->addAction("Reduce Noise", this, SLOT(reduceImageNoise()));
     menu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
     menu->addAction("White Balance", this, SLOT(whiteBalance()));
     effectsBtn->setMenu(menu);
@@ -285,7 +286,7 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    boxBlur(canvas->image, radius);
+    gaussianBlur(canvas->image, radius);
     canvas->showScaled();
 }
 
@@ -300,6 +301,13 @@ void
 Window:: reduceSpeckleNoise()
 {
     despeckle(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: reduceImageNoise()
+{
+    reduceNoise(canvas->image, 1);
     canvas->showScaled();
 }
 
