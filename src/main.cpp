@@ -268,14 +268,14 @@ void
 Window:: toBlacknWhite()
 {
     int thresh = calcOtsuThresh(canvas->image);
-    globalThresh(canvas->image, thresh);
+    threshold(canvas->image, thresh);
     canvas->showScaled();
 }
 
 void
 Window:: adaptiveThresh()
 {
-    adaptiveIntegralThresh(canvas->image);
+    adaptiveThreshold(canvas->image);
     canvas->showScaled();
 }
 
@@ -286,7 +286,8 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    gaussianBlur(canvas->image, radius);
+    //gaussianBlur(canvas->image, radius);
+    boxFilter(canvas->image, radius);
     canvas->showScaled();
 }
 
@@ -307,7 +308,8 @@ Window:: reduceSpeckleNoise()
 void
 Window:: reduceImageNoise()
 {
-    reduceNoise(canvas->image, 1);
+    medianFilter(canvas->image, 1);
+    //reduceNoise(canvas->image, 1);
     canvas->showScaled();
 }
 

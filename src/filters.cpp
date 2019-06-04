@@ -150,7 +150,7 @@ int calcOtsuThresh(QImage img)
     return threshold;
 }
 
-void globalThresh(QImage &img, int thresh)
+void threshold(QImage &img, int thresh)
 {
     #pragma omp parallel for
     for (int y=0;y<img.height();y++) {
@@ -168,7 +168,7 @@ void globalThresh(QImage &img, int thresh)
 
 //*********---------- Adaptive Threshold ---------**********//
 // Apply Bradley threshold (to get desired output, tune value of T and s)
-void adaptiveIntegralThresh(QImage &img)
+void adaptiveThreshold(QImage &img)
 {
     int w = img.width();
     int h = img.height();
@@ -341,36 +341,39 @@ void boxFilter(QImage &img, int r/*blur radius*/)
         }
     }
     // Run blur in vertical direction
+    QRgb *data = (QRgb*)img.scanLine(0);
+    QRgb* tmpData = (QRgb*)tmp.constScanLine(0);
+    #pragma omp parallel for
     for (int x=0; x<w; ++x)
     {
         QRgb clr, clr2;
         int y, sum_r,sum_g,sum_b, count;
         sum_r = sum_g = sum_b = 0;
         for (y=0; y<=r; ++y) {
-            clr = ((QRgb*)tmp.constScanLine(y))[x];
+            clr = (tmpData + (w*y))[x];
             sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
         }
         count = r+1;
-        ((QRgb*)img.scanLine(0))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        data[x] = qRgb(sum_r/count, sum_g/count, sum_b/count); // first row
         for (y=1; y<=r; y++) {
-            clr = ((QRgb*)tmp.constScanLine(y+r))[x];
+            clr = (tmpData + (w*(y+r)))[x];
             sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
             count += 1;
-            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
         }
         for (y=r+1; y<h-r; y++) {
-            clr = ((QRgb*)tmp.constScanLine(y+r))[x];
-            clr2 = ((QRgb*)tmp.constScanLine(y-r-1))[x];
+            clr = (tmpData + (w*(y+r)))[x];
+            clr2 = (tmpData + (w*(y-r-1)))[x];
             sum_r += qRed(clr) - qRed(clr2);
             sum_g += qGreen(clr) - qGreen(clr2);
             sum_b += qBlue(clr) - qBlue(clr2);
-            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
         }
         for (y=h-r; y<h; y++) {
-            clr = ((QRgb*)tmp.constScanLine(y-r-1))[x];
+            clr = (tmpData + (w*(y-r-1)))[x];
             sum_r -= qRed(clr); sum_g -= qGreen(clr); sum_b -= qBlue(clr);
             count -= 1;
-            ((QRgb*)img.scanLine(y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
         }
     }
 }
@@ -378,6 +381,7 @@ void boxFilter(QImage &img, int r/*blur radius*/)
 
 //*************------------ Sharpen ------------****************
 // Using unsharp masking
+// output_image = input_image + (input_image - blur_image)
 
 void sharpen(QImage &img)
 {
@@ -394,9 +398,13 @@ void sharpen(QImage &img)
           row = (QRgb*)img.scanLine(y); }
         for (int x=0; x<w; x++)
         {
-            int r = qRed(row[x]) + 0.7*(qRed(row[x]) - qRed(row_mask[x]));
-            int g = qGreen(row[x]) + 0.7*(qGreen(row[x]) - qGreen(row_mask[x]));
-            int b = qBlue(row[x]) + 0.7*(qBlue(row[x]) - qBlue(row_mask[x]));
+            int r_diff = (qRed(row[x]) - qRed(row_mask[x]));
+            int g_diff = (qGreen(row[x]) - qGreen(row_mask[x]));
+            int b_diff = (qBlue(row[x]) - qBlue(row_mask[x]));
+            // threshold = 5, factor = 1.0
+            int r = r_diff > 5? qRed(row[x])   + 1.0*r_diff : qRed(row[x]);
+            int g = g_diff > 5? qGreen(row[x]) + 1.0*g_diff : qGreen(row[x]);
+            int b = b_diff > 5? qBlue(row[x])  + 1.0*b_diff : qBlue(row[x]);
             r = (r < 0)? 0: (r>255? 255:r);
             g = (g < 0)? 0: (g>255? 255:g);
             b = (b < 0)? 0: (b>255? 255:b);
@@ -629,8 +637,7 @@ typedef struct
 
 typedef struct
 {
-  MedianSkipList
-    lists[4];
+  MedianSkipList list;
 
   unsigned int
     center,
@@ -639,23 +646,21 @@ typedef struct
 } MedianPixelList;
 
 
-void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int channel,
-                              unsigned int color)
+void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
 {
-    MedianSkipList *list;
+    MedianSkipList list = pixel_list->list;
     int level;
     unsigned int search, update[9];
 
-    list=pixel_list->lists+channel;
-    list->nodes[color].signature=pixel_list->signature;
-    list->nodes[color].count=1;
+    list.nodes[color].signature=pixel_list->signature;
+    list.nodes[color].count=1;
     /*  Determine where it belongs in the list.
         This loop consumes most of the time.*/
     search=65536UL;
-    for (level=list->level; level >= 0; level--)
+    for (level=list.level; level >= 0; level--)
     {
-        while (list->nodes[search].next[level] < color)
-            search=list->nodes[search].next[level];
+        while (list.nodes[search].next[level] < color)
+            search=list.nodes[search].next[level];
         update[level]=search;
     }
     /*Generate a pseudo-random level for this node.*/
@@ -667,48 +672,44 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int channel,
     }
     if (level > 8)
         level=8;
-    if (level > (list->level+2))
-        level=list->level+2;
+    if (level > (list.level+2))
+        level=list.level+2;
     /* If we're raising the list's level, link back to the root node.*/
-    while (level > list->level)
+    while (level > list.level)
     {
-        list->level++;
-        update[list->level]=65536U;
+        list.level++;
+        update[list.level]=65536U;
     }
     /*Link the node into the skip-list.*/
     do
     {
-        list->nodes[color].next[level]=list->nodes[update[level]].next[level];
-        list->nodes[update[level]].next[level]=color;
+        list.nodes[color].next[level]=list.nodes[update[level]].next[level];
+        list.nodes[update[level]].next[level]=color;
     }
     while (level-- > 0);
 }
 
 inline
-void InsertMedianList(MedianPixelList *pixel_list, uchar *pixel)
+void InsertMedianList(MedianPixelList *pixel_list, uchar pixel)
 {
-    for (int channel=0; channel<4; channel++) {
-        unsigned int index = (unsigned short)(pixel[channel]*257U);
-        if (pixel_list->lists[channel].nodes[index].signature == pixel_list->signature)
-            pixel_list->lists[channel].nodes[index].count++;
-        else
-            AddNodeMedianList(pixel_list,channel,index);
-    }
+    unsigned int index = (unsigned short)(pixel*257U);
+    if (pixel_list->list.nodes[index].signature == pixel_list->signature)
+        pixel_list->list.nodes[index].count++;
+    else
+        AddNodeMedianList(pixel_list, index);
 }
 
 void ResetMedianList(MedianPixelList *pixel_list)
 {
     MedianListNode *root;
-    MedianSkipList *list;
+    MedianSkipList list;
 
-    for (int channel=0; channel < 4; channel++)
-    {
-        list=pixel_list->lists+channel;
-        root=list->nodes+65536UL;
-        list->level=0;
-        for (int level=0; level < 9; level++)
-            root->next[level]=65536UL;
-    }
+    list=pixel_list->list;
+    root=list.nodes+65536UL;
+    list.level=0;
+    for (int level=0; level < 9; level++)
+        root->next[level]=65536UL;
+
     pixel_list->seed = pixel_list->signature++;
 }
 
@@ -717,10 +718,7 @@ void DestroyMedianList(void *pixel_list)
     MedianPixelList *skiplist = (MedianPixelList *) pixel_list;
 
     if (skiplist != (void *) NULL)
-    {
-        for (unsigned int i=0; i < 4U; i++)
-            free(skiplist->lists[i].nodes);
-    }
+        free(skiplist->list.nodes);
     free(skiplist);
 }
 
@@ -729,85 +727,69 @@ MedianPixelList* AllocateMedianList(const long width)
     MedianPixelList *skiplist;
 
     skiplist = (MedianPixelList *) calloc(1,sizeof(MedianPixelList));//TODO:align to 64
-    if (skiplist != (MedianPixelList *) NULL)
-    {
-        unsigned int node_list_size = 65537U*sizeof(MedianListNode);
+    if (skiplist == (MedianPixelList *) NULL) return skiplist;
 
-        skiplist->center=width*width/2;
-        skiplist->signature = 0xabacadabUL; //MagickSignature;
-        for (int i=0; i < 4; i++)
-        {
-            skiplist->lists[i].nodes = (MedianListNode*) calloc(1,node_list_size);
-            if (skiplist->lists[i].nodes == (MedianListNode *) NULL)
-            {
-                DestroyMedianList(skiplist);
-                skiplist=(MedianPixelList *) NULL;
-                break;
-            }
-        }
+    unsigned int node_list_size = 65537U*sizeof(MedianListNode);
+
+    skiplist->center=width*width/2;
+    skiplist->signature = 0xabacadabUL; //MagickSignature;
+    skiplist->list.nodes = (MedianListNode*) calloc(1,node_list_size);
+    if (skiplist->list.nodes == (MedianListNode *) NULL)
+    {
+        DestroyMedianList(skiplist);
+        skiplist=(MedianPixelList *) NULL;
     }
     return skiplist;
 }
 
-QRgb GetNonpeakMedianList(MedianPixelList *pixel_list)
+QRgb GetMedian(MedianPixelList *pixel_list)
 {
-    MedianSkipList *list;
+    MedianSkipList list=pixel_list->list;
 
-    unsigned long channels[4],center,color,count,previous,next;
+    unsigned long center,color,count;
 
-  /* Finds the median value for each of the color.*/
+    /* Finds the median value */
     center=pixel_list->center;
-    for (int channel=0; channel < 4; channel++)
+    color=65536L;
+    count=0;
+    do
     {
-        list=pixel_list->lists+channel;
-        color=65536L;
-        next=list->nodes[color].next[0];
-        count=0;
-        do
-        {
-            previous=color;
-            color=next;
-            next=list->nodes[color].next[0];
-            count+=list->nodes[color].count;
-        }
-        while (count <= center);
-        if ((previous == 65536L) && (next != 65536L))
-            color=next;
-        else if ((previous != 65536L) && (next == 65536L))
-            color=previous;
-        channels[channel]=color;
+        color=list.nodes[color].next[0];
+        count+=list.nodes[color].count;
     }
-    uchar pixel[4];
-    pixel[0] = channels[0]/257U;
-    pixel[1] = channels[1]/257U;
-    pixel[2] = channels[2]/257U;
-    pixel[3] = channels[3]/257U;
-    QRgb *rgb = (QRgb*)(&pixel[0]);
-    return(*rgb);
+    while (count <= center);
+    return color/257U;
 }
 
-void reduceNoise(QImage &img, int radius)
+void medianFilter(QImage &img, int radius)
 {
     int w = img.width();
     int h = img.height();
     QImage tmp = expandBorder(img, radius);
+    int tmp_w = tmp.width();
 
-    MedianPixelList *skiplist = AllocateMedianList(2*radius+1);
+    uchar *data = (uchar*)img.scanLine(0);
+    uchar *tmpData = (uchar*)tmp.constScanLine(0);
 
-    for (int y=0; y < h; y++)
-    {
-        QRgb *row = (QRgb*)img.scanLine(y);
-        for (int x=0; x < w; x++)
+    #pragma omp parallel for
+    for (int channel=0; channel<4; channel++) {
+        MedianPixelList *skiplist = AllocateMedianList(2*radius+1);
+
+        for (int y=0; y < h; y++)
         {
-            ResetMedianList(skiplist);
-            for (int i=y-radius; i <= y+radius; i++)
+            uchar *row = data + (y*w*4);
+            for (int x=0; x < w; x++)
             {
-                QRgb *tmpRow = (QRgb*)tmp.constScanLine(i+radius);
-                for (int j=x-radius; j<=x+radius; j++)
-                    InsertMedianList(skiplist, (uchar*)&tmpRow[j+radius]);
+                ResetMedianList(skiplist);
+                for (int i=y-radius; i <= y+radius; i++)
+                {
+                    uchar *tmpRow = tmpData + ((i+radius)*tmp_w*4);
+                    for (int j=x-radius; j<=x+radius; j++)
+                        InsertMedianList(skiplist, tmpRow[4*(j+radius)+channel]);
+                }
+                row[4*x+channel] = GetMedian(skiplist);
             }
-            row[x] = GetNonpeakMedianList(skiplist);
         }
+        DestroyMedianList(skiplist);
     }
-    DestroyMedianList(skiplist);
 }

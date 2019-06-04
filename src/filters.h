@@ -8,10 +8,10 @@ void grayScale(QImage &img);
 int calcOtsuThresh(QImage img);
 
 // Apply threshold for given global threshold value
-void globalThresh(QImage &img, int thresh);
+void threshold(QImage &img, int thresh);
 
 // Apply adaptive integral threshold using bradley's method
-void adaptiveIntegralThresh(QImage &img);
+void adaptiveThreshold(QImage &img);
 
 // Apply Convolution Matrix
 void convolve(QImage &img, float kernel[], int kernel_width);
@@ -21,6 +21,9 @@ void gaussianBlur(QImage &img, int radius=1, float sigma=0);
 
 // Apply Box Blur
 void boxFilter(QImage &img, int radius=1);
+
+// Apply Median Filter
+void medianFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
 void sharpen(QImage &img);
@@ -35,4 +38,4 @@ void autoWhiteBalance(QImage &img);
 void despeckle(QImage &img);
 
 // Remove salt and pepper noise
-void reduceNoise(QImage &img, int radius=1);
+//void reduceNoise(QImage &img, int radius=1);
