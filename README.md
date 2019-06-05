@@ -3,16 +3,23 @@ A simple image viewer with some useful features (written in qt4).
 
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
-This can ..  
+
  * Resize  
  * Crop in particular ratio  
  * Rotate  
  * Create photo grid for printing  
  * Add Border  
- * Filters (Grayscale, Scan Page, Blur, Sharpen, Auto Contrast)  
+ * Filters  
+  * Grayscale  
+  * Scan Page  
+  * Blur  
+  * Sharpen  
+  * Auto Contrast  
+  * White Balance
+  * Despeckle  
+  * Reduce Noise  
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
-N.B - You can use the python version of this program [pypicview](https://github.com/ksharindam/pypicview)
 
 ### Build
 To build this program, extract the source code zip.  

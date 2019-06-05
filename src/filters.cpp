@@ -1,4 +1,4 @@
-// this file is part of qmageview program
+// this file is part of qmageview program which is GPLv3 licensed
 #include "filters.h"
 #include <cmath>
 #include <chrono>
@@ -173,11 +173,10 @@ void adaptiveThreshold(QImage &img)
     int w = img.width();
     int h = img.height();
     // Allocate memory for integral image
-    int *ptr, **intImg;
     int len = sizeof(int *) * h + sizeof(int) * w * h;
-    intImg = (int **)malloc(len);
+    unsigned **intImg = (unsigned **)malloc(len);
 
-    ptr = (int*)(intImg + h);
+    unsigned *ptr = (unsigned*)(intImg + h);
     for(int i = 0; i < h; i++)
         intImg[i] = (ptr + w * i);
 
@@ -760,6 +759,7 @@ QRgb GetMedian(MedianPixelList *pixel_list)
     while (count <= center);
     return color/257U;
 }
+
 
 void medianFilter(QImage &img, int radius)
 {

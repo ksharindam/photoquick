@@ -26,23 +26,30 @@
 #include <QPainter>
 #include <QDesktopWidget>
 #include <QMenu>
+#include <QRegExp>
+#include <QDebug>
 #include <cmath>
 
 Window:: Window()
 {
     setupUi(this);
-    QMenu *menu = new QMenu(effectsBtn);
-    menu->addAction("Mirror", this, SLOT(mirror()));
-    menu->addAction("GrayScale", this, SLOT(toGrayScale()));
-    menu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
-    menu->addAction("Threshold", this, SLOT(toBlacknWhite()));
-    menu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    menu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    menu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
-    menu->addAction("Reduce Noise", this, SLOT(reduceImageNoise()));
-    menu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
-    menu->addAction("White Balance", this, SLOT(whiteBalance()));
-    effectsBtn->setMenu(menu);
+    QMenu *saveMenu = new QMenu(saveBtn);
+    saveMenu->addAction("Overwrite", this, SLOT(saveFile()));
+    saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
+    saveMenu->addAction("Save As...", this, SLOT(saveAs()));
+    saveBtn->setMenu(saveMenu);
+    QMenu *fxMenu = new QMenu(effectsBtn);
+    fxMenu->addAction("Mirror", this, SLOT(mirror()));
+    fxMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
+    fxMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
+    fxMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+    fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
+    fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    fxMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
+    fxMenu->addAction("Reduce Noise", this, SLOT(reduceImageNoise()));
+    fxMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
+    fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
+    effectsBtn->setMenu(fxMenu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     canvas = new Canvas(this, scrollArea);
@@ -54,7 +61,7 @@ Window:: Window()
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    filepath = QString("nidhi.jpg");
+    filename = QString("nidhi.jpg");
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
     btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
@@ -65,7 +72,6 @@ Window:: connectSignals()
 {
     // For the buttons of the left side
     connect(openBtn, SIGNAL(clicked()), this, SLOT(openFile()));
-    connect(saveBtn, SIGNAL(clicked()), this, SLOT(saveFile()));
     connect(resizeBtn, SIGNAL(clicked()), this, SLOT(resizeImage()));
     connect(cropBtn, SIGNAL(clicked()), this, SLOT(cropImage()));
     connect(addBorderBtn, SIGNAL(clicked()), this, SLOT(addBorder()));
@@ -90,7 +96,7 @@ Window:: openFile()
 {
     QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
                          "PNG Images (*.png);;SVG Images (*.svg);;All Files (*)";
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", this->filepath, filefilter);
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", filename, filefilter);
     if (filepath.isEmpty()) return;
     openImage(filepath);
 }
@@ -120,24 +126,19 @@ Window:: openImage(QString filepath)
         canvas->has_alpha = true;
     else
         canvas->has_alpha = false;
-    this->filepath = filepath;
+    this->filename = filepath;
     setWindowTitle(QFileInfo(filepath).fileName());
 }
 
 void
 Window:: saveFile()
 {
-    QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
-                                 "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
-                                 "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
-    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", this->filepath, filefilter);
-    if (filepath.isEmpty()) return;
     QImage img = canvas->image;
     if (canvas->animation)
         img = canvas->movie()->currentImage();
     if (img.isNull()) return;
     int quality = -1;
-    if (filepath.endsWith(".jpg", Qt::CaseInsensitive)) {
+    if (filename.endsWith(".jpg", Qt::CaseInsensitive)) {
         if (canvas->has_alpha) { // converts background to white
             img = QImage(img.width(), img.height(), QImage::Format_ARGB32);
             img.fill(Qt::white);
@@ -151,7 +152,42 @@ Window:: saveFile()
         }
         else return;
     }
-    img.save(filepath, NULL, quality);
+    img.save(filename, NULL, quality);
+    setWindowTitle(QFileInfo(filename).fileName());
+}
+
+void
+Window:: saveAs()
+{
+    QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
+                                 "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
+                                 "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
+    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", filename, filefilter);
+    if (filepath.isEmpty()) return;
+    filename = filepath;
+    saveFile();
+}
+
+void
+Window:: saveACopy()    // generate a new filename and save
+{
+    QFileInfo fi(filename);
+    QString dir = fi.dir().path();
+    QString basename = fi.completeBaseName();
+    QString ext = fi.suffix().isEmpty()? ".jpg": "."+fi.suffix();
+    // extract the num just before the file extension
+    QRegExp rx("(.*\\D)*(\\d*)");
+    int pos = rx.indexIn(basename);
+    if (pos==-1) return;
+    int num = rx.cap(2).isEmpty()? 1: rx.cap(2).toInt();
+    QString path;
+    do {
+        path = dir+ '/' + rx.cap(1) + QString::number(num) + ext;
+        num++;
+    }
+    while (QFileInfo(path).exists());
+    this->filename = path;
+    saveFile();
 }
 
 void
@@ -286,8 +322,8 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    //gaussianBlur(canvas->image, radius);
-    boxFilter(canvas->image, radius);
+    gaussianBlur(canvas->image, radius);
+    //boxFilter(canvas->image, radius);
     canvas->showScaled();
 }
 
@@ -331,7 +367,7 @@ Window:: whiteBalance()
 void
 Window:: openPrevImage()
 {
-    QFileInfo fi(filepath);
+    QFileInfo fi(filename);
     if (not fi.exists()) return;
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();         // This does not include filename
@@ -347,7 +383,7 @@ Window:: openPrevImage()
 void
 Window:: openNextImage()
 {
-    QFileInfo fi(filepath);
+    QFileInfo fi(filename);
     if (not fi.exists()) return;
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();         // This does not include filename

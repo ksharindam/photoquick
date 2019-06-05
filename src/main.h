@@ -22,7 +22,7 @@ public:
     QSettings settings;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
-    QString filepath;
+    QString filename;
 private:
     void connectSignals();
     float getOptimumScale(QImage img);
@@ -32,6 +32,8 @@ private:
 public slots:
     void openFile();
     void saveFile();
+    void saveAs();
+    void saveACopy();
     void resizeImage();
     void cropImage();
     void cancelCropping();
