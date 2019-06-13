@@ -38,8 +38,15 @@ Window:: Window()
     saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     saveMenu->addAction("Save As...", this, SLOT(saveAs()));
     saveBtn->setMenu(saveMenu);
+    QMenu *transformMenu = new QMenu(transformBtn);
+    transformMenu->addAction("Mirror", this, SLOT(mirror()));
+    transformMenu->addAction("Straighten", this, SLOT(perspectiveTransform()));
+    transformBtn->setMenu(transformMenu);
+    QMenu *decorateMenu = new QMenu(decorateBtn);
+    decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
+    decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
+    decorateBtn->setMenu(decorateMenu);
     QMenu *fxMenu = new QMenu(effectsBtn);
-    fxMenu->addAction("Mirror", this, SLOT(mirror()));
     fxMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
     fxMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     fxMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
@@ -74,8 +81,6 @@ Window:: connectSignals()
     connect(openBtn, SIGNAL(clicked()), this, SLOT(openFile()));
     connect(resizeBtn, SIGNAL(clicked()), this, SLOT(resizeImage()));
     connect(cropBtn, SIGNAL(clicked()), this, SLOT(cropImage()));
-    connect(addBorderBtn, SIGNAL(clicked()), this, SLOT(addBorder()));
-    connect(photoGridBtn, SIGNAL(clicked()), this, SLOT(createPhotoGrid()));
     connect(quitBtn, SIGNAL(clicked()), this, SLOT(close()));
     // For the buttons of the right side
     connect(prevBtn, SIGNAL(clicked()), this, SLOT(openPrevImage()));
@@ -213,57 +218,10 @@ Window:: resizeImage()
 void
 Window:: cropImage()
 {
-    if (not canvas->crop_mode) {
-        canvas->enableCropMode(true);
-        QCheckBox *lockratio = new QCheckBox("Lock Ratio  ", statusbar);
-        statusbar->addPermanentWidget(lockratio);
-        QLabel *labelWH = new QLabel("<b>W:H =</b>", statusbar);
-        statusbar->addPermanentWidget(labelWH);
-        labelWH->setEnabled(false);
-        QDoubleSpinBox *spinWidth = new QDoubleSpinBox(statusbar);
-        spinWidth->setRange(0.1, 9.9);
-        spinWidth->setSingleStep(0.1);
-        spinWidth->setDecimals(1);
-        spinWidth->setMaximumWidth(44);
-        spinWidth->setValue(3.5);
-        spinWidth->setEnabled(false);
-        statusbar->addPermanentWidget(spinWidth);
-        QLabel *colon = new QLabel(":", statusbar);
-        statusbar->addPermanentWidget(colon);
-        QDoubleSpinBox *spinHeight = new QDoubleSpinBox(statusbar);
-        spinHeight->setRange(0.1, 9.9);
-        spinHeight->setSingleStep(0.1);
-        spinHeight->setDecimals(1);
-        spinHeight->setMaximumWidth(44);
-        spinHeight->setValue(4.5);
-        spinHeight->setEnabled(false);
-        statusbar->addPermanentWidget(spinHeight);
-        QPushButton *cropnowBtn = new QPushButton("Crop Now", statusbar);
-        statusbar->addPermanentWidget(cropnowBtn);
-        QPushButton *cropcancelBtn = new QPushButton("Cancel", statusbar);
-        statusbar->addPermanentWidget(cropcancelBtn);
-        connect(lockratio, SIGNAL(toggled(bool)), labelWH, SLOT(setEnabled(bool)));
-        connect(lockratio, SIGNAL(toggled(bool)), spinWidth, SLOT(setEnabled(bool)));
-        connect(lockratio, SIGNAL(toggled(bool)), spinHeight, SLOT(setEnabled(bool)));
-        connect(lockratio, SIGNAL(toggled(bool)), canvas, SLOT(lockCropRatio(bool)));
-        connect(spinWidth, SIGNAL(valueChanged(double)), canvas, SLOT(setCropWidth(double)));
-        connect(spinHeight, SIGNAL(valueChanged(double)), canvas, SLOT(setCropHeight(double)));
-        connect(cropnowBtn, SIGNAL(clicked()), canvas, SLOT(cropImage()));
-        connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
-        connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(cancelCropping()));
-        crop_widgets << lockratio << labelWH << spinWidth << colon << spinHeight << cropnowBtn << cropcancelBtn;
-    }
-}
-
-void
-Window:: cancelCropping()
-{
-    canvas->enableCropMode(false);
-    while (not crop_widgets.isEmpty()) {
-        QWidget *widget = crop_widgets.takeLast();
-        statusbar->removeWidget(widget);
-        widget->deleteLater();
-    }
+    Crop *crop = new Crop(canvas, statusbar);
+    connect(canvas, SIGNAL(mousePressed(QPoint)), crop, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), crop, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), crop, SLOT(onMouseMove(QPoint)));
 }
 
 void
@@ -434,6 +392,15 @@ Window:: mirror()
 }
 
 void
+Window:: perspectiveTransform()
+{
+    PerspectiveTransform *transform = new PerspectiveTransform(canvas, statusbar);
+    connect(canvas, SIGNAL(mousePressed(QPoint)), transform, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), transform, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), transform, SLOT(onMouseMove(QPoint)));
+}
+
+void
 Window:: playSlideShow(bool checked)
 {
     if (checked) { // Start slideshow
@@ -486,15 +453,8 @@ Window:: adjustWindowSize(bool animation)
 void
 Window:: updateStatus()
 {
-    int width, height;
-    if (canvas->crop_mode) {
-        width = round((canvas->p2.x() - canvas->p1.x() + 1)/canvas->scaleW);
-        height = round((canvas->p2.y() - canvas->p1.y() + 1)/canvas->scaleH);
-    }
-    else {
-        width = canvas->image.width();
-        height = canvas->image.height();
-    }
+    int width = canvas->image.width();
+    int height = canvas->image.height();
     QString text = "Resolution : %1x%2 , Scale : %3x";
     statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(canvas->scale, 2)));
 }
@@ -504,8 +464,8 @@ Window:: disableButtons(bool disable)
 {
     resizeBtn->setDisabled(disable);
     cropBtn->setDisabled(disable);
-    addBorderBtn->setDisabled(disable);
-    photoGridBtn->setDisabled(disable);
+    transformBtn->setDisabled(disable);
+    decorateBtn->setDisabled(disable);
     zoomInBtn->setDisabled(disable);
     zoomOutBtn->setDisabled(disable);
     origSizeBtn->setDisabled(disable);

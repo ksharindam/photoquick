@@ -14,7 +14,6 @@ class Window : public QMainWindow, Ui_MainWindow
     Q_OBJECT
 public:
     Window();
-    //~Window();
     void openImage(QString filename);
     void adjustWindowSize(bool animation=false);
     //Variables declaration
@@ -28,7 +27,6 @@ private:
     float getOptimumScale(QImage img);
     void disableButtons(bool disable);
     void closeEvent(QCloseEvent *ev);
-    QList<QWidget *> crop_widgets;
 public slots:
     void openFile();
     void saveFile();
@@ -36,7 +34,6 @@ public slots:
     void saveACopy();
     void resizeImage();
     void cropImage();
-    void cancelCropping();
     void addBorder();
     void createPhotoGrid();
     void toGrayScale();
@@ -56,6 +53,7 @@ public slots:
     void rotateLeft();
     void rotateRight();
     void mirror();
+    void perspectiveTransform();
     void playSlideShow(bool checked);
     void updateStatus();
 };

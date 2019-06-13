@@ -6,10 +6,8 @@ Image Label Object to display the image.
 */
 
 #include <QLabel>
-#include <QWidget>
+#include <QStatusBar>
 #include <QMovie>
-#include <QPixmap>
-#include <QPoint>
 #include <QMouseEvent>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -26,34 +24,82 @@ public:
     void showScaled();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     void zoomBy(float factor);
-    void enableCropMode(bool enable);
     // Variables
     QImage image;
-    bool crop_mode, animation;
-    bool has_alpha; // true for png image
-    float scale, scaleW, scaleH;
-    QPoint p1, p2;
+    bool animation;
+    bool has_alpha;     // always true for png image
+    float scale;
+    bool drag_to_scroll;    // if click and drag moves image
 private:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
     void mouseMoveEvent(QMouseEvent *ev);
-    void drawCropBox();
     // Variables
-    int clk_area;
-    bool mouse_pressed, lock_crop_ratio;
-    float crop_width, crop_height, imgAspect;
-    QPixmap pm_tmp;
-    QPoint topleft, btmright, last_pt, clk_pos;
-    // Click and drag handling variables
+    bool mouse_pressed;
     int v_scrollbar_pos, h_scrollbar_pos;
     QPoint clk_global;
     QScrollBar *vScrollbar, *hScrollbar;
-private slots:
-    void lockCropRatio(bool checked);
-    void setCropWidth(double value);
-    void setCropHeight(double value);
-    void cropImage();
 signals:
+    void mousePressed(QPoint);
+    void mouseReleased(QPoint);
+    void mouseMoved(QPoint);
     void imageUpdated();
 };
 
+// the crop manager
+class Crop : public QObject
+{
+    Q_OBJECT
+public:
+    Crop(Canvas *canvas, QStatusBar *statusbar);
+    Canvas *canvas;
+    QStatusBar *statusbar;
+private:
+    QPixmap pixmap;
+    bool mouse_pressed;
+    QPoint topleft, btmright;   // corner pos at the time of mouse click
+    QPoint p1, p2;              // corner pos while mouse moves
+    QPoint clk_pos;
+    int clk_area;
+    float scaleX, scaleY, crop_w, crop_h;
+    bool lock_crop_ratio;
+    QList<QWidget *> crop_widgets;
+    void drawCropBox();
+private slots:
+    void onMousePress(QPoint pos);
+    void onMouseRelease(QPoint pos);
+    void onMouseMove(QPoint pos);
+    void lockCropRatio(bool);
+    void setCropWidth(double);
+    void setCropHeight(double);
+    void crop();
+    void finish();
+};
+
+// perspective transform manager
+class PerspectiveTransform : public QObject
+{
+    Q_OBJECT
+public:
+    PerspectiveTransform(Canvas *canvas, QStatusBar *statusbar);
+    Canvas *canvas;
+    QStatusBar *statusbar;
+private:
+    QPixmap pixmap;
+    bool mouse_pressed;
+    QPoint topleft, topright, btmleft, btmright, clk_pos, p1,p2,p3,p4;
+    int clk_area;
+    float scaleX, scaleY;
+    QList<QWidget *> crop_widgets;
+    void drawCropBox();
+private slots:
+    void onMousePress(QPoint pos);
+    void onMouseRelease(QPoint pos);
+    void onMouseMove(QPoint pos);
+    void transform();
+    void finish();
+};
+
+
+void calcArc(QPoint center, QPoint from, QPoint to, QPoint through,
+                            float &start, float &span);
