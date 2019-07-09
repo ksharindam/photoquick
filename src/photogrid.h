@@ -1,10 +1,10 @@
 #pragma once
-/*
-This file is a part of qmageview program, which is GPLv3 licensed
-*/
+/* This file is a part of qmageview program, which is GPLv3 licensed */
 
 #include "ui_photogrid_dialog.h"
 #include "ui_gridsetup_dialog.h"
+#include "ui_collage_dialog.h"
+#include "ui_collagesetup_dialog.h"
 #include <QLabel>
 #include <QMouseEvent>
 
@@ -81,6 +81,84 @@ public:
     int W, H, DPI, rows, cols, paperW, paperH;
 };
 
-// Static functions
-QImage loadImage(QString filename);  // Returns an autorotated image according to exif data
 
+// *********** Collage maker *****************
+class CollageItem
+{
+public:
+    CollageItem(QString filename);
+    int img_w, img_h; // the original img resolution
+    int x, y;
+    int w, h;           // the size on collage paper
+    QPixmap pixmap;
+    std::string filename;
+    bool border = false;
+    int rotation = 0;
+    bool contains(QPoint pos);
+    bool overCorner(QPoint pos);
+};
+
+class CollagePaper : public QLabel
+{
+    Q_OBJECT
+public:
+    CollagePaper(QWidget *parent, int w, int h, int pdf_w, int pdf_h, int dpi);
+    /*CollagePaper(QWidget *parent, int w, int h) :
+                CollagePaper(parent, w, h, 0, 0, 0) {}
+    CollagePaper(QWidget *parent, int pdf_w, int pdf_h, int dpi) :
+                CollagePaper(parent, 0, 0, pdf_w, pdf_h, dpi) {}*/
+
+    QPixmap paper;          // the scaled pixmap on which images are drawn
+    int W, H, dpi;
+    float pdf_w, pdf_h;     // size in points
+    QString background_filename;
+    QPixmap drag_icon;
+    //QString dir;            // directory for opening files
+    QList<CollageItem*> collageItems;
+    bool mouse_pressed = false;
+    bool corner_clicked = false;
+    QPoint clk_pos;
+    void mousePressEvent(QMouseEvent *ev);
+    void mouseMoveEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
+    void draw();
+    void setup();
+    void clean();       // delete collage items
+    QImage getCollage();
+public slots:
+    void addPhoto();
+    void removePhoto();
+    void rotatePhoto();
+    void toggleBorder(); // enable or disable border
+    void updateStatus();
+    void savePdf();
+signals:
+    void statusChanged(QString);
+};
+
+
+class CollageDialog : public QDialog, public Ui_CollageDialog
+{
+    Q_OBJECT
+public:
+    CollageDialog(QWidget *parent);
+    CollagePaper *collagePaper;
+    QImage collage;
+    void accept();
+    void reject();
+public slots:
+    void setupBackground();
+    void showStatus(QString);
+};
+
+class CollageSetupDialog : public QDialog, public Ui_CollageSetupDialog
+{
+    Q_OBJECT
+public:
+    CollageSetupDialog(QWidget *parent);
+    void accept();
+    QString filename;
+public slots:
+    void selectFile();
+    void toggleUsePageSize(const QString&);
+};

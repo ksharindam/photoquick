@@ -17,6 +17,7 @@
 ...........................................................................
 */
 #include "main.h"
+#include "common.h"
 #include "dialogs.h"
 #include "photogrid.h"
 #include "filters.h"
@@ -25,6 +26,7 @@
 #include <QFileInfo>
 #include <QPainter>
 #include <QDesktopWidget>
+#include <QSettings>
 #include <QMenu>
 #include <QRegExp>
 #include <QDebug>
@@ -34,7 +36,7 @@ Window:: Window()
 {
     setupUi(this);
     QMenu *saveMenu = new QMenu(saveBtn);
-    saveMenu->addAction("Overwrite", this, SLOT(saveFile()));
+    saveMenu->addAction("Overwrite", this, SLOT(overwrite()));
     saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     saveMenu->addAction("Save As...", this, SLOT(saveAs()));
     saveBtn->setMenu(saveMenu);
@@ -44,6 +46,7 @@ Window:: Window()
     transformBtn->setMenu(transformMenu);
     QMenu *decorateMenu = new QMenu(decorateBtn);
     decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
+    decorateMenu->addAction("Photo Collage", this, SLOT(createPhotoCollage()));
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
     decorateBtn->setMenu(decorateMenu);
     QMenu *fxMenu = new QMenu(effectsBtn);
@@ -53,7 +56,7 @@ Window:: Window()
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     fxMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
-    fxMenu->addAction("Reduce Noise", this, SLOT(reduceImageNoise()));
+    fxMenu->addAction("Remove Dust", this, SLOT(removeDust()));
     fxMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
     fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
     effectsBtn->setMenu(fxMenu);
@@ -68,7 +71,8 @@ Window:: Window()
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    filename = QString("nidhi.jpg");
+    filename = QString("qmageview.jpg");
+    QSettings settings;
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
     btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
@@ -136,7 +140,7 @@ Window:: openImage(QString filepath)
 }
 
 void
-Window:: saveFile()
+Window:: saveImage(QString filename)
 {
     QImage img = canvas->image;
     if (canvas->animation)
@@ -159,6 +163,13 @@ Window:: saveFile()
     }
     img.save(filename, NULL, quality);
     setWindowTitle(QFileInfo(filename).fileName());
+    this->filename = filename;
+}
+
+void
+Window:: overwrite()
+{
+    saveImage(this->filename);
 }
 
 void
@@ -169,8 +180,7 @@ Window:: saveAs()
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
     QString filepath = QFileDialog::getSaveFileName(this, "Save Image", filename, filefilter);
     if (filepath.isEmpty()) return;
-    filename = filepath;
-    saveFile();
+    saveImage(filepath);
 }
 
 void
@@ -191,8 +201,7 @@ Window:: saveACopy()    // generate a new filename and save
         num++;
     }
     while (QFileInfo(path).exists());
-    this->filename = path;
-    saveFile();
+    saveImage(path);
 }
 
 void
@@ -252,6 +261,20 @@ Window:: createPhotoGrid()
 }
 
 void
+Window:: createPhotoCollage()
+{
+    QFileInfo fi(filename);
+    QString dir = fi.dir().path();
+    QDir::setCurrent(dir);
+    CollageDialog *dialog = new CollageDialog(this);
+    if (dialog->exec() == 1) {
+        canvas->scale = getOptimumScale(dialog->collage);
+        canvas->setImage(dialog->collage);
+        adjustWindowSize();
+    }
+}
+
+void
 Window:: toGrayScale()
 {
     grayScale(canvas->image);
@@ -300,10 +323,9 @@ Window:: reduceSpeckleNoise()
 }
 
 void
-Window:: reduceImageNoise()
+Window:: removeDust()
 {
     medianFilter(canvas->image, 1);
-    //reduceNoise(canvas->image, 1);
     canvas->showScaled();
 }
 
@@ -476,29 +498,14 @@ Window:: disableButtons(bool disable)
 void
 Window:: closeEvent(QCloseEvent *ev)
 {
+    QSettings settings;
     settings.setValue("OffsetX", geometry().x()-x());
     settings.setValue("OffsetY", geometry().y()-y());
     settings.setValue("BtnBoxWidth", frame->width());
     QMainWindow::closeEvent(ev);
 }
 
-
-// Static functions
-void waitFor(int millisec)
-{
-    // Creates an eventloop to wait for a time
-    QEventLoop *loop = new QEventLoop();
-    QTimer::singleShot(millisec, loop, SLOT(quit()));
-    loop->exec();
-    loop->deleteLater();
-}
-
-float roundOff(float num, int dec)
-{
-    double m = (num < 0.0) ? -1.0 : 1.0;   // check if input is negative
-    double pwr = pow(10, dec);
-    return float(floor((double)num * m * pwr + 0.5) / pwr) * m;
-}
+// ************* main function ****************
 
 int main(int argc, char *argv[])
 {
@@ -514,7 +521,7 @@ int main(int argc, char *argv[])
             win->openImage(path);
     }
     else {
-        QImage img = QImage(":/images/nidhi.jpg");
+        QImage img = QImage(":/images/qmageview.jpg");
         win->canvas->setImage(img);
         win->adjustWindowSize();
     }

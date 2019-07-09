@@ -332,13 +332,13 @@ PerspectiveTransform:: onMousePress(QPoint pos)
     if (QRect(topleft, QSize(60, 60)).contains(clk_pos))
         clk_area = 1;   // Topleft is clicked
     else if (QRect(topright, QSize(-60, 60)).contains(clk_pos))
-        clk_area = 2;   // Topleft is clicked
+        clk_area = 2;   // Topright is clicked
     else if (QRect(btmleft, QSize(60, -60)).contains(clk_pos))
-        clk_area = 3;   // Topleft is clicked
+        clk_area = 3;   // Bottomleft is clicked
     else if (QRect(btmright, QSize(-60, -60)).contains(clk_pos))
         clk_area = 4;   // bottom right corner clicked
     else
-        clk_area = 0;   // ouside cropbox
+        clk_area = 0;
 }
 
 void
@@ -427,7 +427,6 @@ PerspectiveTransform:: transform()
     QTransform::quadToQuad(mapFrom, mapTo, tfm);
     QImage img = canvas->image.transformed(tfm, Qt::SmoothTransformation);
     QTransform trueMtx = QImage::trueMatrix(tfm,canvas->image.width(),canvas->image.height());
-    ///QPoint offset = tfm.map(QPoint(0,0));
     topleft = trueMtx.map(p1);
     btmright = trueMtx.map(p4);
     canvas->image = img.copy(QRect(topleft, btmright));
@@ -449,7 +448,7 @@ PerspectiveTransform:: finish()
 }
 
 // arc is drawn from p1 to p2 through p3
-// p3 is at opposite corner of p
+// p3 is at diagonal corner of p
 // angle is  drawn counter clock-wise, and direction of y axis is
 // upward, while direction of image y axis is downward
 void calcArc(QPoint p/*center*/, QPoint p1, QPoint p2, QPoint p3,

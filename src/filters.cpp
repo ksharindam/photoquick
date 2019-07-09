@@ -4,7 +4,7 @@
 #include <chrono>
 #include <QDebug>
 
-// macros for mesuring execution time
+// macros for measuring execution time
 #define TIME_START auto start = std::chrono::steady_clock::now();
 #define TIME_STOP auto end = std::chrono::steady_clock::now();\
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\

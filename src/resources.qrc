@@ -1,7 +1,12 @@
 <RCC>
   <qresource>
+    <file>images/drag.png</file>
+    <file>images/addborder.png</file>
+    <file>images/settings.png</file>
+    <file>images/list-add.png</file>
+    <file>images/list-remove.png</file>
     <file>images/effects.png</file>
-    <file>images/nidhi.jpg</file>
+    <file>images/qmageview.jpg</file>
     <file>images/prev.png</file>
     <file>images/next.png</file>
     <file>images/play.png</file>

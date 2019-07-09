@@ -1,11 +1,8 @@
 #pragma once
-/*
-This file is a part of qmageview program, which is GPLv3 licensed
-*/
+/* This file is a part of qmageview program, which is GPLv3 licensed */
 
 #include "ui_mainwindow.h"
 #include "canvas.h"
-#include <QSettings>
 #include <QTimer>
 
 
@@ -15,10 +12,10 @@ class Window : public QMainWindow, Ui_MainWindow
 public:
     Window();
     void openImage(QString filename);
+    void saveImage(QString filename);
     void adjustWindowSize(bool animation=false);
     //Variables declaration
     Canvas *canvas;
-    QSettings settings;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
     QString filename;
@@ -29,20 +26,21 @@ private:
     void closeEvent(QCloseEvent *ev);
 public slots:
     void openFile();
-    void saveFile();
+    void overwrite();
     void saveAs();
     void saveACopy();
     void resizeImage();
     void cropImage();
     void addBorder();
     void createPhotoGrid();
+    void createPhotoCollage();
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();
     void blur();
     void sharpenImage();
     void reduceSpeckleNoise();
-    void reduceImageNoise();
+    void removeDust();
     void sigmoidContrast(); // Enhance low light images
     void whiteBalance();
     void openPrevImage();

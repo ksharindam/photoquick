@@ -22,11 +22,12 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
 This image viewer is tested on Raspberry Pi (Raspbian).  
 
 ### Build
-To build this program, extract the source code zip.  
-Open terminal and change directory to qmageview/QmageView.  
+Install dependencies...  
 **Build dependencies ...**  
  * libqt4-dev  
 
+To build this program, extract the source code zip.  
+Open terminal and change directory to src/  
 Then run these commands to compile...  
 ```
 qmake  
@@ -42,13 +43,13 @@ To uninstall, run ...
 **Runtime Dependencies**  
 * libqtcore4  
 * libqtgui4  
-* libqt4-svg  
+* libqt4-svg  (optional for svg support)  
 * libgomp1
 
 
 ### Usage
 To run this program...  
-`qmageview`
+`qmageview`  
 
 To open image.jpg with it...  
 `qmageview image.jpg`  

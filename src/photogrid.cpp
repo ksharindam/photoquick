@@ -1,15 +1,18 @@
-/*
-This file is a part of qmageview program, which is GPLv3 licensed
-*/
+/* This file is a part of qmageview program, which is GPLv3 licensed */
+
+#include <QDebug>
+#include "common.h"
 #include "photogrid.h"
-#include "exif.h"
+#include "pdfwriter.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPen>
 #include <QDesktopWidget>
 #include <QSettings>
-//#include <QDebug>
+#include <QBuffer>
+#include <cmath>
+
 
 GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 {
@@ -295,34 +298,495 @@ GridSetupDialog:: accept()
     QDialog::accept();
 }
 
-// Static functions
-QImage loadImage(QString filename)
+
+// *************************** ------------- ***************************
+// *************************** Photo Collage ***************************
+// *************************** ------------- ***************************
+
+// ******************* Collage Dialog ***********************
+
+CollageDialog:: CollageDialog(QWidget *parent) : QDialog(parent)
 {
-    QImage img(filename);
-    if (img.isNull()) return img;
-    // Get image orientation
-    int size, orientation = 0;
-    QFile file(filename);
-    file.open(QIODevice::ReadOnly);
-    size = file.size() < 65536 ? file.size() : 65536;  // load maximum of 64 kB
-    char* buffer = new char[size];
-    file.read(buffer, size);
-    easyexif::EXIFInfo info;
-    info.parseFrom((uchar*)buffer, size);
-    orientation = info.Orientation;
-    file.close();
-    delete buffer;
-    // rotate if required
-    QTransform transform;
-    switch (orientation) {
-        case 6:
-            return img.transformed(transform.rotate(90));
-        case 3:
-            return img.transformed(transform.rotate(180));
-        case 8:
-            return img.transformed(transform.rotate(270));
-        default:
-            return img;
+    setupUi(this);
+    resize(1050, 716);
+    QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
+    layout->setContentsMargins(0, 0, 0, 0);
+    QSettings settings;
+    int W = settings.value("CollageW", 1024).toInt();
+    int H = settings.value("CollageH", 720).toInt();
+    int pdf_w = settings.value("CollagePdfW", 595).toInt();
+    int pdf_h = settings.value("CollagePdfH", 842).toInt();
+    int dpi = settings.value("CollagePdfDpi", 300).toInt();
+    collagePaper = new CollagePaper(this, W, H, pdf_w, pdf_h, dpi);
+    layout->addWidget(collagePaper);
+    connect(collagePaper, SIGNAL(statusChanged(QString)), this, SLOT(showStatus(QString)));
+    connect(addBtn, SIGNAL(clicked()), collagePaper, SLOT(addPhoto()));
+    connect(removeBtn, SIGNAL(clicked()), collagePaper, SLOT(removePhoto()));
+    connect(rotateBtn, SIGNAL(clicked()), collagePaper, SLOT(rotatePhoto()));
+    connect(addBorderBtn, SIGNAL(clicked()), collagePaper, SLOT(toggleBorder()));
+    connect(configBtn, SIGNAL(clicked()), this, SLOT(setupBackground()));
+    connect(savePdfBtn, SIGNAL(clicked()), collagePaper, SLOT(savePdf()));
+    connect(okBtn, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
+}
+
+void
+CollageDialog:: setupBackground()
+{
+    CollageSetupDialog *dlg = new CollageSetupDialog(this);
+    if (dlg->exec() == QDialog::Rejected) return;
+    QSettings settings;
+    collagePaper->background_filename = "";
+    collagePaper->dpi = 0;
+    if (dlg->resolutionBtn->isChecked()) {
+        collagePaper->W = dlg->widthEdit->text().toInt();
+        collagePaper->H = dlg->heightEdit->text().toInt();
+        settings.setValue("CollageW", collagePaper->W);
+        settings.setValue("CollageH", collagePaper->H);
+        settings.setValue("CollagePdfDpi", 0);  // this prevents using pdf paper size
+    }
+    else if (dlg->pageSizeBtn->isChecked()) {
+        // convert other units to point (1/72 inch))
+        float factor = 1.0;
+        if (dlg->unitsCombo->currentText() == QString("in")) {
+            factor = 72.0;
+        }
+        else if (dlg->unitsCombo->currentText() == QString("mm"))
+            factor = 72/25.4;
+        collagePaper->pdf_w = dlg->pageWidth->value()*factor;
+        collagePaper->pdf_h = dlg->pageHeight->value()*factor;
+        collagePaper->dpi = dlg->dpiCombo->currentText().toInt();
+        settings.setValue("CollagePdfW", collagePaper->pdf_w);
+        settings.setValue("CollagePdfH", collagePaper->pdf_h);
+        settings.setValue("CollagePdfDpi", collagePaper->dpi);
+    }
+    else {
+        collagePaper->background_filename = dlg->filename;
+    }
+    savePdfBtn->setEnabled(collagePaper->dpi != 0);
+    collagePaper->setup();
+}
+
+void
+CollageDialog:: showStatus(QString status)
+{
+    statusbar->setText(status);
+}
+
+void
+CollageDialog:: accept()
+{
+    collage = collagePaper->getCollage();
+    collagePaper->clean();
+    QDialog::accept();
+}
+
+void
+CollageDialog:: reject()
+{
+    collagePaper->clean();
+    QDialog::reject();
+}
+
+// *************************** Collage Paper ***************************
+
+// get a size of collage paper that fits inside window, and keeps aspect ratio
+void getOptimumSize(int W, int H, int &out_w, int &out_h)
+{
+    if (W > H) { // landscape
+        fitToSize(W,H, 1000,670, out_w, out_h);
+    }
+    else {
+        if (W<=800) {
+            out_w = W;
+            out_h = H;
+            return;
+        }
+        out_w = 800;
+        out_h = round((800.0/W)*H);
     }
 }
 
+CollagePaper:: CollagePaper(QWidget *parent, int w, int h, int pdf_w, int pdf_h, int dpi)
+                        : QLabel(parent), W(w), H(h), dpi(dpi), pdf_w(pdf_w), pdf_h(pdf_h)
+{
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setMouseTracking(true);
+    background_filename = "";
+    drag_icon = QPixmap(":/images/drag.png");
+    setup();
+}
+
+void
+CollagePaper:: setup()
+{
+    // load and set bg image
+    clean();
+    if (dpi) {
+        W = pdf_w*dpi/72.0;
+        H = pdf_h*dpi/72.0;
+        // calculate optimum paper resolution (assuming 100 dpi screen)
+        paper = QPixmap(round(pdf_w*100/72.0), round(pdf_h*100/72.0));
+        paper.fill();
+    }
+    else if (not background_filename.isEmpty()) {
+        QImage img = loadImage(background_filename);
+        W = img.width();
+        H = img.height();
+        int opt_w, opt_h;
+        getOptimumSize(W,H, opt_w, opt_h);
+        paper = QPixmap::fromImage(img.scaled(opt_w, opt_h));
+    }
+    else {
+        int opt_w, opt_h;
+        getOptimumSize(W,H, opt_w, opt_h);
+        paper = QPixmap(opt_w, opt_h);
+        paper.fill();
+    }
+    setPixmap(paper);
+}
+
+void
+CollagePaper:: addPhoto()
+{
+    QString filefilter = "Image files (*.jpg *.jpeg)";
+    QStringList filenames = QFileDialog::getOpenFileNames(this, "Add Photos", "", filefilter);
+    if (filenames.isEmpty()) return;
+    for (QString filepath : filenames) {
+        CollageItem *item = new CollageItem(filepath);
+        item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
+        item->h = round(item->img_h*100/300.0);
+        if (item->w > paper.width() or item->h > paper.height())
+            fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+        collageItems.append(item);
+    }
+    draw();
+    updateStatus();
+}
+
+void
+CollagePaper:: removePhoto()
+{
+    if (collageItems.isEmpty()) return;
+    CollageItem *item = collageItems.takeLast();
+    delete item;
+    draw();
+    updateStatus();
+}
+
+void
+CollagePaper:: rotatePhoto()
+{
+    if (collageItems.isEmpty()) return;
+    CollageItem *item = collageItems.last();
+    item->rotation += 90;
+    item->rotation %= 360;  // keep angle between 0 and 359
+    int tmp = item->w;
+    item->w = item->h;
+    item->h = tmp;
+    QTransform tfm;
+    tfm.rotate(90);
+    item->pixmap = item->pixmap.transformed(tfm);
+    draw();
+}
+
+void
+CollagePaper:: toggleBorder()
+{
+    if (collageItems.isEmpty()) return;
+    CollageItem *item = collageItems.last();
+    item->border = not item->border;
+    draw();
+}
+
+void
+CollagePaper:: mousePressEvent(QMouseEvent *ev)
+{
+    clk_pos = ev->pos();
+    for (int i=collageItems.size()-1; i>=0; i--)
+    {
+        CollageItem *item = collageItems.at(i);
+        if (item->contains(ev->pos()))
+        {
+            collageItems.removeAt(i);
+            collageItems.append(item);
+            mouse_pressed = true;
+            if (item->overCorner(ev->pos()))
+                corner_clicked = true;
+            break;
+        }
+    }
+    draw();
+    updateStatus();
+}
+
+void
+CollagePaper:: mouseMoveEvent(QMouseEvent *ev)
+{
+    if (not mouse_pressed) return;
+    if (collageItems.isEmpty()) return;
+    CollageItem *item = collageItems.last();
+    QPoint moved = ev->pos() - clk_pos;
+    clk_pos = ev->pos();
+    if (corner_clicked) {
+        int box_w = item->w + moved.x();
+        int box_h = item->h + moved.y();
+        double img_aspect = item->pixmap.width()/(double)item->pixmap.height();
+        int w = round(box_h * img_aspect);
+        int h = round(box_w / img_aspect);
+        if (h<=box_h) {
+            item->w = box_w;
+            item->h = h;
+        }
+        else {
+            item->h = box_h;
+            item->w = w;
+        }
+    }
+    else
+    {
+        int new_x = MAX(item->x+moved.x(), 0);
+        int new_y = MAX(item->y+moved.y(), 0);
+        item->x = MIN(new_x, paper.width()-item->w);
+        item->y = MIN(new_y, paper.height()-item->h);
+    }
+    draw();
+    updateStatus();
+}
+
+void
+CollagePaper:: mouseReleaseEvent(QMouseEvent */*ev*/)
+{
+    mouse_pressed = false;
+    corner_clicked = false;
+}
+
+void
+CollagePaper:: draw()
+{
+    QPixmap pm = paper.copy();
+    QPainter painter(&pm);
+    for (CollageItem *item : collageItems)
+    {
+        painter.drawPixmap(item->x, item->y, item->w, item->h, item->pixmap);
+        if (item == collageItems.last()) {     // highlight the selected (last) item
+            QPen pen(Qt::blue, 2);
+            painter.setPen(pen);
+            painter.drawRect(item->x+1, item->y+1, item->w-2, item->h-2);
+            painter.setPen(Qt::black);
+        }
+        if (item->border)
+            painter.drawRect(item->x, item->y, item->w-1, item->h-1);
+        painter.drawPixmap(item->x+item->w-16, item->y+item->h-16, drag_icon);
+    }
+    painter.end();
+    setPixmap(pm);
+}
+
+QImage
+CollagePaper:: getCollage()
+{
+    double scaleX = ((double)W)/paper.width();
+    double scaleY = ((double)H)/paper.height();
+    QPixmap pm;
+    if (not background_filename.isEmpty())
+        pm = QPixmap::fromImage(loadImage(background_filename));
+    else {
+        pm = QPixmap(W, H);
+        pm.fill();
+    }
+    QPainter painter(&pm);
+    for (CollageItem *item : collageItems)
+    {
+        QPixmap pixmap = QPixmap::fromImage(loadImage(QString::fromStdString(item->filename)));
+        if (item->rotation) {
+            QTransform tfm;
+            tfm.rotate(item->rotation);
+            pixmap = pixmap.transformed(tfm);
+        }
+        pixmap = pixmap.scaled(round(item->w*scaleX), round(item->h*scaleY),
+                            Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        painter.drawPixmap(round(item->x*scaleX), round(item->y*scaleY), pixmap);
+        if (item->border)
+            painter.drawRect(round(item->x*scaleX), round(item->y*scaleY),
+                            pixmap.width()-1, pixmap.height()-1);
+    }
+    return pm.toImage();
+}
+
+void
+CollagePaper:: savePdf()
+{
+    if (collageItems.isEmpty()) return;
+    QFileInfo fi(QString::fromStdString(collageItems.last()->filename));
+    QString dir = fi.dir().path();
+    QString path(dir+ "/" + "collage.pdf");
+    int num=1;
+    while (QFileInfo(path).exists()) {
+        path = dir + "/" + "collage-" + QString::number(num++) + ".pdf";
+    }
+    float scaleX = pdf_w/(float)paper.width();
+    float scaleY = pdf_h/(float)paper.height();
+    PdfWriter writer;
+    writer.begin(path.toStdString());
+    PdfObj cont;
+    std::string cont_strm = "";
+    PdfDict resources;
+    PdfDict imgs;
+    PdfObj img;
+    img.set("Type", "/XObject");
+    img.set("Subtype", "/Image");
+    img.set("ColorSpace", "/DeviceRGB");
+    img.set("BitsPerComponent", "8");
+    img.set("Filter", "/DCTDecode"); // jpg = DCTDecode, for png = FlateDecode
+    for (int i=0; i<collageItems.count(); i++)
+    {
+        CollageItem *item = collageItems.at(i);
+        img.set("Width", item->img_w);
+        img.set("Height", item->img_h);
+        if (item->border) {
+            QByteArray bArray;
+            QBuffer buffer(&bArray);
+            buffer.open(QIODevice::WriteOnly);
+            QImage image = loadImage(QString::fromStdString(item->filename));
+            QPainter painter(&image);
+            painter.drawRect(0,0, image.width()-1, image.height()-1);
+            painter.end();
+            image.save(&buffer, "JPG");
+            std::string data(bArray.data(), bArray.size());
+            writer.addObj(img, data);
+            bArray.clear();
+            buffer.close();
+        }
+        else
+            writer.addObj(img, readFile(item->filename));
+        std::string matrix = imgMatrix(item->x*scaleX,
+                                pdf_h - item->y*scaleY - item->h*scaleY, // img Y to pdf Y
+                                item->w*scaleX, item->h*scaleY, item->rotation);
+        cont_strm += format("q %s /img%d Do Q\n", matrix.c_str(), i);
+        imgs.set(format("img%d",i), img.byref());
+    }
+    writer.addObj(cont, cont_strm);
+    resources.set("XObject", imgs);
+    PdfObj page = writer.createPage(pdf_w, pdf_h);
+    page.set("Contents", cont);
+    page.set("Resources", resources);
+    writer.addPage(page);
+    writer.finish();
+}
+
+void
+CollagePaper:: updateStatus()
+{
+    if (collageItems.isEmpty()) {
+        emit statusChanged(QString(""));
+        return;
+    }
+    CollageItem *item = collageItems.last();
+    QString status;
+    int w = item->w*((float)W)/paper.width();
+    int h = item->h*((float)H)/paper.height();
+    status.sprintf("Resolution : %dx%d", w, h);
+    if (dpi) {
+        float w_cm = item->w*pdf_w/(float)paper.width()*2.54/72;
+        float h_cm = item->h*pdf_h/(float)paper.height()*2.54/72;
+        status += QString().sprintf(",   Size : %.1fx%.1f cm", w_cm, h_cm);
+    }
+    emit statusChanged(status);
+}
+
+void
+CollagePaper:: clean()
+{
+    while (not collageItems.isEmpty()) {
+        CollageItem *item = collageItems.takeLast();
+        delete item;
+    }
+}
+
+// ******************* Collage Item *********************
+
+CollageItem:: CollageItem(QString filename) : x(0), y(0)
+{
+    // resize it
+    pixmap = QPixmap::fromImage(loadImage(filename));
+    img_w = pixmap.width();
+    img_h = pixmap.height();
+    if (img_w > 600 and img_h > 600)
+        pixmap = pixmap.scaled(600, 600, Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    this->filename = filename.toStdString();
+}
+
+bool
+CollageItem:: contains(QPoint pos)
+{
+    return ((x <= pos.x() and pos.x() < x+w) and
+            (y <= pos.y() and pos.y() < y+h));
+}
+
+bool
+CollageItem:: overCorner(QPoint pos)
+{
+    return (x+w-20 <= pos.x() and pos.x() < x+w and
+            y+h-20 <= pos.y() and pos.y() < y+h);
+}
+
+// ****************** Collage Setup Dialog ****************** //
+
+CollageSetupDialog:: CollageSetupDialog(QWidget *parent) : QDialog(parent)
+{
+    setupUi(this);
+    connect(selectFileBtn, SIGNAL(clicked()), this, SLOT(selectFile()));
+    connect(pageSizeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(toggleUsePageSize(const QString&)));
+    filename = "";
+}
+
+void
+CollageSetupDialog:: selectFile()
+{
+    if (not bgPhotoBtn->isChecked()) return;
+    QString filefilter = "Image files (*.jpg *.png *.jpeg);;JPEG Images (*.jpg *.jpeg);;"
+                         "PNG Images (*.png)";
+    QString filepath = QFileDialog::getOpenFileName(this, "Add Photo", "", filefilter);
+    if (filepath.isEmpty()) return;
+    this->filename = filepath;
+    QString text = QFileInfo(filepath).fileName();
+    QFontMetrics fontMetrics(filenameLabel->font());
+    text = fontMetrics.elidedText(text, Qt::ElideMiddle, filenameLabel->width()-2);
+    filenameLabel->setText(text);
+}
+
+void
+CollageSetupDialog:: toggleUsePageSize(const QString& text)
+{
+    widget_2->setEnabled(text == QString("Custom"));
+}
+
+void
+CollageSetupDialog:: accept()
+{
+    if (resolutionBtn->isChecked()) {
+        if (widthEdit->text().isEmpty() or heightEdit->text().isEmpty()) return;
+    }
+    else if (pageSizeBtn->isChecked()) {
+        QString text = pageSizeCombo->currentText();
+        if (text == QString("A4")) {
+            pageWidth->setValue(595.0);
+            pageHeight->setValue(842.0);
+        }
+        else if (text == QString("A5")) {
+            pageWidth->setValue(420.0);
+            pageHeight->setValue(595.0);
+        }
+        else if (text == QString("4x6 inch")) {
+            pageWidth->setValue(432.0);
+            pageHeight->setValue(288.0);
+        }
+        if (text != QString("Custom"))
+            unitsCombo->setCurrentIndex(0); // unit = pt
+    }
+    else if (bgPhotoBtn->isChecked()) {
+        if (filename.isEmpty()) return;
+    }
+    QDialog::accept();
+}

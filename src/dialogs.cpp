@@ -6,6 +6,7 @@
 // Dialog to set JPG image quality for saving
 QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
 {
+    setWindowTitle("Set Quality");
 	timer = new QTimer(this);
 	timer->setSingleShot(true);
 	timer->setInterval(800);
