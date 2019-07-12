@@ -1,10 +1,10 @@
 <RCC>
   <qresource>
+    <file>images/image-add.png</file>
+    <file>images/image-remove.png</file>
     <file>images/drag.png</file>
     <file>images/addborder.png</file>
     <file>images/settings.png</file>
-    <file>images/list-add.png</file>
-    <file>images/list-remove.png</file>
     <file>images/effects.png</file>
     <file>images/qmageview.jpg</file>
     <file>images/prev.png</file>

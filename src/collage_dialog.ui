@@ -78,7 +78,7 @@
         </property>
         <property name="icon">
          <iconset resource="resources.qrc">
-          <normaloff>:/images/list-add.png</normaloff>:/images/list-add.png</iconset>
+          <normaloff>:/images/image-add.png</normaloff>:/images/image-add.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -98,7 +98,7 @@
         </property>
         <property name="icon">
          <iconset resource="resources.qrc">
-          <normaloff>:/images/list-remove.png</normaloff>:/images/list-remove.png</iconset>
+          <normaloff>:/images/image-remove.png</normaloff>:/images/image-remove.png</iconset>
         </property>
         <property name="iconSize">
          <size>

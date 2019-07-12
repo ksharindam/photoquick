@@ -328,6 +328,7 @@ CollageDialog:: CollageDialog(QWidget *parent) : QDialog(parent)
     connect(savePdfBtn, SIGNAL(clicked()), collagePaper, SLOT(savePdf()));
     connect(okBtn, SIGNAL(clicked()), this, SLOT(accept()));
     connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
+    savePdfBtn->setEnabled(dpi != 0);
 }
 
 void
@@ -566,6 +567,11 @@ CollagePaper:: draw()
 {
     QPixmap pm = paper.copy();
     QPainter painter(&pm);
+    if (dpi) {              // my printer has bottom margin of 41.05 pt
+        painter.setPen(Qt::gray);
+        int offset = round((42.0*pm.height())/pdf_h);
+        painter.drawLine(offset, pm.height()-offset, pm.width()-offset, pm.height()-offset);
+    }
     for (CollageItem *item : collageItems)
     {
         painter.drawPixmap(item->x, item->y, item->w, item->h, item->pixmap);
@@ -620,10 +626,12 @@ CollagePaper:: savePdf()
     if (collageItems.isEmpty()) return;
     QFileInfo fi(QString::fromStdString(collageItems.last()->filename));
     QString dir = fi.dir().path();
-    QString path(dir+ "/" + "collage.pdf");
+    QString filename("photo-collage.pdf");
+    QString path(dir+ "/" + filename);
     int num=1;
     while (QFileInfo(path).exists()) {
-        path = dir + "/" + "collage-" + QString::number(num++) + ".pdf";
+        filename = "photo-collage-" + QString::number(num++) + ".pdf";
+        path = dir + "/" + filename;
     }
     float scaleX = pdf_w/(float)paper.width();
     float scaleY = pdf_h/(float)paper.height();
@@ -673,6 +681,8 @@ CollagePaper:: savePdf()
     page.set("Resources", resources);
     writer.addPage(page);
     writer.finish();
+    Notifier *notifier = new Notifier(this);
+    notifier->notify("PDF Saved !", "Pdf Saved as \n" + filename);
 }
 
 void

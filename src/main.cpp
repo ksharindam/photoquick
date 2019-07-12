@@ -197,8 +197,7 @@ Window:: saveACopy()    // generate a new filename and save
     int num = rx.cap(2).isEmpty()? 1: rx.cap(2).toInt();
     QString path;
     do {
-        path = dir+ '/' + rx.cap(1) + QString::number(num) + ext;
-        num++;
+        path = dir+ '/' + rx.cap(1) + QString::number(num++) + ext;
     }
     while (QFileInfo(path).exists());
     saveImage(path);

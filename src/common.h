@@ -2,6 +2,7 @@
 /* This file is a part of qmageview program, which is GPLv3 licensed */
 
 #include <QImage>
+#include <QSystemTrayIcon>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -19,3 +20,9 @@ void waitFor(int millisec);
 // Returns an autorotated image according to exif data
 QImage loadImage(QString filename);
 
+class Notifier : public QSystemTrayIcon
+{
+public:
+    Notifier(QObject *parent);
+    void notify(QString title, QString message);
+};

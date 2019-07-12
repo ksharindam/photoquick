@@ -6,6 +6,7 @@
 #include <QEventLoop>
 #include <QFile>
 #include <QTransform>
+#include <QIcon>
 #include <cmath>
 
 void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h)
@@ -70,4 +71,19 @@ QImage loadImage(QString filename)
         default:
             return img;
     }
+}
+
+Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/resize.png"), parent)
+{
+    // this is not taking mouse click input (dont know why)
+    //QObject::connect(this, SIGNAL(messageClicked()), this, SLOT(hide()));
+}
+
+void
+Notifier:: notify(QString title, QString message)
+{
+    show();
+    waitFor(200);
+    showMessage(title, message);
+    QTimer::singleShot(3000, this, SLOT(deleteLater()));
 }
