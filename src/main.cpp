@@ -126,7 +126,7 @@ Window:: openImage(QString filepath)
     else {                         // For static images
         QImage img = loadImage(filepath);  // Returns an autorotated image
         if (img.isNull()) return;
-        canvas->scale = getOptimumScale(img);
+        canvas->scale = fitToScreenScale(img);
         canvas->setImage(img);
         adjustWindowSize();
         disableButtons(false);
@@ -253,7 +253,7 @@ Window:: createPhotoGrid()
 {
     GridDialog *dialog = new GridDialog(canvas->image, this);
     if (dialog->exec() == 1) {
-        canvas->scale = getOptimumScale(dialog->gridPaper->photo_grid);
+        canvas->scale = fitToScreenScale(dialog->gridPaper->photo_grid);
         canvas->setImage(dialog->gridPaper->photo_grid);
         adjustWindowSize();
     }
@@ -267,7 +267,7 @@ Window:: createPhotoCollage()
     QDir::setCurrent(dir);
     CollageDialog *dialog = new CollageDialog(this);
     if (dialog->exec() == 1) {
-        canvas->scale = getOptimumScale(dialog->collage);
+        canvas->scale = fitToScreenScale(dialog->collage);
         canvas->setImage(dialog->collage);
         adjustWindowSize();
     }
@@ -378,20 +378,46 @@ Window:: openNextImage()
 void
 Window:: zoomInImage()
 {
+    QScrollBar *vertical = scrollArea->verticalScrollBar();
+    QScrollBar *horizontal = scrollArea->horizontalScrollBar();
+    float relPosV = vertical->value()/(float)vertical->maximum();
+    float relPosH = horizontal->value()/(float)horizontal->maximum();
+    bool wasVisibleV = vertical->isVisible();
+    bool wasVisibleH = horizontal->isVisible();
+    if (not wasVisibleV) relPosV=0.5;
+    if (not wasVisibleH) relPosH=0.5;
     canvas->zoomBy(6.0/5);
+    waitFor(30);
+    vertical->setValue(vertical->maximum()*relPosV);
+    horizontal->setValue(horizontal->maximum()*relPosH);
 }
 
 void
 Window:: zoomOutImage()
 {
+    QScrollBar *vertical = scrollArea->verticalScrollBar();
+    QScrollBar *horizontal = scrollArea->horizontalScrollBar();
+    float relPosV = vertical->value()/(float)vertical->maximum();
+    float relPosH = horizontal->value()/(float)horizontal->maximum();
     canvas->zoomBy(5.0/6);
+    waitFor(30);
+    vertical->setValue(vertical->maximum()*relPosV);
+    horizontal->setValue(horizontal->maximum()*relPosH);
 }
 
+// switches size between 1x and fit to window
 void
 Window:: origSizeImage()
 {
+    if (canvas->scale == 1.0) {
+        canvas->scale = fitToWindowScale(canvas->image);
+        canvas->showScaled();
+        origSizeBtn->setIcon(QIcon(":/images/originalsize.png"));
+        return;
+    }
     canvas->scale = 1.0;
     canvas->showScaled();
+    origSizeBtn->setIcon(QIcon(":/images/fit-to-screen.png"));
 }
 
 void
@@ -435,7 +461,20 @@ Window:: playSlideShow(bool checked)
 }
 
 float
-Window:: getOptimumScale(QImage img)
+Window:: fitToWindowScale(QImage img)
+{
+    int img_w = img.width();
+    int img_h =  img.height();
+    int max_w = scrollArea->width();
+    int max_h = scrollArea->height()-14;    // 14 is to compensate increased statusbar
+    int out_w, out_h;
+    fitToSize(img_w, img_h, max_w, max_h, out_w, out_h);
+    float scale = img_w>img_h ? out_w/(float)img_w : out_h/(float)img_h;
+    return scale;
+}
+
+float
+Window:: fitToScreenScale(QImage img)
 {
     float scale;
     int img_width = img.width();

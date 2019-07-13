@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>images/fit-to-screen.png</file>
     <file>images/image-add.png</file>
     <file>images/image-remove.png</file>
     <file>images/drag.png</file>

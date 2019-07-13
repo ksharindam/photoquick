@@ -21,7 +21,8 @@ public:
     QString filename;
 private:
     void connectSignals();
-    float getOptimumScale(QImage img);
+    float fitToScreenScale(QImage img);
+    float fitToWindowScale(QImage img);
     void disableButtons(bool disable);
     void closeEvent(QCloseEvent *ev);
 public slots:
