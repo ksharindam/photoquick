@@ -450,7 +450,7 @@ CollagePaper:: setup()
 void
 CollagePaper:: addPhoto()
 {
-    QString filefilter = "Image files (*.jpg *.jpeg)";
+    QString filefilter = "Image files (*.jpg *.jpeg *.png)";
     QStringList filenames = QFileDialog::getOpenFileNames(this, "Add Photos", "", filefilter);
     if (filenames.isEmpty()) return;
     for (QString filepath : filenames) {
@@ -604,7 +604,7 @@ CollagePaper:: getCollage()
     QPainter painter(&pm);
     for (CollageItem *item : collageItems)
     {
-        QPixmap pixmap = QPixmap::fromImage(loadImage(QString::fromStdString(item->filename)));
+        QPixmap pixmap = QPixmap::fromImage(loadImage(item->filename));
         if (item->rotation) {
             QTransform tfm;
             tfm.rotate(item->rotation);
@@ -624,7 +624,7 @@ void
 CollagePaper:: savePdf()
 {
     if (collageItems.isEmpty()) return;
-    QFileInfo fi(QString::fromStdString(collageItems.last()->filename));
+    QFileInfo fi(collageItems.last()->filename);
     QString dir = fi.dir().path();
     QString filename("photo-collage.pdf");
     QString path(dir+ "/" + filename);
@@ -652,13 +652,24 @@ CollagePaper:: savePdf()
         CollageItem *item = collageItems.at(i);
         img.set("Width", item->img_w);
         img.set("Height", item->img_h);
-        if (item->border) {
+        if (item->border or item->filename.endsWith(".png", Qt::CaseInsensitive)) {
             QByteArray bArray;
             QBuffer buffer(&bArray);
             buffer.open(QIODevice::WriteOnly);
-            QImage image = loadImage(QString::fromStdString(item->filename));
+            QImage image;
+            if (item->filename.endsWith(".png", Qt::CaseInsensitive)){
+                image = QImage(item->img_w, item->img_h, QImage::Format_ARGB32);
+                image.fill(Qt::white);
+            }
+            else {
+                image = loadImage(item->filename);
+            }
             QPainter painter(&image);
-            painter.drawRect(0,0, image.width()-1, image.height()-1);
+            if (item->filename.endsWith(".png", Qt::CaseInsensitive)) {
+                painter.drawImage(0,0, loadImage(item->filename));
+            }
+            if (item->border)
+                painter.drawRect(0,0, image.width()-1, image.height()-1);
             painter.end();
             image.save(&buffer, "JPG");
             std::string data(bArray.data(), bArray.size());
@@ -667,7 +678,7 @@ CollagePaper:: savePdf()
             buffer.close();
         }
         else
-            writer.addObj(img, readFile(item->filename));
+            writer.addObj(img, readFile(item->filename.toStdString()));
         std::string matrix = imgMatrix(item->x*scaleX,
                                 pdf_h - item->y*scaleY - item->h*scaleY, // img Y to pdf Y
                                 item->w*scaleX, item->h*scaleY, item->rotation);
@@ -724,7 +735,7 @@ CollageItem:: CollageItem(QString filename) : x(0), y(0)
     img_h = pixmap.height();
     if (img_w > 600 and img_h > 600)
         pixmap = pixmap.scaled(600, 600, Qt::KeepAspectRatio,Qt::SmoothTransformation);
-    this->filename = filename.toStdString();
+    this->filename = filename;
 }
 
 bool

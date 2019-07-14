@@ -164,6 +164,8 @@ Window:: saveImage(QString filename)
     img.save(filename, NULL, quality);
     setWindowTitle(QFileInfo(filename).fileName());
     this->filename = filename;
+    Notifier *notifier = new Notifier(this);
+    notifier->notify("Image Saved !", "Successfully Saved Image");
 }
 
 void
@@ -526,6 +528,7 @@ Window:: disableButtons(bool disable)
     cropBtn->setDisabled(disable);
     transformBtn->setDisabled(disable);
     decorateBtn->setDisabled(disable);
+    effectsBtn->setDisabled(disable);
     zoomInBtn->setDisabled(disable);
     zoomOutBtn->setDisabled(disable);
     origSizeBtn->setDisabled(disable);

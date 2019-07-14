@@ -91,7 +91,7 @@ public:
     int x, y;
     int w, h;           // the size on collage paper
     QPixmap pixmap;
-    std::string filename;
+    QString filename;
     bool border = false;
     int rotation = 0;
     bool contains(QPoint pos);
@@ -103,10 +103,6 @@ class CollagePaper : public QLabel
     Q_OBJECT
 public:
     CollagePaper(QWidget *parent, int w, int h, int pdf_w, int pdf_h, int dpi);
-    /*CollagePaper(QWidget *parent, int w, int h) :
-                CollagePaper(parent, w, h, 0, 0, 0) {}
-    CollagePaper(QWidget *parent, int pdf_w, int pdf_h, int dpi) :
-                CollagePaper(parent, 0, 0, pdf_w, pdf_h, dpi) {}*/
 
     QPixmap paper;          // the scaled pixmap on which images are drawn
     int W, H, dpi;
