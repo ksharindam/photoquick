@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>Image Viewer</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/images/image.png</normaloff>:/images/image.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
     <property name="spacing">
@@ -242,7 +246,7 @@
          <x>0</x>
          <y>0</y>
          <width>523</width>
-         <height>384</height>
+         <height>383</height>
         </rect>
        </property>
       </widget>

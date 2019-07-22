@@ -1,5 +1,6 @@
 // this file is part of qmageview program which is GPLv3 licensed
 #include "filters.h"
+#include "common.h"
 #include <cmath>
 #include <chrono>
 #include <QDebug>
@@ -793,3 +794,53 @@ void medianFilter(QImage &img, int radius)
         DestroyMedianList(skiplist);
     }
 }
+
+
+// ************* ------------ skin detection -------------************
+/* HSV colorspace utilities
+we are using 32 bit unsigned int to hold a hsv color
+first 16 bit is for hue, next 8 bit is for saturation and last
+8 bit is for value
+*/
+/*
+typedef unsigned int HSV;
+
+inline int qHue(HSV hsv) { return ((hsv>>16) & 0xffff); }
+// sat and val has same pos like green and blue i.e last 16 bits
+#define qSat qGreen
+#define qVal qBlue
+
+inline HSV qHsv(int h, int s, int v)
+{
+    return ( (h & 0xffffu)<<16 | (s & 0xffu)<<8 | (v & 0xffu) );
+}
+
+inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
+{
+    float r = qRed(rgb)/255.0;
+    float g = qGreen(rgb)/255.0;
+    float b = qBlue(rgb)/255.0;
+    float mx = MAX(MAX(r,g),b);
+    float mn = MIN(MIN(r,g),b);
+    float df = mx - mn;
+
+    if (mx==mn)
+        h = 0;
+    else if (mx==r)
+        h = int(60*(g-b)/df+360)%360;
+    else if (mx==g)
+        h = int(60*(b-r)/df+120)%360;
+    else if (mx==b)
+        h = int(60*(r-g)/df+240)%360;
+
+    s = (mx==0)? 0 : round(255*df/mx);
+    v = 255*mx;
+}
+
+inline bool isSkin(int r, int g, int b){
+    int h=0,s=0,v=0;
+    rgbToHsv(qRgb(r,g,b), h,s,v);
+    return (r>g) and (r>b) and (r>60) and (g>40) and (b>20) and (abs(r-g)>15) and
+    ((h>350) or (h<35)) and (s<170) and (v < 310-s);
+}
+*/

@@ -35,6 +35,7 @@ public slots:
     void addBorder();
     void createPhotoGrid();
     void createPhotoCollage();
+    // filters
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();
@@ -44,6 +45,7 @@ public slots:
     void removeDust();
     void sigmoidContrast(); // Enhance low light images
     void whiteBalance();
+    // file and view options
     void openPrevImage();
     void openNextImage();
     void zoomInImage();

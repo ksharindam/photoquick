@@ -6,25 +6,19 @@ PdfWriter:: PdfWriter()
     version = "1.4";
     producer = "PDF Writer by Arindam";
     header = format("%%PDF-%s\n", version.c_str());
-    // std::cout << header;
-    //header += "%\xe2\xe3\xe4\xe5\n";
     offset = header.size();
 }
 
 void
 PdfWriter:: begin(std::string filename)
 {
-    // pdf_date = time.strftime("(D:%Y%m%d%H%M%S%z')")
-    // self.creation_date = pdf_date[:20] + "'" + pdf_date[20:]
-    stream.open(filename/*, std::ofstream::out|std::ofstream::binary*/);
+    stream.open(filename);
     stream << header;
 }
 
 PdfObj
 PdfWriter:: createPage(int w, int h, std::string Contents, std::string Resources)
 {
-    //w = round(w);
-    //h = round(h);
     PdfObj page;
     page.set("Type", "/Page");
     page.set("MediaBox", format("[0 0 %d %d]",w,h));
@@ -53,7 +47,6 @@ PdfWriter:: addObj(PdfObj &obj, std::string Stream, int id)
         obj_offsets.push_back(offset);
     }
     std::string strng = obj.toString(Stream);
-    // std::cout << strng<<"\n";
     stream << strng;
     stream.flush();
     offset += strng.size();
@@ -69,7 +62,6 @@ PdfWriter:: finish()
     pages_obj.set("Count", format("%d", pages.size()));
     pages_obj.set("Kids", pages);
     addObj(pages_obj, "", 3);
-    // std::cout << pages_obj.id<<"\n";
     PdfObj info;
     info.set("Producer", format("(%s)",producer.c_str()));
     // info.set("CreationDate", creation_date);
@@ -98,7 +90,6 @@ PdfWriter:: finish()
 
 PdfObj:: PdfObj()
 {
-    // content = new PdfDict());
 }
 
 std::string
