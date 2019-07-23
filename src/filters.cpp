@@ -428,6 +428,10 @@ void sigmoidalContrast(QImage &img, float midpoint)
 {
     int w = img.width();
     int h = img.height();
+    uchar histogram[256];
+    for (int i=0; i<256; i++) {
+        histogram[i] = 255*ScaledSigmoidal(3, midpoint, i/255.0);
+    }
     #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
@@ -436,9 +440,9 @@ void sigmoidalContrast(QImage &img, float midpoint)
         { row = (QRgb*)img.scanLine(y); } // omp critical prevents segfault
         for (int x=0; x<w; x++) {
             int clr = row[x];
-            int r = 255*ScaledSigmoidal(3, midpoint, qRed(clr)/255.0);
-            int g = 255*ScaledSigmoidal(3, midpoint, qGreen(clr)/255.0);
-            int b = 255*ScaledSigmoidal(3, midpoint, qBlue(clr)/255.0);
+            int r = histogram[qRed(clr)];
+            int g = histogram[qGreen(clr)];
+            int b = histogram[qBlue(clr)];
             row[x] = qRgb(r,g,b);
         }
     }
