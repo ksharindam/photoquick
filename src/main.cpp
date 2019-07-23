@@ -211,14 +211,16 @@ Window:: resizeImage()
     ResizeDialog *dialog = new ResizeDialog(this, canvas->image.width(), canvas->image.height());
     if (dialog->exec() == 1) {
         QImage img;
+        Qt::TransformationMode tfmMode = dialog->smoothScaling->isChecked() ?
+                        Qt::SmoothTransformation : Qt::FastTransformation;
         QString img_width = dialog->widthEdit->text();
         QString img_height = dialog->heightEdit->text();
         if ( !img_width.isEmpty() and !img_height.isEmpty() )
-            img = canvas->image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            img = canvas->image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, tfmMode);
         else if (not img_width.isEmpty())
-            img = canvas->image.scaledToWidth(img_width.toInt(), Qt::SmoothTransformation);
+            img = canvas->image.scaledToWidth(img_width.toInt(), tfmMode);
         else if (not img_height.isEmpty())
-            img = canvas->image.scaledToHeight(img_height.toInt(), Qt::SmoothTransformation);
+            img = canvas->image.scaledToHeight(img_height.toInt(), tfmMode);
         else
             return;
         canvas->setImage(img);
