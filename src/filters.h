@@ -37,5 +37,8 @@ void autoWhiteBalance(QImage &img);
 // remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
 
+// edge preserving noise reduction filter (used for artistic effects)
+void kuwaharaFilter(QImage &img, int radius);
+
 // Remove salt and pepper noise
 //void reduceNoise(QImage &img, int radius=1);

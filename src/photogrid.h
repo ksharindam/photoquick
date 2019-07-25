@@ -87,6 +87,7 @@ class CollageItem
 {
 public:
     CollageItem(QString filename);
+    CollageItem(QImage img);
     int img_w, img_h; // the original img resolution
     int x, y;
     int w, h;           // the size on collage paper
@@ -96,6 +97,10 @@ public:
     int rotation = 0;
     bool contains(QPoint pos);
     bool overCorner(QPoint pos);
+    bool jpgOnDisk();
+    QImage image();
+private:
+    QImage image_;      // either image_ or filename is stored
 };
 
 class CollagePaper : public QLabel
@@ -120,6 +125,7 @@ public:
     void draw();
     void setup();
     void clean();       // delete collage items
+    void addItem(CollageItem *item);
     QImage getCollage();
 public slots:
     void addPhoto();

@@ -448,6 +448,18 @@ CollagePaper:: setup()
 }
 
 void
+CollagePaper:: addItem(CollageItem *item)
+{
+    item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
+    item->h = round(item->img_h*100/300.0);
+    if (item->w > paper.width() or item->h > paper.height())
+        fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+    collageItems.append(item);
+    draw();
+    updateStatus();
+}
+
+void
 CollagePaper:: addPhoto()
 {
     QString filefilter = "Image files (*.jpg *.jpeg *.png)";
@@ -455,14 +467,8 @@ CollagePaper:: addPhoto()
     if (filenames.isEmpty()) return;
     for (QString filepath : filenames) {
         CollageItem *item = new CollageItem(filepath);
-        item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
-        item->h = round(item->img_h*100/300.0);
-        if (item->w > paper.width() or item->h > paper.height())
-            fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
-        collageItems.append(item);
+        addItem(item);
     }
-    draw();
-    updateStatus();
 }
 
 void
@@ -604,7 +610,7 @@ CollagePaper:: getCollage()
     QPainter painter(&pm);
     for (CollageItem *item : collageItems)
     {
-        QPixmap pixmap = QPixmap::fromImage(loadImage(item->filename));
+        QPixmap pixmap = QPixmap::fromImage(item->image());
         if (item->rotation) {
             QTransform tfm;
             tfm.rotate(item->rotation);
@@ -652,33 +658,20 @@ CollagePaper:: savePdf()
         CollageItem *item = collageItems.at(i);
         img.set("Width", item->img_w);
         img.set("Height", item->img_h);
-        if (item->border or item->filename.endsWith(".png", Qt::CaseInsensitive)) {
+        if (item->jpgOnDisk()) {
+            writer.addObj(img, readFile(item->filename.toStdString()));
+        }
+        else {
             QByteArray bArray;
             QBuffer buffer(&bArray);
             buffer.open(QIODevice::WriteOnly);
-            QImage image;
-            if (item->filename.endsWith(".png", Qt::CaseInsensitive)){
-                image = QImage(item->img_w, item->img_h, QImage::Format_ARGB32);
-                image.fill(Qt::white);
-            }
-            else {
-                image = loadImage(item->filename);
-            }
-            QPainter painter(&image);
-            if (item->filename.endsWith(".png", Qt::CaseInsensitive)) {
-                painter.drawImage(0,0, loadImage(item->filename));
-            }
-            if (item->border)
-                painter.drawRect(0,0, image.width()-1, image.height()-1);
-            painter.end();
+            QImage image = item->image();
             image.save(&buffer, "JPG");
             std::string data(bArray.data(), bArray.size());
             writer.addObj(img, data);
             bArray.clear();
             buffer.close();
         }
-        else
-            writer.addObj(img, readFile(item->filename.toStdString()));
         std::string matrix = imgMatrix(item->x*scaleX,
                                 pdf_h - item->y*scaleY - item->h*scaleY, // img Y to pdf Y
                                 item->w*scaleX, item->h*scaleY, item->rotation);
@@ -736,6 +729,26 @@ CollageItem:: CollageItem(QString filename) : x(0), y(0)
     if (img_w > 600 and img_h > 600)
         pixmap = pixmap.scaled(600, 600, Qt::KeepAspectRatio,Qt::SmoothTransformation);
     this->filename = filename;
+    this->image_ = QImage();     // null image
+}
+
+CollageItem:: CollageItem(QImage img) : x(0), y(0)
+{
+    // resize it
+    pixmap = QPixmap::fromImage(img);
+    img_w = pixmap.width();
+    img_h = pixmap.height();
+    if (img_w > 600 and img_h > 600)
+        pixmap = pixmap.scaled(600, 600, Qt::KeepAspectRatio,Qt::SmoothTransformation);
+    this->filename = QString("");
+    this->image_ = img;
+}
+
+bool
+CollageItem:: jpgOnDisk()
+{
+    return (not (not image_.isNull() or this->border or
+            this->filename.endsWith(".png", Qt::CaseInsensitive)));
 }
 
 bool
@@ -750,6 +763,30 @@ CollageItem:: overCorner(QPoint pos)
 {
     return (x+w-20 <= pos.x() and pos.x() < x+w and
             y+h-20 <= pos.y() and pos.y() < y+h);
+}
+
+QImage
+CollageItem:: image()
+{
+    QImage img;
+    if (not this->image_.isNull()) {
+        img = image_;
+    }
+    else if (this->filename.endsWith(".png", Qt::CaseInsensitive)) {
+        img = QImage(this->img_w, this->img_h, QImage::Format_ARGB32);
+        img.fill(Qt::white);
+    }
+    else {
+        img = loadImage(this->filename);
+    }
+    QPainter painter(&img);
+    if (this->filename.endsWith(".png", Qt::CaseInsensitive)) {
+        painter.drawImage(0,0, loadImage(this->filename));
+    }
+    if (this->border)
+        painter.drawRect(0,0, img.width()-1, img.height()-1);
+    painter.end();
+    return img;
 }
 
 // ****************** Collage Setup Dialog ****************** //

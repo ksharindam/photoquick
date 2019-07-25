@@ -270,6 +270,8 @@ Window:: createPhotoCollage()
     QString dir = fi.dir().path();
     QDir::setCurrent(dir);
     CollageDialog *dialog = new CollageDialog(this);
+    CollageItem *item = new CollageItem(canvas->image);
+    dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {
         canvas->scale = fitToScreenScale(dialog->collage);
         canvas->setImage(dialog->collage);

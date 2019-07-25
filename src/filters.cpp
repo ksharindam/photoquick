@@ -5,6 +5,7 @@
 #include <chrono>
 #include <QDebug>
 
+#define PI 3.141592654
 // macros for measuring execution time
 #define TIME_START auto start = std::chrono::steady_clock::now();
 #define TIME_STOP auto end = std::chrono::steady_clock::now();\
@@ -280,9 +281,8 @@ void convolve(QImage &img, float kernel[], int width/*of kernel*/)
 
 
 //*************---------- Gaussian Blur ---------***************//
-#define PI 3.141592654
 
-void gaussianBlur(QImage &img, int radius, float sigma)
+void gaussianBlur(QImage &img, int radius, float sigma/*standard deviation*/)
 {
     if (sigma==0)  sigma = radius/2.0 ;
     int kernel_width = 2*radius + 1;
@@ -625,6 +625,9 @@ void despeckle(QImage &img)
 
 // ******** ---------- Reduce Salt & Pepper noise ---------**********//
 // Edge preserving noise reduction filter.
+// Algorithm implemented from graphicsmagick source which is based on the
+// paper "Skip Lists: A probabilistic Alternative to Balanced Trees"
+// by William Pugh (1990)
 typedef struct
 {
   unsigned int
@@ -798,6 +801,124 @@ void medianFilter(QImage &img, int radius)
         DestroyMedianList(skiplist);
     }
 }
+
+//*********** ------------ Kuwahara Filter ------------ ************* //
+/*inline float getPixelLuma(QRgb clr)
+{
+  return (0.212656f*qRed(clr) + 0.715158f*qGreen(clr) + 0.072186f*qBlue(clr));
+}
+
+inline double getPixelLuma(double red, double green, double blue)
+{
+  return (0.212656*red + 0.715158*green + 0.072186*blue);
+}
+
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+}RectInfo;
+
+void kuwaharaFilter(QImage &img, int radius)
+{
+    int w = img.width();
+    int h = img.height();
+    QImage gaussImg = img.copy();
+    gaussianBlur(gaussImg, 2);
+    int width = radius+1;
+
+    QRgb *srcData = (QRgb*)gaussImg.constScanLine(0);
+    QRgb *dstData = (QRgb*)img.scanLine(0);
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        for (int x=0; x<w; x++)
+        {
+            double min_variance = 1.7e308;//maximum for double
+            RectInfo quadrant;
+            RectInfo target = {0,0,1,1};
+            for (int i=0; i<4; i++)
+            {
+                quadrant.x = x;
+                quadrant.y = y;
+                quadrant.width=width;
+                quadrant.height=width;
+
+                switch (i)
+                {
+                  case 0:
+                  {
+                    quadrant.x = x-(width-1);
+                    quadrant.y = y-(width-1);
+                    break;
+                  }
+                  case 1:
+                  {
+                    quadrant.y = y-(width-1);
+                    break;
+                  }
+                  case 2:
+                  {
+                    quadrant.x = x-(width-1);
+                    break;
+                  }
+                  default:
+                    break;
+                } // end of switch
+                // manage boundary problem
+                if (quadrant.x <0) {
+                    quadrant.x=0;
+                    quadrant.width = x+1;
+                }
+                else if (quadrant.x+quadrant.width>w)
+                    quadrant.width = w-quadrant.x;
+                if (quadrant.y <0) {
+                    quadrant.y=0;
+                    quadrant.height = y+1;
+                }
+                else if (quadrant.y+quadrant.height>h)
+                    quadrant.height = h-quadrant.y;
+                // calculate mean of variance
+                double mean_r = 0, mean_g = 0, mean_b = 0;
+                QRgb *quadRow = srcData + (w*quadrant.y + quadrant.x);
+                // for each pixel in quadrant
+                for (int m=0; m<quadrant.height; m++)
+                {
+                    for (int n=0; n<quadrant.width; n++) {
+                      mean_r += (double) qRed(quadRow[n]);
+                      mean_g += (double) qGreen(quadRow[n]);
+                      mean_b += (double) qBlue(quadRow[n]);
+                    }
+                    quadRow += w;
+                }
+                mean_r /= (quadrant.width*quadrant.height);
+                mean_g /= (quadrant.width*quadrant.height);
+                mean_b /= (quadrant.width*quadrant.height);
+
+                double mean_luma = getPixelLuma(mean_r, mean_g, mean_b);
+                double variance=0.0;
+                quadRow = srcData + (w*quadrant.y + quadrant.x);
+                for (int m=0; m<quadrant.height; m++)
+                {
+                    for (int n=0; n<quadrant.width; n++) {
+                      double luma = getPixelLuma(quadRow[n]);
+                      variance += (luma-mean_luma)*(luma-mean_luma);
+                    }
+                    quadRow += w;
+                }
+                if (variance < min_variance)
+                {
+                    min_variance=variance;
+                    target=quadrant;
+                }
+            }   // end quadrant loop
+            QRgb clr = (srcData + (w*(target.y+target.height/2)))[(target.x+target.width/2)];
+            (dstData + w*y)[x] = clr;
+        }   // end column loop
+    } // end row loop
+}*/
 
 
 // ************* ------------ skin detection -------------************
