@@ -926,6 +926,7 @@ void kuwaharaFilter(QImage &img, int radius)
 we are using 32 bit unsigned int to hold a hsv color
 first 16 bit is for hue, next 8 bit is for saturation and last
 8 bit is for value
+h = 0-359, s = 0-255, v = 0-255
 */
 /*
 typedef unsigned int HSV;
@@ -952,14 +953,27 @@ inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
     if (mx==mn)
         h = 0;
     else if (mx==r)
-        h = int(60*(g-b)/df+360)%360;
+        h = round(60*(g-b)/df+360)%360;
     else if (mx==g)
-        h = int(60*(b-r)/df+120)%360;
+        h = round(60*(b-r)/df+120)%360;
     else if (mx==b)
-        h = int(60*(r-g)/df+240)%360;
+        h = round(60*(r-g)/df+240)%360;
 
     s = (mx==0)? 0 : round(255*df/mx);
     v = 255*mx;
+}
+
+void hsvToRgb(HSV hsv, int &r, int &g, int &b)
+{
+    float h = Hue(hsv)/60.0;
+    float s = Sat(hsv)/255.0;
+    float v = Val(hsv)/255.0;
+    k = (5 + h) % 6;
+    r = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
+    k = (3 + h) % 6;
+    g = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
+    k = (1 + h) % 6;
+    b = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
 }
 
 inline bool isSkin(int r, int g, int b){

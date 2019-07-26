@@ -422,7 +422,6 @@ void
 CollagePaper:: setup()
 {
     // load and set bg image
-    clean();
     if (dpi) {
         W = pdf_w*dpi/72.0;
         H = pdf_h*dpi/72.0;
@@ -444,7 +443,14 @@ CollagePaper:: setup()
         paper = QPixmap(opt_w, opt_h);
         paper.fill();
     }
-    setPixmap(paper);
+    // resize and reposition items when a paper size is changed
+    for (CollageItem *item : collageItems) {
+        item->x = 0;
+        item->y = 0;
+        if (item->w > paper.width() or item->h > paper.height())
+            fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+    }
+    draw();
 }
 
 void
