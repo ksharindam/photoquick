@@ -18,6 +18,9 @@ inline bool isBigEndian()
     int i=1; return ! *((char *)&i);
 }
 
+// clamp an integer in 0-255 range
+#define Clamp(a) ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) )
+
 // Expand each size of Image by certain amount of border
 QImage expandBorder(QImage img, int width)
 {
@@ -418,9 +421,9 @@ void sharpen(QImage &img)
 
 #define Sigmoidal(a,b,x) ( tanh((0.5*(a))*((x)-(b))) )
 
-#define ScaledSigmoidal(a,b,x) (                    \
-  (Sigmoidal((a),(b),(x))-Sigmoidal((a),(b),0.0)) / \
-  (Sigmoidal((a),(b),1.0)-Sigmoidal((a),(b),0.0)) )
+#define ScaledSigmoidal(a,b,x,min,max) (                    \
+  (Sigmoidal((a),(b),(x))-Sigmoidal((a),(b),(min))) / \
+  (Sigmoidal((a),(b),(max))-Sigmoidal((a),(b),(min))) )
 
 // midpoint => range = 0.0 -> 1.0 , default = 0.5
 // contrast => range =   1 -> 20,   default = 3
@@ -430,7 +433,7 @@ void sigmoidalContrast(QImage &img, float midpoint)
     int h = img.height();
     uchar histogram[256];
     for (int i=0; i<256; i++) {
-        histogram[i] = 255*ScaledSigmoidal(3, midpoint, i/255.0);
+        histogram[i] = 255*ScaledSigmoidal(3, midpoint, i/255.0, 0.0,1.0);
     }
     #pragma omp parallel for
     for (int y=0; y<h; y++)
@@ -448,10 +451,9 @@ void sigmoidalContrast(QImage &img, float midpoint)
     }
 }
 
-
-// ************* ------------ Auto White Balance -------------************
-// adopted from a stackoverflow code
-
+/*********** ---------- Stretch Contrast ------------- ***************/
+// perc = percentile to calculate (range = 0-100)
+// N = total number of samples (i.e number of pixels)
 int percentile(unsigned int histogram[], float perc, int N)
 {
     int A=0;
@@ -460,6 +462,46 @@ int percentile(unsigned int histogram[], float perc, int N)
     }
     return A;
 }
+
+void stretchContrast(QImage &img)
+{
+    float midpoint = 0.3;
+    int w = img.width();
+    int h = img.height();
+    // Calculate percentile
+    unsigned int histogram[256] = {};
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row;
+        row = (QRgb*)img.constScanLine(y);
+        for (int x=0; x<w; x++) {
+            ++histogram[qGray(row[x])];
+        }
+    }
+    int min = percentile(histogram, 0.2, w*h);
+    int max = percentile(histogram, 100-1, w*h);
+    for (int i=0; i<256; i++) {
+        int val = 255*ScaledSigmoidal(3, midpoint, i/255.0, min/255.0, max/255.0);
+        histogram[i] = Clamp(val);
+    }
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*)img.scanLine(y); } // omp critical prevents segfault
+        for (int x=0; x<w; x++) {
+            int clr = row[x];
+            float factor = histogram[qGray(clr)]/(float)qGray(clr);
+            int r = Clamp((int)(factor*qRed(clr)));
+            int g = Clamp((int)(factor*qGreen(clr)));
+            int b = Clamp((int)(factor*qBlue(clr)));
+            row[x] = qRgb(r,g,b);
+        }
+    }
+}
+// ************* ------------ Auto White Balance -------------************
+// adopted from a stackoverflow code
 
 void autoWhiteBalance(QImage &img)
 {
@@ -495,13 +537,11 @@ void autoWhiteBalance(QImage &img)
             int r = 255.0*(qRed(row[x]) - min_r)/(max_r-min_r);// stretch contrast
             int g = 255.0*(qGreen(row[x]) - min_g)/(max_g-min_g);
             int b = 255.0*(qBlue(row[x]) - min_b)/(max_b-min_b);
-            r = (r < 0)? 0: (r>255? 255:r);  // clip between 0-255 range
-            g = (g < 0)? 0: (g>255? 255:g);
-            b = (b < 0)? 0: (b>255? 255:b);
-            row[x] = qRgb(r,g,b);
+            row[x] = qRgb(Clamp(r), Clamp(g), Clamp(b));
         }
     }
 }
+
 
 
 // ********* ---------- Despecle ---------- ***********

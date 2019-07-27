@@ -44,6 +44,7 @@ public slots:
     void reduceSpeckleNoise();
     void removeDust();
     void sigmoidContrast(); // Enhance low light images
+    void enhanceLight();
     void whiteBalance();
     // file and view options
     void openPrevImage();

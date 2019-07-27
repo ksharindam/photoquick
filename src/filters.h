@@ -31,6 +31,9 @@ void sharpen(QImage &img);
 // Sigmoidal Contrast to enhance low light images
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 
+// Sigmoidal Contrast to enhance low light images
+void stretchContrast(QImage &img);
+
 // Auto white balance
 void autoWhiteBalance(QImage &img);
 

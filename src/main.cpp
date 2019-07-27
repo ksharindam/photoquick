@@ -58,6 +58,7 @@ Window:: Window()
     fxMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
     fxMenu->addAction("Remove Dust", this, SLOT(removeDust()));
     fxMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
+    fxMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
     fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
     effectsBtn->setMenu(fxMenu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
@@ -339,6 +340,12 @@ void
 Window:: sigmoidContrast()
 {
     sigmoidalContrast(canvas->image, 0.3);
+    canvas->showScaled();
+}
+void
+Window:: enhanceLight()
+{
+    stretchContrast(canvas->image);
     canvas->showScaled();
 }
 
