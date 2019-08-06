@@ -335,7 +335,6 @@ Window:: removeDust()
     canvas->showScaled();
 }
 
-// Enhance low light images using Sigmoidal Contrast
 void
 Window:: sigmoidContrast()
 {

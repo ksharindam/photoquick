@@ -21,6 +21,81 @@ inline bool isBigEndian()
 // clamp an integer in 0-255 range
 #define Clamp(a) ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) )
 
+/* HSV colorspace utilities
+we are using 32 bit unsigned int to hold a hsv color
+first 16 bit is for hue, next 8 bit is for saturation and last
+8 bit is for value
+h = 0-359, s = 0-255, v = 0-255
+*/
+
+typedef unsigned int QHsv;
+
+inline int qHue(QHsv hsv) { return ((hsv>>16) & 0xffff); }
+// sat and val has same pos like green and blue i.e last 16 bits
+#define qSat qGreen
+#define qVal qBlue
+
+inline QHsv qHsv(int h, int s, int v)
+{
+    return ( (h & 0xffffu)<<16 | (s & 0xffu)<<8 | (v & 0xffu) );
+}
+
+inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
+{
+    float r = qRed(rgb)/255.0;
+    float g = qGreen(rgb)/255.0;
+    float b = qBlue(rgb)/255.0;
+    float mx = MAX(MAX(r,g),b);
+    float mn = MIN(MIN(r,g),b);
+    float df = mx - mn;
+
+    if (mx==mn)
+        h = 0;
+    else if (mx==r)
+        h = (int)roundf(60*(g-b)/df+360) % 360;
+    else if (mx==g)
+        h = (int)roundf(60*(b-r)/df+120) % 360;
+    else if (mx==b)
+        h = (int)roundf(60*(r-g)/df+240) % 360;
+
+    s = (mx==0)? 0 : roundf(255*df/mx);
+    v = 255*mx;
+}
+// calculate remainder i.e a%b (works in case of float)
+#define mod(a,b) ( (a) - ((int)((a)/(b)))*(b) )
+void hsvToRgb(QHsv hsv, int &r, int &g, int &b)
+{
+    float h = qHue(hsv)/60.0;
+    float s = qSat(hsv)/255.0;
+    float v = qVal(hsv)/255.0;
+    float k;
+    k = mod(5 + h, 6);
+    r = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+    k = mod(3 + h, 6);
+    g = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+    k = mod(1 + h, 6);
+    b = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+}
+
+// convert rgb image to hsv image
+void hsvImg(QImage &img)
+{
+    int w = img.width();
+    int h = img.height();
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        QHsv *row;
+        int h=0,s=0,v=0;
+        #pragma omp critical
+        { row = (QHsv*)img.scanLine(y);}
+        for (int x=0; x<w; x++) {
+            rgbToHsv(row[x],h,s,v);
+            row[x] = qHsv(h,s,v);
+        }
+    }
+}
+
 // Expand each size of Image by certain amount of border
 QImage expandBorder(QImage img, int width)
 {
@@ -408,10 +483,7 @@ void sharpen(QImage &img)
             int r = r_diff > 5? qRed(row[x])   + 1.0*r_diff : qRed(row[x]);
             int g = g_diff > 5? qGreen(row[x]) + 1.0*g_diff : qGreen(row[x]);
             int b = b_diff > 5? qBlue(row[x])  + 1.0*b_diff : qBlue(row[x]);
-            r = (r < 0)? 0: (r>255? 255:r);
-            g = (g < 0)? 0: (g>255? 255:g);
-            b = (b < 0)? 0: (b>255? 255:b);
-            row[x] = qRgb(r, g, b);
+            row[x] = qRgb(Clamp(r), Clamp(g), Clamp(b));
         }
     }
 }
@@ -440,7 +512,7 @@ void sigmoidalContrast(QImage &img, float midpoint)
     {
         QRgb *row;
         #pragma omp critical
-        { row = (QRgb*)img.scanLine(y); } // omp critical prevents segfault
+        { row = (QRgb*)img.scanLine(y); }
         for (int x=0; x<w; x++) {
             int clr = row[x];
             int r = histogram[qRed(clr)];
@@ -468,6 +540,7 @@ void stretchContrast(QImage &img)
     float midpoint = 0.3;
     int w = img.width();
     int h = img.height();
+    hsvImg(img);
     // Calculate percentile
     unsigned int histogram[256] = {};
     for (int y=0; y<h; y++)
@@ -475,11 +548,11 @@ void stretchContrast(QImage &img)
         QRgb *row;
         row = (QRgb*)img.constScanLine(y);
         for (int x=0; x<w; x++) {
-            ++histogram[qGray(row[x])];
+            ++histogram[qVal(row[x])];
         }
     }
-    int min = percentile(histogram, 0.2, w*h);
-    int max = percentile(histogram, 100-1, w*h);
+    int min = percentile(histogram, 0.5, w*h);
+    int max = percentile(histogram, 99.5, w*h);
     for (int i=0; i<256; i++) {
         int val = 255*ScaledSigmoidal(3, midpoint, i/255.0, min/255.0, max/255.0);
         histogram[i] = Clamp(val);
@@ -487,19 +560,19 @@ void stretchContrast(QImage &img)
     #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
+        int r=0,g=0,b=0;
         QRgb *row;
         #pragma omp critical
-        { row = (QRgb*)img.scanLine(y); } // omp critical prevents segfault
+        { row = (QRgb*)img.scanLine(y); }
         for (int x=0; x<w; x++) {
             int clr = row[x];
-            float factor = histogram[qGray(clr)]/(float)qGray(clr);
-            int r = Clamp((int)(factor*qRed(clr)));
-            int g = Clamp((int)(factor*qGreen(clr)));
-            int b = Clamp((int)(factor*qBlue(clr)));
+            int hsv = qHsv(qHue(clr), qSat(clr), histogram[qVal(clr)]);
+            hsvToRgb(hsv, r,g,b);
             row[x] = qRgb(r,g,b);
         }
     }
 }
+
 // ************* ------------ Auto White Balance -------------************
 // adopted from a stackoverflow code
 
@@ -521,12 +594,12 @@ void autoWhiteBalance(QImage &img)
             ++histogram_b[qBlue(row[x])];
         }
     }
-    int min_r = percentile(histogram_r, 0.2, w*h);
-    int min_g = percentile(histogram_g, 0.2, w*h);
-    int min_b = percentile(histogram_b, 0.2, w*h);
-    int max_r = percentile(histogram_r, 100-2, w*h);
-    int max_g = percentile(histogram_g, 100-2, w*h);
-    int max_b = percentile(histogram_b, 100-2, w*h);
+    int min_r = percentile(histogram_r, 0.5, w*h);
+    int min_g = percentile(histogram_g, 0.5, w*h);
+    int min_b = percentile(histogram_b, 0.5, w*h);
+    int max_r = percentile(histogram_r, 99.5, w*h);
+    int max_g = percentile(histogram_g, 99.5, w*h);
+    int max_b = percentile(histogram_b, 99.5, w*h);
     #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
@@ -615,7 +688,7 @@ void despeckle(QImage &img)
     #pragma omp parallel for
     for (int i=0; i < 4; i++) // 4 channels ARGB32 image
     {
-        if (i==0 and isBigEndian()) continue;  // skip Alpha if ARGB order
+        if (i==0 and isBigEndian()) continue;  // skip Alpha for ARGB order
         if (i==3 and not isBigEndian()) continue;  // BGRA order
         // allocate memory for pixels array
         uchar *pixels = (uchar*)calloc(1,length);
@@ -701,8 +774,8 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
 
     list.nodes[color].signature=pixel_list->signature;
     list.nodes[color].count=1;
-    /*  Determine where it belongs in the list.
-        This loop consumes most of the time.*/
+    //  Determine where it belongs in the list.
+    //    This loop consumes most of the time.
     search=65536UL;
     for (level=list.level; level >= 0; level--)
     {
@@ -710,7 +783,7 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
             search=list.nodes[search].next[level];
         update[level]=search;
     }
-    /*Generate a pseudo-random level for this node.*/
+    // Generate a pseudo-random level for this node.
     for (level=0; ; level++)
     {
         pixel_list->seed=(pixel_list->seed*42893621U)+1U;
@@ -721,13 +794,13 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
         level=8;
     if (level > (list.level+2))
         level=list.level+2;
-    /* If we're raising the list's level, link back to the root node.*/
+    // If we're raising the list's level, link back to the root node.
     while (level > list.level)
     {
         list.level++;
         update[list.level]=65536U;
     }
-    /*Link the node into the skip-list.*/
+    //Link the node into the skip-list.
     do
     {
         list.nodes[color].next[level]=list.nodes[update[level]].next[level];
@@ -795,7 +868,7 @@ QRgb GetMedian(MedianPixelList *pixel_list)
 
     unsigned long center,color,count;
 
-    /* Finds the median value */
+    // Finds the median value
     center=pixel_list->center;
     color=65536L;
     count=0;
@@ -843,7 +916,8 @@ void medianFilter(QImage &img, int radius)
 }
 
 //*********** ------------ Kuwahara Filter ------------ ************* //
-/*inline float getPixelLuma(QRgb clr)
+#if (0)
+inline float getPixelLuma(QRgb clr)
 {
   return (0.212656f*qRed(clr) + 0.715158f*qGreen(clr) + 0.072186f*qBlue(clr));
 }
@@ -958,68 +1032,56 @@ void kuwaharaFilter(QImage &img, int radius)
             (dstData + w*y)[x] = clr;
         }   // end column loop
     } // end row loop
-}*/
-
-
-// ************* ------------ skin detection -------------************
-/* HSV colorspace utilities
-we are using 32 bit unsigned int to hold a hsv color
-first 16 bit is for hue, next 8 bit is for saturation and last
-8 bit is for value
-h = 0-359, s = 0-255, v = 0-255
-*/
-/*
-typedef unsigned int HSV;
-
-inline int qHue(HSV hsv) { return ((hsv>>16) & 0xffff); }
-// sat and val has same pos like green and blue i.e last 16 bits
-#define qSat qGreen
-#define qVal qBlue
-
-inline HSV qHsv(int h, int s, int v)
-{
-    return ( (h & 0xffffu)<<16 | (s & 0xffu)<<8 | (v & 0xffu) );
 }
+#endif
 
-inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
+
+// ************ ------------ Enhance Color ----------- ************* //
+#if (0)
+void enhanceColor(QImage &img)
 {
-    float r = qRed(rgb)/255.0;
-    float g = qGreen(rgb)/255.0;
-    float b = qBlue(rgb)/255.0;
-    float mx = MAX(MAX(r,g),b);
-    float mn = MIN(MIN(r,g),b);
-    float df = mx - mn;
-
-    if (mx==mn)
-        h = 0;
-    else if (mx==r)
-        h = round(60*(g-b)/df+360)%360;
-    else if (mx==g)
-        h = round(60*(b-r)/df+120)%360;
-    else if (mx==b)
-        h = round(60*(r-g)/df+240)%360;
-
-    s = (mx==0)? 0 : round(255*df/mx);
-    v = 255*mx;
+    int w = img.width();
+    int h = img.height();
+    hsvImg(img);
+    // Calculate percentile
+    unsigned int histogram[256] = {};
+    for (int y=0; y<h; y++)
+    {
+        QHsv *row;
+        row = (QHsv*)img.constScanLine(y);
+        for (int x=0; x<w; x++) {
+            ++histogram[qSat(row[x])];
+        }
+    }
+    float min = percentile(histogram, 0.2, w*h);
+    float max = percentile(histogram, 99.5, w*h);
+    for (int i=0; i<256; i++) {
+        int sat = 255*(i-min)/(max-min); // try replacing 255 with 255.0
+        histogram[i] = Clamp(sat);
+    }
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        int r=0,g=0,b=0;
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*)img.scanLine(y); }
+        for (int x=0; x<w; x++) {
+            int clr = row[x];
+            int hsv = qHsv(qHue(clr), histogram[qSat(clr)], qVal(clr));
+            hsvToRgb(hsv, r,g,b);
+            row[x] = qRgb(r,g,b);
+        }
+    }
 }
+#endif
 
-void hsvToRgb(HSV hsv, int &r, int &g, int &b)
-{
-    float h = Hue(hsv)/60.0;
-    float s = Sat(hsv)/255.0;
-    float v = Val(hsv)/255.0;
-    k = (5 + h) % 6;
-    r = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
-    k = (3 + h) % 6;
-    g = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
-    k = (1 + h) % 6;
-    b = round(255*(v - v*s*MAX(MIN(k, 4-k, 1),0)));
-}
-
+// ************* ------------ Skin Detection -------------************ /
+#if (0)
 inline bool isSkin(int r, int g, int b){
     int h=0,s=0,v=0;
     rgbToHsv(qRgb(r,g,b), h,s,v);
     return (r>g) and (r>b) and (r>60) and (g>40) and (b>20) and (abs(r-g)>15) and
     ((h>350) or (h<35)) and (s<170) and (v < 310-s);
 }
-*/
+#endif
