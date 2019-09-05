@@ -124,7 +124,7 @@ Window:: openImage(QString filepath)
           disableButtons(true);
         }
     }
-    else {                         // For static images
+    else {  // For inanimate images
         QImage img = loadImage(filepath);  // Returns an autorotated image
         if (img.isNull()) return;
         canvas->scale = fitToScreenScale(img);
@@ -137,7 +137,10 @@ Window:: openImage(QString filepath)
     else
         canvas->has_alpha = false;
     this->filename = filepath;
-    setWindowTitle(QFileInfo(filepath).fileName());
+    QFileInfo fi(filename);
+    QString dir = fi.dir().path();
+    QDir::setCurrent(dir);
+    setWindowTitle(fi.fileName());
 }
 
 void
@@ -267,9 +270,6 @@ Window:: createPhotoGrid()
 void
 Window:: createPhotoCollage()
 {
-    QFileInfo fi(filename);
-    QString dir = fi.dir().path();
-    QDir::setCurrent(dir);
     CollageDialog *dialog = new CollageDialog(this);
     CollageItem *item = new CollageItem(canvas->image);
     dialog->collagePaper->addItem(item);

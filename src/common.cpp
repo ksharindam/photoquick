@@ -73,10 +73,8 @@ QImage loadImage(QString filename)
     }
 }
 
-Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/resize.png"), parent)
+Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/image.png"), parent)
 {
-    // this is not taking mouse click input (dont know why)
-    //QObject::connect(this, SIGNAL(messageClicked()), this, SLOT(hide()));
 }
 
 void
