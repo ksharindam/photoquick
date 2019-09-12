@@ -800,6 +800,7 @@ CollageItem:: image()
 CollageSetupDialog:: CollageSetupDialog(QWidget *parent) : QDialog(parent)
 {
     setupUi(this);
+    customSize->setEnabled(false);
     connect(selectFileBtn, SIGNAL(clicked()), this, SLOT(selectFile()));
     connect(pageSizeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(toggleUsePageSize(const QString&)));
     filename = "";
@@ -823,7 +824,7 @@ CollageSetupDialog:: selectFile()
 void
 CollageSetupDialog:: toggleUsePageSize(const QString& text)
 {
-    widget_2->setEnabled(text == QString("Custom"));
+    customSize->setEnabled(text == QString("Custom"));
 }
 
 void
