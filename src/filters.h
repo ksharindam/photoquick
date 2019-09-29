@@ -22,7 +22,7 @@ void gaussianBlur(QImage &img, int radius=1, float sigma=0);
 // Apply Box Blur
 void boxFilter(QImage &img, int radius=1);
 
-// Apply Median Filter
+// Apply Median Filter (Remove salt and pepper noise)
 void medianFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
@@ -42,6 +42,3 @@ void despeckle(QImage &img);
 
 // edge preserving noise reduction filter (used for artistic effects)
 void kuwaharaFilter(QImage &img, int radius);
-
-// Remove salt and pepper noise
-//void reduceNoise(QImage &img, int radius=1);

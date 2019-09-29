@@ -917,6 +917,27 @@ void medianFilter(QImage &img, int radius)
 
 //*********** ------------ Kuwahara Filter ------------ ************* //
 #if (0)
+// takes 4 pixels and a floating point coordinate, returns bilinear interpolated pixel
+QRgb interpolateBilinear(float x, float y, QRgb p00, QRgb p01, QRgb p10, QRgb p11)
+{
+    float offset_x = floorf(x);
+    float offset_y = floorf(y);
+    float delta_x = (x-offset_x);// w
+    float delta_y = (y-offset_y);// h
+    float epsilon_x = 1.0-delta_x;// 1-w
+    float epsilon_y = 1.0-delta_y;// 1-h
+    // Y = A(1-w)(1-h) + B(w)(1-h) + C(h)(1-w) + D(w)(h)
+    //   = (1-h){(1-w)A + wB} + h{(1-w)C + wD}
+    int r = (epsilon_y*(epsilon_x*qRed(p00)+delta_x*qRed(p01)) +
+                delta_y*(epsilon_x*qRed(p10)+delta_x*qRed(p11)));
+    int g = (epsilon_y*(epsilon_x*qGreen(p00)+delta_x*qGreen(p01)) +
+                delta_y*(epsilon_x*qGreen(p10)+delta_x*qGreen(p11)));
+    int b = (epsilon_y*(epsilon_x*qBlue(p00)+delta_x*qBlue(p01)) +
+                delta_y*(epsilon_x*qBlue(p10)+delta_x*qBlue(p11)));
+    return qRgb(r,g,b);
+}
+
+// Calculate Luminance (Y) from an sRGB value
 inline float getPixelLuma(QRgb clr)
 {
   return (0.212656f*qRed(clr) + 0.715158f*qGreen(clr) + 0.072186f*qBlue(clr));
@@ -940,7 +961,7 @@ void kuwaharaFilter(QImage &img, int radius)
     int w = img.width();
     int h = img.height();
     QImage gaussImg = img.copy();
-    gaussianBlur(gaussImg, 2);
+    gaussianBlur(gaussImg, radius);
     int width = radius+1;
 
     QRgb *srcData = (QRgb*)gaussImg.constScanLine(0);
