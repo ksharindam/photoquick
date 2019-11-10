@@ -322,6 +322,7 @@ CollageDialog:: CollageDialog(QWidget *parent) : QDialog(parent)
     connect(collagePaper, SIGNAL(statusChanged(QString)), this, SLOT(showStatus(QString)));
     connect(addBtn, SIGNAL(clicked()), collagePaper, SLOT(addPhoto()));
     connect(removeBtn, SIGNAL(clicked()), collagePaper, SLOT(removePhoto()));
+    connect(copyBtn, SIGNAL(clicked()), collagePaper, SLOT(copyPhoto()));
     connect(rotateBtn, SIGNAL(clicked()), collagePaper, SLOT(rotatePhoto()));
     connect(addBorderBtn, SIGNAL(clicked()), collagePaper, SLOT(toggleBorder()));
     connect(configBtn, SIGNAL(clicked()), this, SLOT(setupBackground()));
@@ -485,6 +486,15 @@ CollagePaper:: removePhoto()
     delete item;
     draw();
     updateStatus();
+}
+
+void
+CollagePaper:: copyPhoto()
+{
+    if (collageItems.isEmpty()) return;
+    CollageItem *item = new CollageItem(collageItems.last());
+    collageItems.append(item);
+    draw();
 }
 
 void

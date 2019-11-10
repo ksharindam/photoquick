@@ -88,6 +88,14 @@ class CollageItem
 public:
     CollageItem(QString filename);
     CollageItem(QImage img);
+    CollageItem(const CollageItem* p){
+        pixmap = p->pixmap; filename = p->filename;
+        image_ = p->image_;
+        img_w = p->img_w; img_h = p->img_h;
+        x = p->x+2; y = p->y+2; w = p->w; h = p->h;
+        border = p->border;
+        rotation = p->rotation;
+    };
     int img_w, img_h; // the original img resolution
     int x, y;
     int w, h;           // the size on collage paper
@@ -130,6 +138,7 @@ public:
 public slots:
     void addPhoto();
     void removePhoto();
+    void copyPhoto();
     void rotatePhoto();
     void toggleBorder(); // enable or disable border
     void updateStatus();
