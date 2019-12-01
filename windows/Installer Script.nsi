@@ -23,7 +23,7 @@
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
 ; License page
-!insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
+!insertmacro MUI_PAGE_LICENSE "..\LICENSE.txt"
 ; Instfiles page
 !insertmacro MUI_PAGE_INSTFILES
 ; Finish page
