@@ -1,4 +1,4 @@
-# QmageView
+# QmageView (for Linux and Windows)
 A simple image viewer with some useful features (written in qt4).
 
 ### Description
@@ -21,7 +21,7 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 
-### Build
+### Build (Linux)
 Install dependencies...  
 **Build dependencies ...**  
  * libqt4-dev  
@@ -46,6 +46,15 @@ To uninstall, run ...
 * libqt4-svg  (optional for svg support)  
 * libgomp1
 
+### Build (Windows)
+Download Qt 4.8.7 and minGW32  
+add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
+In qmageview/src directory open Command Line.  
+Run command...  
+`qmake`  
+`make -j4`  
+
+You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/qmageview/releases).  
 
 ### Usage
 To run this program...  

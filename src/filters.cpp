@@ -318,7 +318,8 @@ void convolve(QImage &img, float kernel[], int width/*of kernel*/)
     int tmp_w = tmp.width();
 
     /* Build normalized kernel */
-    float normal_kernel[width][width] = {};
+    float normal_kernel[width][width]; // = {}; // Throws error in C99 compiler
+    memset(normal_kernel, 0, (width*width) * sizeof(float));
 
     float normalize = 0.0;
     for (int i=0; i < (width*width); i++)

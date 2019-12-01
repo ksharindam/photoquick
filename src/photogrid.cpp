@@ -17,7 +17,6 @@
 GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 {
     setupUi(this);
-    resize(1020, 640);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     gridPaper = new GridPaper(this);
@@ -308,7 +307,6 @@ GridSetupDialog:: accept()
 CollageDialog:: CollageDialog(QWidget *parent) : QDialog(parent)
 {
     setupUi(this);
-    resize(1050, 716);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     QSettings settings;

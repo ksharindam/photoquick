@@ -260,6 +260,8 @@ void
 Window:: createPhotoGrid()
 {
     GridDialog *dialog = new GridDialog(canvas->image, this);
+    int dialog_h = screen_height - offset_y - offset_x;
+    dialog->resize(1020, dialog_h);
     if (dialog->exec() == 1) {
         canvas->scale = fitToScreenScale(dialog->gridPaper->photo_grid);
         canvas->setImage(dialog->gridPaper->photo_grid);
@@ -271,6 +273,8 @@ void
 Window:: createPhotoCollage()
 {
     CollageDialog *dialog = new CollageDialog(this);
+    int dialog_h = screen_height - offset_y - offset_x;
+    dialog->resize(1050, dialog_h);
     CollageItem *item = new CollageItem(canvas->image);
     dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {

@@ -6,10 +6,10 @@ TEMPLATE = app
 TARGET = qmageview
 DEPENDPATH += .
 INCLUDEPATH += .
-QMAKE_CXXFLAGS = -fopenmp
+QMAKE_CXXFLAGS = -fopenmp -std=c++11
 LIBS += -lgomp
 
-#CONFIG += debug
+CONFIG -= debug
 
 # build dir
 MOC_DIR = build
@@ -26,6 +26,8 @@ FORMS += mainwindow.ui resize_dialog.ui photogrid_dialog.ui gridsetup_dialog.ui 
          collage_dialog.ui collagesetup_dialog.ui
 
 # install
-INSTALLS += target
-target.path = /usr/local/bin
+!win32 {
+    INSTALLS += target
+    target.path = /usr/local/bin
+}
 
