@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "QmageView"
-!define PRODUCT_VERSION "4.0"
+!define PRODUCT_VERSION "4.0.1"
 !define PRODUCT_PUBLISHER "Arindamsoft Co."
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\qmageview.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"

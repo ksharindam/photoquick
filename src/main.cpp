@@ -124,9 +124,12 @@ Window:: openImage(QString filepath)
           disableButtons(true);
         }
     }
-    else {  // For inanimate images
+    else {  // For still images
         QImage img = loadImage(filepath);  // Returns an autorotated image
         if (img.isNull()) return;
+        // Converted because filters can only be applied to RGB32 or ARGB32 image
+        if (img.format()!=QImage::Format_ARGB32 and img.format()!=QImage::Format_RGB32)
+            img = img.convertToFormat(QImage::Format_ARGB32);
         canvas->scale = fitToScreenScale(img);
         canvas->setImage(img);
         adjustWindowSize();
