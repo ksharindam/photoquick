@@ -405,7 +405,15 @@ Window:: zoomInImage()
     bool wasVisibleH = horizontal->isVisible();
     if (not wasVisibleV) relPosV=0.5;
     if (not wasVisibleH) relPosH=0.5;
-    canvas->zoomBy(6.0/5);
+    // Integer scale to view small icons
+    if (canvas->image.width() < 200 and canvas->image.height() < 200 and canvas->scale>=1)
+        canvas->scale += 1;
+    else
+        canvas->scale *= (6.0/5);
+    canvas->showScaled();
+    if ((canvas->pixmap()->width()>scrollArea->width() or
+            canvas->pixmap()->height()>scrollArea->height()) && not this->isMaximized())
+        this->showMaximized();
     waitFor(30);
     vertical->setValue(vertical->maximum()*relPosV);
     horizontal->setValue(horizontal->maximum()*relPosH);
@@ -418,7 +426,11 @@ Window:: zoomOutImage()
     QScrollBar *horizontal = scrollArea->horizontalScrollBar();
     float relPosV = vertical->value()/(float)vertical->maximum();
     float relPosH = horizontal->value()/(float)horizontal->maximum();
-    canvas->zoomBy(5.0/6);
+    if (canvas->image.width() < 200 and canvas->image.height() < 200 and canvas->scale>1)
+        canvas->scale -= 1;
+    else
+        canvas->scale *= (5.0/6);
+    canvas->showScaled();
     waitFor(30);
     vertical->setValue(vertical->maximum()*relPosV);
     horizontal->setValue(horizontal->maximum()*relPosH);
@@ -437,6 +449,9 @@ Window:: origSizeImage()
     canvas->scale = 1.0;
     canvas->showScaled();
     origSizeBtn->setIcon(QIcon(":/images/fit-to-screen.png"));
+    if ((canvas->pixmap()->width()>scrollArea->width() or
+            canvas->pixmap()->height()>scrollArea->height()) && not this->isMaximized())
+        this->showMaximized();
 }
 
 void

@@ -56,8 +56,11 @@ void
 Canvas:: showScaled()
 {
     QPixmap pm = QPixmap::fromImage(image);
-    if (scale != 1.0)
-        pm = pm.scaledToHeight(scale*pm.height(), Qt::SmoothTransformation);
+    if (scale != 1.0) {
+        Qt::TransformationMode mode = floorf(scale) == ceilf(scale)? // integer scale
+                                    Qt::FastTransformation : Qt::SmoothTransformation;
+        pm = pm.scaledToHeight(scale*pm.height(), mode);
+    }
     setPixmap(pm);
     emit imageUpdated();
 }
@@ -68,13 +71,6 @@ Canvas:: rotate(int degree, Qt::Axis axis)
     QTransform transform;
     transform.rotate(degree, axis);
     image = image.transformed(transform);
-    showScaled();
-}
-
-void
-Canvas:: zoomBy(float factor)
-{
-    scale *= factor;
     showScaled();
 }
 

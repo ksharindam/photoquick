@@ -23,7 +23,6 @@ public:
     void setImage(QImage img);
     void showScaled();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
-    void zoomBy(float factor);
     // Variables
     QImage image;
     bool animation;
