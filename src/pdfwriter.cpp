@@ -6,14 +6,14 @@ PdfWriter:: PdfWriter()
     version = "1.4";
     producer = "PDF Writer by Arindam";
     header = format("%%PDF-%s\n", version.c_str());
-    offset = header.size();
 }
 
 void
 PdfWriter:: begin(std::string filename)
 {
-    stream.open(filename);
+    stream.open(filename, std::ios::out|std::ios::binary);
     stream << header;
+    offset = stream.tellp();
 }
 
 PdfObj
@@ -49,7 +49,7 @@ PdfWriter:: addObj(PdfObj &obj, std::string Stream, int id)
     std::string strng = obj.toString(Stream);
     stream << strng;
     stream.flush();
-    offset += strng.size();
+    offset = stream.tellp();
     return obj.id;   // object identifier
 }
 
