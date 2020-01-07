@@ -72,7 +72,7 @@ Window:: Window()
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    filename = QString("qmageview.jpg");
+    filename = QString("photoquick.jpg");
     QSettings settings;
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
@@ -583,8 +583,11 @@ Window:: closeEvent(QCloseEvent *ev)
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    app.setOrganizationName("qmageview");
-    app.setApplicationName("qmageview");
+    app.setOrganizationName("photoquick");
+    app.setApplicationName("photoquick");
+#ifdef WIN32
+	app.addLibraryPath(app.applicationDirPath());
+#endif
     Window *win = new Window();
     win->show();
     if (argc > 1) {
@@ -594,7 +597,7 @@ int main(int argc, char *argv[])
             win->openImage(path);
     }
     else {
-        QImage img = QImage(":/images/qmageview.jpg");
+        QImage img = QImage(":/images/photoquick.jpg");
         win->canvas->setImage(img);
         win->adjustWindowSize();
     }

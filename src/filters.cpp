@@ -1,4 +1,4 @@
-// this file is part of qmageview program which is GPLv3 licensed
+// this file is part of photoquick program which is GPLv3 licensed
 #include "filters.h"
 #include "common.h"
 #include <cmath>

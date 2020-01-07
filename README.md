@@ -1,4 +1,4 @@
-# QmageView (for Linux and Windows)
+# PhotoQuick (for Linux and Windows)
 A simple image viewer with some useful features (written in qt4).
 
 ### Description
@@ -49,16 +49,16 @@ To uninstall, run ...
 ### Build (Windows)
 Download Qt 4.8.7 and minGW32  
 add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
-In qmageview/src directory open Command Line.  
+In src directory open Command Line.  
 Run command...  
 `qmake`  
 `make -j4`  
 
-You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/qmageview/releases).  
+You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/photoquick/releases).  
 
 ### Usage
 To run this program...  
-`qmageview`  
+`photoquick`  
 
 To open image.jpg with it...  
-`qmageview image.jpg`  
+`photoquick image.jpg`  

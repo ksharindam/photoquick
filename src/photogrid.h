@@ -1,5 +1,4 @@
 #pragma once
-/* This file is a part of qmageview program, which is GPLv3 licensed */
 
 #include "ui_photogrid_dialog.h"
 #include "ui_gridsetup_dialog.h"

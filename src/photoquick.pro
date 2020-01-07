@@ -3,11 +3,12 @@
 ######################################################################
 
 TEMPLATE = app
-TARGET = qmageview
+TARGET = photoquick
 DEPENDPATH += .
 INCLUDEPATH += .
 QMAKE_CXXFLAGS = -fopenmp -std=c++11
 LIBS += -lgomp
+win32:DEFINES += WIN32
 
 CONFIG -= debug
 

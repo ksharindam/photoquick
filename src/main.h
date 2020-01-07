@@ -1,6 +1,4 @@
 #pragma once
-/* This file is a part of qmageview program, which is GPLv3 licensed */
-
 #include "ui_mainwindow.h"
 #include "canvas.h"
 #include <QTimer>

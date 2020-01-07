@@ -1,5 +1,5 @@
 /*
-This file is a part of qmageview program, which is GPLv3 licensed
+This file is a part of photoquick program, which is GPLv3 licensed
 */
 #include "canvas.h"
 #include <QDebug>

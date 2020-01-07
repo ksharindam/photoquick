@@ -1,7 +1,5 @@
 #pragma once
 /*
-This file is a part of qmageview program, which is GPLv3 licensed
-
 Image Label Object to display the image.
 */
 
