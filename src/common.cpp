@@ -1,7 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "common.h"
-#include "exif.h"
 #include <QTimer>
 #include <QEventLoop>
 #include <QFile>
@@ -43,22 +42,15 @@ void waitFor(int millisec)
 }
 
 // load an image from file
-QImage loadImage(QString filename)
+QImage loadImage(QString fileName)
 {
-    QImage img(filename);
+    QImage img(fileName);
     if (img.isNull()) return img;
     // Get image orientation
-    int size, orientation = 0;
-    QFile file(filename);
-    file.open(QIODevice::ReadOnly);
-    size = file.size() < 65536 ? file.size() : 65536;  // load maximum of 64 kB
-    char* buffer = new char[size];
-    file.read(buffer, size);
-    easyexif::EXIFInfo info;
-    info.parseFrom((uchar*)buffer, size);
-    orientation = info.Orientation;
-    file.close();
-    delete buffer;
+    char *filename = fileName.toUtf8().data();
+    FILE *f = fopen(filename, "rb");
+    int orientation = getOrientation(f);
+    fclose(f);
     // rotate if required
     QTransform transform;
     switch (orientation) {

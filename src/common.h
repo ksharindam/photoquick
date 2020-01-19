@@ -17,6 +17,8 @@ void waitFor(int millisec);
 // load an image from file
 // Returns an autorotated image according to exif data
 QImage loadImage(QString filename);
+// get jpeg image orientation from exif
+int getOrientation(FILE *f);
 
 class Notifier : public QSystemTrayIcon
 {
