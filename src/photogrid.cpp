@@ -147,7 +147,7 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
     W = settings.value("ImageWidth", 413).toInt();
     H = settings.value("ImageHeight", 531).toInt();
     cols = settings.value("Cols", 4).toInt();
-    rows = settings.value("Rows", 2).toInt();           // total no. of columns and rows
+    rows = settings.value("Rows", 2).toInt();  // total no. of columns and rows
     setupGrid();
 }
 
@@ -376,7 +376,7 @@ CollageDialog:: showStatus(QString status)
 void
 CollageDialog:: accept()
 {
-    collage = collagePaper->getCollage();
+    collage = collagePaper->getFinalCollage();
     collagePaper->clean();
     QDialog::accept();
 }
@@ -610,7 +610,7 @@ CollagePaper:: draw()
 }
 
 QImage
-CollagePaper:: getCollage()
+CollagePaper:: getFinalCollage()
 {
     double scaleX = ((double)W)/paper.width();
     double scaleY = ((double)H)/paper.height();
@@ -680,6 +680,15 @@ CollagePaper:: savePdf()
             QBuffer buffer(&bArray);
             buffer.open(QIODevice::WriteOnly);
             QImage image = item->image();
+            // remove transperancy
+            if (image.format()==QImage::Format_ARGB32) {
+                QImage new_img(image.width(), image.height(), QImage::Format_ARGB32);
+                new_img.fill(Qt::white);
+                QPainter painter(&new_img);
+                painter.drawImage(0,0, image);
+                painter.end();
+                image = new_img;
+            }
             image.save(&buffer, "JPG");
             std::string data(bArray.data(), bArray.size());
             writer.addObj(img, data);
@@ -786,20 +795,14 @@ CollageItem:: image()
     if (not this->image_.isNull()) {
         img = image_;
     }
-    else if (this->filename.endsWith(".png", Qt::CaseInsensitive)) {
-        img = QImage(this->img_w, this->img_h, QImage::Format_ARGB32);
-        img.fill(Qt::white);
-    }
     else {
         img = loadImage(this->filename);
     }
-    QPainter painter(&img);
-    if (this->filename.endsWith(".png", Qt::CaseInsensitive)) {
-        painter.drawImage(0,0, loadImage(this->filename));
-    }
-    if (this->border)
+    if (this->border) {
+        QPainter painter(&img);
         painter.drawRect(0,0, img.width()-1, img.height()-1);
-    painter.end();
+        painter.end();
+    }
     return img;
 }
 

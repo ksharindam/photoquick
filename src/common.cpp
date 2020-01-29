@@ -46,7 +46,12 @@ QImage loadImage(QString fileName)
 {
     QImage img(fileName);
     if (img.isNull()) return img;
-    // Get image orientation
+    // Converted because filters can only be applied to RGB32 or ARGB32 image
+    if (img.hasAlphaChannel() && img.format()!=QImage::Format_ARGB32)
+        img = img.convertToFormat(QImage::Format_ARGB32);
+    else if (!img.hasAlphaChannel() and img.format()!=QImage::Format_RGB32)
+        img = img.convertToFormat(QImage::Format_RGB32);
+    // Get jpg orientation
     char *filename = fileName.toUtf8().data();
     FILE *f = fopen(filename, "rb");
     int orientation = getOrientation(f);
@@ -60,9 +65,8 @@ QImage loadImage(QString fileName)
             return img.transformed(transform.rotate(180));
         case 8:
             return img.transformed(transform.rotate(270));
-        default:
-            return img;
     }
+    return img;
 }
 
 Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/image.png"), parent)

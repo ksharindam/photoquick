@@ -24,7 +24,6 @@ public:
     // Variables
     QImage image;
     bool animation;
-    bool has_alpha;     // always true for png image
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
 private:

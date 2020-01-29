@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2016-2019 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2016-2020 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -127,18 +127,11 @@ Window:: openImage(QString filepath)
     else {  // For still images
         QImage img = loadImage(filepath);  // Returns an autorotated image
         if (img.isNull()) return;
-        // Converted because filters can only be applied to RGB32 or ARGB32 image
-        if (img.format()!=QImage::Format_ARGB32 and img.format()!=QImage::Format_RGB32)
-            img = img.convertToFormat(QImage::Format_ARGB32);
         canvas->scale = fitToScreenScale(img);
         canvas->setImage(img);
         adjustWindowSize();
         disableButtons(false);
     }
-    if (QString::fromUtf8(img_reader.format()).compare("png")==0)
-        canvas->has_alpha = true;
-    else
-        canvas->has_alpha = false;
     this->filename = filepath;
     QFileInfo fi(filename);
     QString dir = fi.dir().path();
@@ -155,7 +148,7 @@ Window:: saveImage(QString filename)
     if (img.isNull()) return;
     int quality = -1;
     if (filename.endsWith(".jpg", Qt::CaseInsensitive)) {
-        if (canvas->has_alpha) { // converts background to white
+        if (img.hasAlphaChannel()) { // converts background to white
             img = QImage(img.width(), img.height(), QImage::Format_ARGB32);
             img.fill(Qt::white);
             QPainter painter(&img);

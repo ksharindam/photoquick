@@ -133,7 +133,7 @@ public:
     void setup();
     void clean();       // delete collage items
     void addItem(CollageItem *item);
-    QImage getCollage();
+    QImage getFinalCollage();
 public slots:
     void addPhoto();
     void removePhoto();
