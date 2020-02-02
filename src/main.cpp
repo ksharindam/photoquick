@@ -115,7 +115,16 @@ void
 Window:: openImage(QString filepath)
 {
     QImageReader img_reader(filepath);
-    if (QString::fromUtf8(img_reader.format()).compare("gif")==0) { // For gif animations
+    int frame_count = img_reader.imageCount();
+    if (frame_count==1) {  // For still images
+        QImage img = loadImage(filepath);  // Returns an autorotated image
+        if (img.isNull()) return;
+        canvas->scale = fitToScreenScale(img);
+        canvas->setImage(img);
+        adjustWindowSize();
+        disableButtons(false);
+    }
+    else if (frame_count>1) { // For animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
         if (anim->isValid()) {
           canvas->setAnimation(anim);
@@ -124,13 +133,9 @@ Window:: openImage(QString filepath)
           disableButtons(true);
         }
     }
-    else {  // For still images
-        QImage img = loadImage(filepath);  // Returns an autorotated image
-        if (img.isNull()) return;
-        canvas->scale = fitToScreenScale(img);
-        canvas->setImage(img);
-        adjustWindowSize();
-        disableButtons(false);
+    else {
+        statusbar->showMessage(QString("Invalid frame count : %1").arg(frame_count));
+        return;
     }
     this->filename = filepath;
     QFileInfo fi(filename);

@@ -2,16 +2,16 @@
 #include "filters.h"
 #include "common.h"
 #include <cmath>
-#include <chrono>
 #include <QDebug>
 
-#define PI 3.141592654
 // macros for measuring execution time
+#include <chrono>
 #define TIME_START auto start = std::chrono::steady_clock::now();
 #define TIME_STOP auto end = std::chrono::steady_clock::now();\
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\
     qDebug() << "Execution Time :" << elapse;
 
+#define PI 3.141592654
 // Byte order is ARGB if big endian else BGRA
 inline bool isBigEndian()
 {
