@@ -60,6 +60,7 @@ Window:: Window()
     fxMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
     fxMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
     fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
+    fxMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     effectsBtn->setMenu(fxMenu);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -357,6 +358,13 @@ void
 Window:: whiteBalance()
 {
     autoWhiteBalance(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: enhanceColors()
+{
+    enhanceColor(canvas->image);
     canvas->showScaled();
 }
 

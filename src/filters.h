@@ -37,6 +37,9 @@ void stretchContrast(QImage &img);
 // Auto white balance
 void autoWhiteBalance(QImage &img);
 
+// Auto white balance
+void enhanceColor(QImage &img);
+
 // remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
 

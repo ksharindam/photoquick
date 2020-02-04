@@ -44,6 +44,7 @@ public slots:
     void sigmoidContrast(); // Enhance low light images
     void enhanceLight();
     void whiteBalance();
+    void enhanceColors();
     // file and view options
     void openPrevImage();
     void openNextImage();

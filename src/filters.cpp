@@ -31,7 +31,7 @@ h = 0-359, s = 0-255, v = 0-255
 typedef unsigned int QHsv;
 
 inline int qHue(QHsv hsv) { return ((hsv>>16) & 0xffff); }
-// sat and val has same pos like green and blue i.e last 16 bits
+// sat and val has same pos like green and blue i.e last 2 bytes
 #define qSat qGreen
 #define qVal qBlue
 
@@ -94,6 +94,87 @@ void hsvImg(QImage &img)
             row[x] = qHsv(h,s,v);
         }
     }
+}
+
+// HCL <--> RGB colorspace conversion functions
+// Hue = 0->359, Chroma=0->131, Luminance = 0->100
+// it is same as CIE LCH colorspace, but here components are in reverse order
+typedef unsigned int QHcl;
+#define qHcl qHsv
+#define qCro qGreen
+#define qLum qBlue
+
+// D65 standard referent
+#define LAB_Xn 0.950470
+#define LAB_Yn 1
+#define LAB_Zn 1.088830
+
+#define LAB_t0 0.137931034  // 16 / 116
+#define LAB_t1 0.206896552  // 24 / 116
+#define LAB_t2 0.12841855   // 3 * t1 * t1
+#define LAB_t3 0.008856452  // t1^3
+
+float rgb_xyz(float r) { //sRGB to Linear
+    if ((r /= 255) <= 0.04045) { return r / 12.92; }
+    return pow((r + 0.055) / 1.055, 2.4);
+}
+
+float xyz_lab(float t)
+{
+    if (t > LAB_t3) { return pow(t, 1.0 / 3); }
+    return t / LAB_t2 + LAB_t0;
+}
+
+void rgbToHcl(QRgb rgb, int &h, int &c, int &l)
+{
+    float r,g,b, x,y,z,a;
+    r = rgb_xyz(qRed(rgb));
+    g = rgb_xyz(qGreen(rgb));
+    b = rgb_xyz(qBlue(rgb));
+    // convert to xyz colorspace
+    x = xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB_Xn);
+    y = xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB_Yn);
+    z = xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB_Zn);
+    // convert to LAB colorspace
+    l = 116 * y - 16;
+    l = l < 0 ? 0 : l,
+    a = 500 * (x - y);
+    b = 200 * (y - z);
+    // convert to HCL colorspace
+    c = sqrt(a*a + b*b);
+    h = (int)round(atan2(b, a) * 180/PI + 360) % 360;
+}
+
+float xyz_rgb(float r) { //linear to sRGB
+    return 255 * (r <= 0.00304 ? 12.92 * r : 1.055 * pow(r, 1 / 2.4) - 0.055);
+};
+
+float lab_xyz(float t) {
+    return t > LAB_t1 ? t*t*t : LAB_t2 * (t - LAB_t0);
+};
+
+void hclToRgb(QHcl hcl, int &r, int &g, int &b_)
+{
+    float x,y,z, a,b, h,c,l;
+    h = qHue(hcl);
+    c = qCro(hcl);
+    l = qLum(hcl); // L=[0..100]
+    // convert lch to LAB colorspace
+    h *= PI/180;
+    a = cos(h)*c; // A=[-100..100]
+    b = sin(h)*c; // B=[-100..100]
+    // convert lab to xyz colorspace
+    y = (l + 16) / 116;
+    x = a==0 ? y : y + a/500;
+    z = b==0 ? y : y - b/200;
+
+    x = LAB_Xn * lab_xyz(x);
+    y = LAB_Yn * lab_xyz(y);
+    z = LAB_Zn * lab_xyz(z);
+    // convert xyz to rgb
+    r = Clamp((int)xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z));
+    g = Clamp((int)xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z));
+    b_ = Clamp((int)xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z));
 }
 
 // Expand each size of Image by certain amount of border
@@ -159,7 +240,6 @@ QImage expandBorder(QImage img, int width)
 //********** --------- Gray Scale Image --------- ********** //
 void grayScale(QImage &img)
 {
-    expandBorder(img, 3);
     #pragma omp parallel for
     for (int y=0;y<img.height();y++) {
         QRgb* line;
@@ -575,7 +655,7 @@ void stretchContrast(QImage &img)
 }
 
 // ************* ------------ Auto White Balance -------------************
-// adopted from a stackoverflow code
+// adopted from a stackoverflow code (white patch algorithm)
 
 void autoWhiteBalance(QImage &img)
 {
@@ -617,6 +697,54 @@ void autoWhiteBalance(QImage &img)
 }
 
 
+// ************ ------------ Enhance Color ----------- ************* //
+// Convert to CIE LCH colorspace, and stretch the chroma
+void enhanceColor(QImage &img)
+{
+    int w = img.width();
+    int h = img.height();
+    // convert to HCL colorspace
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        QHcl *row;
+        int h=0,c=0,l=0;
+        #pragma omp critical
+        { row = (QHcl*)img.scanLine(y);}
+        for (int x=0; x<w; x++) {
+            rgbToHcl(row[x],h,c,l);
+            row[x] = qHcl(h,c,l);
+        }
+    }
+    // Calculate percentile
+    unsigned int histogram[132] = {};
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row;
+        row = (QRgb*)img.constScanLine(y);
+        for (int x=0; x<w; x++) {
+            ++histogram[qCro(row[x])];
+        }
+    }
+    int min = percentile(histogram, 0, w*h);
+    int max = percentile(histogram, 100, w*h);
+    if (max==0) // in case of all gray pixels
+        max = 100;
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        int r=0,g=0,b=0,c=0;
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*)img.scanLine(y); }
+        for (int x=0; x<w; x++) {
+            int clr = row[x];
+            c = 100*(qCro(clr)-min)/(max-min);
+            hclToRgb(qHcl(qHue(clr),c,qLum(clr)), r,g,b);
+            row[x] = qRgb(r,g,b);
+        }
+    }
+}
 
 // ********* ---------- Despecle ---------- ***********
 // Crimmins speckle removal
@@ -916,6 +1044,8 @@ void medianFilter(QImage &img, int radius)
     }
 }
 
+// ********************* Experimental Features  ********************* //
+
 //*********** ------------ Kuwahara Filter ------------ ************* //
 #if (0)
 // takes 4 pixels and a floating point coordinate, returns bilinear interpolated pixel
@@ -1058,45 +1188,27 @@ void kuwaharaFilter(QImage &img, int radius)
 #endif
 
 
-// ************ ------------ Enhance Color ----------- ************* //
-#if (0)
-void enhanceColor(QImage &img)
+/*void enhanceColor(QImage &img)
 {
     int w = img.width();
     int h = img.height();
-    hsvImg(img);
-    // Calculate percentile
-    unsigned int histogram[256] = {};
-    for (int y=0; y<h; y++)
-    {
-        QHsv *row;
-        row = (QHsv*)img.constScanLine(y);
-        for (int x=0; x<w; x++) {
-            ++histogram[qSat(row[x])];
-        }
-    }
-    float min = percentile(histogram, 0.2, w*h);
-    float max = percentile(histogram, 99.5, w*h);
-    for (int i=0; i<256; i++) {
-        int sat = 255*(i-min)/(max-min); // try replacing 255 with 255.0
-        histogram[i] = Clamp(sat);
-    }
     #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
-        int r=0,g=0,b=0;
+        int r=0,g=0,b=0,h=0,c=0,l=0;
         QRgb *row;
         #pragma omp critical
         { row = (QRgb*)img.scanLine(y); }
         for (int x=0; x<w; x++) {
             int clr = row[x];
-            int hsv = qHsv(qHue(clr), histogram[qSat(clr)], qVal(clr));
-            hsvToRgb(hsv, r,g,b);
+            rgbToHcl(clr, h,c,l);
+            c += 8;
+            hclToRgb(qHcl(h,c,l), r,g,b);
             row[x] = qRgb(r,g,b);
         }
     }
 }
-#endif
+*/
 
 // ************* ------------ Skin Detection -------------************ /
 #if (0)
