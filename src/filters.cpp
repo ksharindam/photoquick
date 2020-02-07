@@ -901,39 +901,39 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
     int level;
     unsigned int search, update[9];
 
-    list.nodes[color].signature=pixel_list->signature;
-    list.nodes[color].count=1;
-    //  Determine where it belongs in the list.
-    //    This loop consumes most of the time.
-    search=65536UL;
+    list.nodes[color].signature = pixel_list->signature;
+    list.nodes[color].count = 1;
+    // Determine where it belongs in the list.
+    // This loop consumes most of the time.
+    search = 256;
     for (level=list.level; level >= 0; level--)
     {
         while (list.nodes[search].next[level] < color)
-            search=list.nodes[search].next[level];
-        update[level]=search;
+            search = list.nodes[search].next[level];
+        update[level] = search;
     }
     // Generate a pseudo-random level for this node.
     for (level=0; ; level++)
     {
-        pixel_list->seed=(pixel_list->seed*42893621U)+1U;
+        pixel_list->seed = (pixel_list->seed*42893621u)+1u;
         if ((pixel_list->seed & 0x300) != 0x300)
             break;
     }
     if (level > 8)
-        level=8;
+        level = 8;
     if (level > (list.level+2))
-        level=list.level+2;
+        level = list.level+2;
     // If we're raising the list's level, link back to the root node.
     while (level > list.level)
     {
         list.level++;
-        update[list.level]=65536U;
+        update[list.level] = 256;
     }
     //Link the node into the skip-list.
     do
     {
-        list.nodes[color].next[level]=list.nodes[update[level]].next[level];
-        list.nodes[update[level]].next[level]=color;
+        list.nodes[color].next[level] = list.nodes[update[level]].next[level];
+        list.nodes[update[level]].next[level] = color;
     }
     while (level-- > 0);
 }
@@ -941,7 +941,7 @@ void AddNodeMedianList(MedianPixelList *pixel_list, unsigned int color)
 inline
 void InsertMedianList(MedianPixelList *pixel_list, uchar pixel)
 {
-    unsigned int index = (unsigned short)(pixel*257U);
+    unsigned int index = (unsigned short)(pixel);
     if (pixel_list->list.nodes[index].signature == pixel_list->signature)
         pixel_list->list.nodes[index].count++;
     else
@@ -953,11 +953,11 @@ void ResetMedianList(MedianPixelList *pixel_list)
     MedianListNode *root;
     MedianSkipList list;
 
-    list=pixel_list->list;
-    root=list.nodes+65536UL;
-    list.level=0;
+    list = pixel_list->list;
+    root = list.nodes+256;
+    list.level = 0;
     for (int level=0; level < 9; level++)
-        root->next[level]=65536UL;
+        root->next[level] = 256;
 
     pixel_list->seed = pixel_list->signature++;
 }
@@ -976,13 +976,12 @@ MedianPixelList* AllocateMedianList(const long width)
     MedianPixelList *skiplist;
 
     skiplist = (MedianPixelList *) calloc(1,sizeof(MedianPixelList));//TODO:align to 64
-    if (skiplist == (MedianPixelList *) NULL) return skiplist;
-
-    unsigned int node_list_size = 65537U*sizeof(MedianListNode);
+    if (skiplist == (MedianPixelList *) NULL)
+        return skiplist;
 
     skiplist->center=width*width/2;
     skiplist->signature = 0xabacadabUL; //MagickSignature;
-    skiplist->list.nodes = (MedianListNode*) calloc(1,node_list_size);
+    skiplist->list.nodes = (MedianListNode*) calloc(1, 257*sizeof(MedianListNode));
     if (skiplist->list.nodes == (MedianListNode *) NULL)
     {
         DestroyMedianList(skiplist);
@@ -998,16 +997,16 @@ QRgb GetMedian(MedianPixelList *pixel_list)
     unsigned long center,color,count;
 
     // Finds the median value
-    center=pixel_list->center;
-    color=65536L;
-    count=0;
+    center = pixel_list->center;
+    color = 256;
+    count = 0;
     do
     {
-        color=list.nodes[color].next[0];
-        count+=list.nodes[color].count;
+        color = list.nodes[color].next[0];
+        count += list.nodes[color].count;
     }
     while (count <= center);
-    return color/257U;
+    return color;
 }
 
 

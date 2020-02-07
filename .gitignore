@@ -3,10 +3,8 @@
 *.o
 
 # Autocreated source files
-moc_*
-qrc_*
-ui_*
 Makefile
 photoquick
+build/
 
 TODO
