@@ -55,7 +55,7 @@ public slots:
     void rotateRight();
     void mirror();
     void perspectiveTransform();
-    void playSlideShow(bool checked);
+    void playPause();
     void updateStatus();
 };
 

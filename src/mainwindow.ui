@@ -441,7 +441,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QToolButton" name="slideShowBtn">
+        <widget class="QToolButton" name="playPauseBtn">
          <property name="toolTip">
           <string>Play/Pause Slide Show
 [Space]</string>

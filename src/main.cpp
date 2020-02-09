@@ -66,7 +66,6 @@ Window:: Window()
     layout->setContentsMargins(0, 0, 0, 0);
     canvas = new Canvas(this, scrollArea);
     layout->addWidget(canvas);
-    slideShowBtn->setCheckable(true);
     timer = new QTimer(this);
     connectSignals();
     // Initialize Variables
@@ -96,7 +95,7 @@ Window:: connectSignals()
     connect(origSizeBtn, SIGNAL(clicked()), this, SLOT(origSizeImage()));
     connect(rotateLeftBtn, SIGNAL(clicked()), this, SLOT(rotateLeft()));
     connect(rotateRightBtn, SIGNAL(clicked()), this, SLOT(rotateRight()));
-    connect(slideShowBtn, SIGNAL(clicked(bool)), this, SLOT(playSlideShow(bool)));
+    connect(playPauseBtn, SIGNAL(clicked()), this, SLOT(playPause()));
     connect(timer, SIGNAL(timeout()), this, SLOT(openNextImage()));
     // Connect other signals
     connect(canvas, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
@@ -124,6 +123,8 @@ Window:: openImage(QString filepath)
         canvas->setImage(img);
         adjustWindowSize();
         disableButtons(false);
+        if (!timer->isActive())
+            playPauseBtn->setIcon(QIcon(":/images/play.png"));
     }
     else if (frame_count>1) { // For animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
@@ -131,6 +132,7 @@ Window:: openImage(QString filepath)
           canvas->setAnimation(anim);
           adjustWindowSize(true);
           statusbar->showMessage(QString("Resolution : %1x%2").arg(canvas->width()).arg(canvas->height()));
+          playPauseBtn->setIcon(QIcon(":/images/pause.png"));
           disableButtons(true);
         }
     }
@@ -488,15 +490,26 @@ Window:: perspectiveTransform()
 }
 
 void
-Window:: playSlideShow(bool checked)
+Window:: playPause()
 {
-    if (checked) { // Start slideshow
-        timer->start(3000);
-        slideShowBtn->setIcon(QIcon(":/images/pause.png"));
-    }
-    else {       // Stop slideshow
+    if (timer->isActive()) {       // Stop slideshow
         timer->stop();
-        slideShowBtn->setIcon(QIcon(":/images/play.png"));
+        playPauseBtn->setIcon(QIcon(":/images/play.png"));
+        return;
+    }
+    if (canvas->animation) {
+        if (canvas->movie()->state()==QMovie::Running) {
+            canvas->movie()->setPaused(true);
+            playPauseBtn->setIcon(QIcon(":/images/play.png"));
+        }
+        else {
+            canvas->movie()->setPaused(false);
+            playPauseBtn->setIcon(QIcon(":/images/pause.png"));
+        }
+    }
+    else {// Start slideshow
+        timer->start(3000);
+        playPauseBtn->setIcon(QIcon(":/images/pause.png"));
     }
 }
 
