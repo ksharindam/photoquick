@@ -19,6 +19,7 @@
 #include "main.h"
 #include "common.h"
 #include "dialogs.h"
+#include "transform.h"
 #include "photogrid.h"
 #include "filters.h"
 #include <QFileDialog>
@@ -519,7 +520,7 @@ Window:: fitToWindowScale(QImage img)
     int img_w = img.width();
     int img_h =  img.height();
     int max_w = scrollArea->width();
-    int max_h = scrollArea->height()-14;    // 14 is to compensate increased statusbar
+    int max_h = scrollArea->height()-15;    // 15 is to compensate increased statusbar
     int out_w, out_h;
     fitToSize(img_w, img_h, max_w, max_h, out_w, out_h);
     float scale = img_w>img_h ? out_w/(float)img_w : out_h/(float)img_h;
@@ -533,7 +534,7 @@ Window:: fitToScreenScale(QImage img)
     int img_width = img.width();
     int img_height = img.height();
     int max_width = screen_width - (2*btnboxwidth + 2*offset_x);
-    int max_height = screen_height - (offset_y + offset_x + 4+32); // 32 for statusbar with buttons
+    int max_height = screen_height - (offset_y + offset_x + 4+33); // 33 for statusbar with buttons
     if ((img_width > max_width) || (img_height > max_height)) {
         if (float(max_width)/max_height > float(img_width)/img_height) {
             scale = float(max_height)/img_height;
@@ -557,7 +558,7 @@ Window:: adjustWindowSize(bool animation)
     }
     else {
         resize(canvas->pixmap()->width() + 2*btnboxwidth + 4,
-               canvas->pixmap()->height() + 4+32);
+               canvas->pixmap()->height() + 4+33);
     }
     move((screen_width - (width() + 2*offset_x) )/2,
               (screen_height - (height() + offset_x + offset_y))/2 );
