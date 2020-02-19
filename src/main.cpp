@@ -239,10 +239,12 @@ Window:: resizeImage()
 void
 Window:: cropImage()
 {
+    hideButtons();
     Crop *crop = new Crop(canvas, statusbar);
     connect(canvas, SIGNAL(mousePressed(QPoint)), crop, SLOT(onMousePress(QPoint)));
     connect(canvas, SIGNAL(mouseReleased(QPoint)), crop, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), crop, SLOT(onMouseMove(QPoint)));
+    connect(crop, SIGNAL(finished()), this, SLOT(hideButtons()));
 }
 
 void
@@ -484,10 +486,12 @@ Window:: mirror()
 void
 Window:: perspectiveTransform()
 {
+    hideButtons();
     PerspectiveTransform *transform = new PerspectiveTransform(canvas, statusbar);
     connect(canvas, SIGNAL(mousePressed(QPoint)), transform, SLOT(onMousePress(QPoint)));
     connect(canvas, SIGNAL(mouseReleased(QPoint)), transform, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), transform, SLOT(onMouseMove(QPoint)));
+    connect(transform, SIGNAL(finished()), this, SLOT(hideButtons()));
 }
 
 void
@@ -571,6 +575,14 @@ Window:: updateStatus()
     int height = canvas->image.height();
     QString text = "Resolution : %1x%2 , Scale : %3x";
     statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(canvas->scale, 2)));
+}
+
+// hide if not hidden, unhide if hidden
+void
+Window:: hideButtons()
+{
+    frame->setHidden(frame->isVisible());
+    frame_2->setHidden(frame_2->isVisible());
 }
 
 void

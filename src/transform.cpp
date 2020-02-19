@@ -194,6 +194,7 @@ Crop:: finish()
         statusbar->removeWidget(widget);
         widget->deleteLater();
     }
+    emit finished();
     this->deleteLater();
 }
 
@@ -454,6 +455,7 @@ PerspectiveTransform:: finish()
         statusbar->removeWidget(widget);
         widget->deleteLater();
     }
+    emit finished();
     this->deleteLater();
 }
 

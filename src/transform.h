@@ -38,6 +38,8 @@ private slots:
     void setCropMode(QAction *action);
     void crop();
     void finish();
+signals:
+    void finished();
 };
 
 class CropRatioDialog : public QDialog
@@ -79,6 +81,8 @@ private slots:
     void onMouseMove(QPoint pos);
     void transform();
     void finish();
+signals:
+    void finished();
 };
 
 

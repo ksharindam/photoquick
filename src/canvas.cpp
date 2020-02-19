@@ -5,7 +5,6 @@ This file is a part of photoquick program, which is GPLv3 licensed
 #include <QDebug>
 #include <QSizePolicy>
 #include <QTransform>
-#include <QPainter>
 #include <cmath>
 
 

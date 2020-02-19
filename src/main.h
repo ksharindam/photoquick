@@ -30,6 +30,8 @@ public slots:
     void saveACopy();
     void resizeImage();
     void cropImage();
+    void mirror();
+    void perspectiveTransform();
     void addBorder();
     void createPhotoGrid();
     void createPhotoCollage();
@@ -53,9 +55,9 @@ public slots:
     void origSizeImage();
     void rotateLeft();
     void rotateRight();
-    void mirror();
-    void perspectiveTransform();
     void playPause();
+    // others
+    void hideButtons();
     void updateStatus();
 };
 
