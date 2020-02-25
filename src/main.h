@@ -28,6 +28,7 @@ public slots:
     void overwrite();
     void saveAs();
     void saveACopy();
+    void deleteFile();
     void resizeImage();
     void cropImage();
     void mirror();
@@ -61,7 +62,4 @@ public slots:
     void updateStatus();
 };
 
-void waitFor(int millisec);
-// rounds up a number to given decimal point
-float roundOff(float num, int dec);
-
+QString getNextFilename(QString current);

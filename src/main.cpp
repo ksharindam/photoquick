@@ -24,6 +24,7 @@
 #include "filters.h"
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QMessageBox>
 #include <QFileInfo>
 #include <QPainter>
 #include <QDesktopWidget>
@@ -63,6 +64,10 @@ Window:: Window()
     fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
     fxMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     effectsBtn->setMenu(fxMenu);
+    QAction *delAction = new QAction(this);
+    delAction->setShortcut(QString("Delete"));
+    connect(delAction, SIGNAL(triggered()), this, SLOT(deleteFile()));
+    this->addAction(delAction);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     canvas = new Canvas(this, scrollArea);
@@ -212,6 +217,23 @@ Window:: saveACopy()    // generate a new filename and save
     }
     while (QFileInfo(path).exists());
     saveImage(path);
+}
+
+void
+Window:: deleteFile()
+{
+    QString nextfile = getNextFilename(filename); // must be called before deleting
+    QFile fi(filename);
+    if (not fi.exists()) return;
+    if (QMessageBox::warning(this, "Delete File?", "Are you sure to permanently delete this image?",
+            QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+        return;
+    if (!fi.remove()) {
+        QMessageBox::warning(this, "Delete Failed !", "Could not delete the image");
+        return;
+    }
+    if (!nextfile.isNull())
+        openImage(nextfile);
 }
 
 void
@@ -392,17 +414,9 @@ Window:: openPrevImage()
 void
 Window:: openNextImage()
 {
-    QFileInfo fi(filename);
-    if (not fi.exists()) return;
-    QString filename = fi.fileName();
-    QString basedir = fi.absolutePath();         // This does not include filename
-    QString file_filter("*.jpg *.jpeg *.png *.gif *.svg *.bmp *.tiff");
-    QStringList image_list = fi.dir().entryList(file_filter.split(" "));
-
-    int index = image_list.indexOf(filename);
-    if (index == image_list.count()-1) index = -1;
-    QString nextfile = image_list[index+1];
-    openImage(basedir + '/' + nextfile);
+    QString nextfile = getNextFilename(filename);
+    if (!nextfile.isNull())
+        openImage(nextfile);
 }
 
 void
@@ -608,6 +622,23 @@ Window:: closeEvent(QCloseEvent *ev)
     settings.setValue("OffsetY", geometry().y()-y());
     settings.setValue("BtnBoxWidth", frame->width());
     QMainWindow::closeEvent(ev);
+}
+
+// other functions
+QString getNextFilename(QString current)
+{
+    QFileInfo fi(current);
+    if (not fi.exists())
+        return QString();
+    QString filename = fi.fileName();
+    QString basedir = fi.absolutePath();    // This does not include filename
+    QString file_filter("*.jpg *.jpeg *.png *.gif *.svg *.bmp *.tiff");
+    QStringList image_list = fi.dir().entryList(file_filter.split(" "));
+    if (image_list.count()<2)
+        return QString();
+    int index = image_list.indexOf(filename);
+    if (index >= image_list.count()-1) index = -1;
+    return basedir + '/' + image_list[index+1];
 }
 
 // ************* main function ****************

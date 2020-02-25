@@ -90,8 +90,8 @@ void calcArc(QPoint center, QPoint from, QPoint to, QPoint through,
                             float &start, float &span);
 
 // _____________________________________________________________________
-
 // ResizeDialog object to get required image size
+
 class ResizeDialog : public QDialog, public Ui_ResizeDialog
 {
     Q_OBJECT
