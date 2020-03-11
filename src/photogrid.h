@@ -31,7 +31,7 @@ public:
     // Variables
     QList<Thumbnail *> thumbnails;
 public slots:
-    void selectThumbnail(QImage);
+    void selectThumbnail();
 };
 
 // The canvas on which collage is created and displayed.
@@ -43,6 +43,8 @@ public:
     void setupGrid();
     void mouseMoveEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
+    void dragEnterEvent(QDragEnterEvent *ev);
+    void dropEvent(QDropEvent *ev);
     void createFinalGrid();
     // Variables
     int DPI, paperW, paperH, W, H, cols, rows;
@@ -54,6 +56,8 @@ public:
 public slots:
     void setPhoto(QImage img);
     void toggleBorder(bool ok);
+signals:
+    void addPhotoRequested(QImage);
 };
 
 // The dialog to create the grid
@@ -69,6 +73,7 @@ public:
 public slots:
     void configure();
     void addPhoto();
+    void addPhoto(QImage);
     void showHelp();
 };
 
@@ -95,6 +100,7 @@ public:
         border = p->border;
         rotation = p->rotation;
     };
+    bool isNull();
     int img_w, img_h; // the original img resolution
     int x, y;
     int w, h;           // the size on collage paper
@@ -107,6 +113,7 @@ public:
     bool jpgOnDisk();
     QImage image();
 private:
+    bool isValid_ = true;
     QImage image_;      // either image_ or filename is stored
 };
 
@@ -129,6 +136,8 @@ public:
     void mousePressEvent(QMouseEvent *ev);
     void mouseMoveEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
+    void dragEnterEvent(QDragEnterEvent *ev);
+    void dropEvent(QDropEvent *ev);
     void draw();
     void setup();
     void clean();       // delete collage items

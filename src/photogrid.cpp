@@ -11,6 +11,7 @@
 #include <QDesktopWidget>
 #include <QSettings>
 #include <QBuffer>
+#include <QUrl>
 #include <cmath>
 
 
@@ -31,6 +32,7 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
     QObject::connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
     QObject::connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
     QObject::connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
+    QObject::connect(gridPaper, SIGNAL(addPhotoRequested(QImage)), this, SLOT(addPhoto(QImage)));
     gridPaper->photo = img;
 }
 
@@ -57,12 +59,18 @@ GridDialog:: addPhoto()
     QString filepath = QFileDialog::getOpenFileName(this, "Open Image", "", filefilter);
     if (filepath.isEmpty()) return;
     QImage img = loadImage(filepath);
-    if (not img.isNull()) {
-        Thumbnail *thumbnail = new Thumbnail(img, frame);
-        verticalLayout->addWidget(thumbnail);
-        QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
-        thumbnailGr->append(thumbnail);
-    }
+    addPhoto(img);
+}
+
+void
+GridDialog:: addPhoto(QImage img)
+{
+    if (img.isNull())
+        return;
+    Thumbnail *thumbnail = new Thumbnail(img, frame);
+    verticalLayout->addWidget(thumbnail);
+    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
+    thumbnailGr->append(thumbnail);
 }
 
 void
@@ -122,11 +130,11 @@ void
 ThumbnailGroup:: append(Thumbnail *thumbnail)
 {
     thumbnails << thumbnail;
-    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), this, SLOT(selectThumbnail(QImage)));
+    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), this, SLOT(selectThumbnail()));
 }
 
 void
-ThumbnailGroup:: selectThumbnail(QImage)
+ThumbnailGroup:: selectThumbnail()
 {
     for (int i=0;i<thumbnails.count();++i) {
         thumbnails[i]->select(false);
@@ -139,6 +147,7 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
+    setAcceptDrops(true);
     add_border = true;
     QSettings settings(this);
     DPI = settings.value("DPI", 300).toInt();
@@ -183,6 +192,33 @@ void
 GridPaper:: setPhoto(QImage img)
 {
     photo = img;
+}
+
+void
+GridPaper:: dragEnterEvent(QDragEnterEvent *ev)
+{
+    if (ev->mimeData()->hasUrls())
+        ev->acceptProposedAction();
+    else
+        ev->ignore();
+}
+
+void
+GridPaper:: dropEvent(QDropEvent *ev)
+{
+    if ( ev->mimeData()->hasUrls() )
+    {
+        foreach ( const QUrl & url, ev->mimeData()->urls() )
+        {
+            QString str = url.toLocalFile();
+            if (not str.isEmpty())
+            {
+                QImage img = loadImage(str);
+                emit addPhotoRequested(img);
+            }
+        }
+    }
+    ev->ignore();
 }
 
 void
@@ -412,6 +448,7 @@ CollagePaper:: CollagePaper(QWidget *parent, int w, int h, int pdf_w, int pdf_h,
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
+    setAcceptDrops(true);
     background_filename = "";
     drag_icon = QPixmap(":/images/drag.png");
     setup();
@@ -455,6 +492,10 @@ CollagePaper:: setup()
 void
 CollagePaper:: addItem(CollageItem *item)
 {
+    if (item->isNull()){
+        delete item;
+        return;
+    }
     item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
     item->h = round(item->img_h*100/300.0);
     if (item->w > paper.width() or item->h > paper.height())
@@ -518,6 +559,33 @@ CollagePaper:: toggleBorder()
     CollageItem *item = collageItems.last();
     item->border = not item->border;
     draw();
+}
+
+void
+CollagePaper:: dragEnterEvent(QDragEnterEvent *ev)
+{
+    if (ev->mimeData()->hasUrls())
+        ev->acceptProposedAction();
+    else
+        ev->ignore();
+}
+
+void
+CollagePaper:: dropEvent(QDropEvent *ev)
+{
+    if ( ev->mimeData()->hasUrls() )
+    {
+        foreach ( const QUrl & url, ev->mimeData()->urls() )
+        {
+            QString str = url.toLocalFile();
+            if (not str.isEmpty())
+            {
+                CollageItem *item = new CollageItem(str);
+                addItem(item);
+            }
+        }
+    }
+    ev->ignore();
 }
 
 void
@@ -745,8 +813,13 @@ CollagePaper:: clean()
 
 CollageItem:: CollageItem(QString filename) : x(0), y(0)
 {
+    QImage img = loadImage(filename);
+    if (img.isNull()) {
+        isValid_ = false;
+        return;
+    }
     // resize it
-    pixmap = QPixmap::fromImage(loadImage(filename));
+    pixmap = QPixmap::fromImage(img);
     img_w = pixmap.width();
     img_h = pixmap.height();
     if (img_w > 600 and img_h > 600)
@@ -757,6 +830,10 @@ CollageItem:: CollageItem(QString filename) : x(0), y(0)
 
 CollageItem:: CollageItem(QImage img) : x(0), y(0)
 {
+    if (img.isNull()) {
+        isValid_ = false;
+        return;
+    }
     // resize it
     pixmap = QPixmap::fromImage(img);
     img_w = pixmap.width();
@@ -765,6 +842,12 @@ CollageItem:: CollageItem(QImage img) : x(0), y(0)
         pixmap = pixmap.scaled(600, 600, Qt::KeepAspectRatio,Qt::SmoothTransformation);
     this->filename = QString("");
     this->image_ = img;
+}
+
+bool
+CollageItem:: isNull()
+{
+    return not isValid_;
 }
 
 bool
