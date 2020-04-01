@@ -1,4 +1,5 @@
 #include "dialogs.h"
+#include "common.h"
 #include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QGridLayout>
@@ -64,3 +65,5 @@ QualityDialog:: checkFileSize()
 	QString text = "Size : %1 KB";
 	sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
 }
+
+

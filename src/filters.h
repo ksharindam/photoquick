@@ -43,5 +43,7 @@ void enhanceColor(QImage &img);
 // remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
 
+void pencilSketch(QImage &img);
+
 // edge preserving noise reduction filter (used for artistic effects)
 void kuwaharaFilter(QImage &img, int radius);

@@ -17,12 +17,12 @@ OBJECTS_DIR = build
 mytarget.commands += $${QMAKE_MKDIR} build
 
 # Input
-HEADERS += canvas.h main.h transform.h photogrid.h dialogs.h
+HEADERS += canvas.h main.h transform.h photogrid.h dialogs.h inpaint.h
 SOURCES += common.cpp exif.cpp canvas.cpp main.cpp transform.cpp dialogs.cpp \
-        photogrid.cpp filters.cpp pdfwriter.cpp 
+        photogrid.cpp filters.cpp pdfwriter.cpp inpaint.cpp
 RESOURCES += resources.qrc
 FORMS += mainwindow.ui resize_dialog.ui photogrid_dialog.ui gridsetup_dialog.ui \
-         collage_dialog.ui collagesetup_dialog.ui
+         collage_dialog.ui collagesetup_dialog.ui inpaint_dialog.ui
 
 # install
 !win32 {

@@ -1,6 +1,5 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
-#include <QDebug>
 #include "common.h"
 #include "photogrid.h"
 #include "pdfwriter.h"

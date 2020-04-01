@@ -2,7 +2,6 @@
 #include "filters.h"
 #include "common.h"
 #include <cmath>
-#include <QDebug>
 
 // macros for measuring execution time
 #include <chrono>
@@ -251,6 +250,21 @@ void grayScale(QImage &img)
         }
     }
 }
+
+//********* ---------- Invert Colors or Negate --------- ********** //
+void invert(QImage &img)
+{
+    #pragma omp parallel for
+    for (int y=0;y<img.height();y++) {
+        QRgb* line;
+        #pragma omp critical
+        { line = ((QRgb*)img.scanLine(y));}
+        for (int x=0;x<img.width();x++) {
+            line[x] = qRgba(255-qRed(line[x]), 255-qGreen(line[x]), 255-qBlue(line[x]), qAlpha(line[x]));
+        }
+    }
+}
+
 
 //********* --------- Global Threshold -------- ***********//
 #define HISTOGRAM_SIZE 256
@@ -1043,6 +1057,35 @@ void medianFilter(QImage &img, int radius)
     }
 }
 
+
+//*********** ------------ Pencil Sketch ------------ ************* //
+
+void pencilSketch(QImage &img)
+{
+    grayScale(img);
+    QImage topImg = img.copy();
+    invert(topImg);
+    boxFilter(topImg, img.width()/20);
+
+    #pragma omp parallel for
+    for (int y=0;y<img.height();y++) {
+        QRgb *line, *top_line;
+        #pragma omp critical
+        { line = ((QRgb*)img.scanLine(y));
+          top_line = ((QRgb*)topImg.scanLine(y));}
+        for (int x=0;x<img.width();x++) {
+            int back = qRed(line[x]);
+            int top = qRed(top_line[x]);
+            if (back==255 || top==0) continue;
+            // blend topImg and img using color dodge blend
+            int val = MIN(255, (top<<8)/(255-back));
+            line[x] = qRgba(val,val,val, qAlpha(line[x]));
+        }
+    }
+}
+
+
+
 // ********************* Experimental Features  ********************* //
 
 //*********** ------------ Kuwahara Filter ------------ ************* //
@@ -1186,28 +1229,6 @@ void kuwaharaFilter(QImage &img, int radius)
 }
 #endif
 
-
-/*void enhanceColor(QImage &img)
-{
-    int w = img.width();
-    int h = img.height();
-    #pragma omp parallel for
-    for (int y=0; y<h; y++)
-    {
-        int r=0,g=0,b=0,h=0,c=0,l=0;
-        QRgb *row;
-        #pragma omp critical
-        { row = (QRgb*)img.scanLine(y); }
-        for (int x=0; x<w; x++) {
-            int clr = row[x];
-            rgbToHcl(clr, h,c,l);
-            c += 8;
-            hclToRgb(qHcl(h,c,l), r,g,b);
-            row[x] = qRgb(r,g,b);
-        }
-    }
-}
-*/
 
 // ************* ------------ Skin Detection -------------************ /
 #if (0)

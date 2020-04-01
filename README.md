@@ -18,6 +18,8 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
   * White Balance
   * Despeckle  
   * Reduce Noise  
+  * Pencil Sketch  
+  * Magic Eraser (inpainting)  
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 

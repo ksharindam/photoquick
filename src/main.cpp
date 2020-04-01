@@ -21,6 +21,7 @@
 #include "dialogs.h"
 #include "transform.h"
 #include "photogrid.h"
+#include "inpaint.h"
 #include "filters.h"
 #include <QFileDialog>
 #include <QInputDialog>
@@ -31,7 +32,6 @@
 #include <QSettings>
 #include <QMenu>
 #include <QRegExp>
-#include <QDebug>
 #include <cmath>
 
 Window:: Window()
@@ -52,17 +52,22 @@ Window:: Window()
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
     decorateBtn->setMenu(decorateMenu);
     QMenu *fxMenu = new QMenu(effectsBtn);
-    fxMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
     fxMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
-    fxMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+    QMenu *colorMenu = fxMenu->addMenu("Color");
+        colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
+        colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+        colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
+        colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
+    QMenu *brightnessMenu = fxMenu->addMenu("Brightness");
+        brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
+        brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
+    QMenu *noiseMenu = fxMenu->addMenu("Noise Removal");
+        noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
+        noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
+    fxMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    fxMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
-    fxMenu->addAction("Remove Dust", this, SLOT(removeDust()));
-    fxMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
-    fxMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
-    fxMenu->addAction("White Balance", this, SLOT(whiteBalance()));
-    fxMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
+    fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
     effectsBtn->setMenu(fxMenu);
     QAction *delAction = new QAction(this);
     delAction->setShortcut(QString("Delete"));
@@ -314,6 +319,17 @@ Window:: createPhotoCollage()
 }
 
 void
+Window:: magicEraser()
+{
+    InpaintDialog *dialog = new InpaintDialog(canvas->image, this);
+    int dialog_h = screen_height - offset_y - offset_x;
+    dialog->resize(1020, dialog_h);
+    if (dialog->exec()==QDialog::Accepted) {
+        canvas->setImage(dialog->canvas->image);
+    }
+}
+
+void
 Window:: toGrayScale()
 {
     grayScale(canvas->image);
@@ -392,6 +408,13 @@ void
 Window:: enhanceColors()
 {
     enhanceColor(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: pencilSketchFilter()
+{
+    pencilSketch(canvas->image);
     canvas->showScaled();
 }
 

@@ -37,6 +37,7 @@ public slots:
     void createPhotoGrid();
     void createPhotoCollage();
     // filters
+    void magicEraser();
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();
@@ -48,6 +49,7 @@ public slots:
     void enhanceLight();
     void whiteBalance();
     void enhanceColors();
+    void pencilSketchFilter();
     // file and view options
     void openPrevImage();
     void openNextImage();
