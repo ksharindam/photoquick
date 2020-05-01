@@ -22,6 +22,7 @@
 #include "transform.h"
 #include "photogrid.h"
 #include "inpaint.h"
+#include "iscissor.h"
 #include "filters.h"
 #include <QFileDialog>
 #include <QInputDialog>
@@ -41,6 +42,7 @@ Window:: Window()
     saveMenu->addAction("Overwrite", this, SLOT(overwrite()));
     saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     saveMenu->addAction("Save As...", this, SLOT(saveAs()));
+    saveMenu->addAction("Open Image", this, SLOT(openFile()));
     saveBtn->setMenu(saveMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
     transformMenu->addAction("Mirror", this, SLOT(mirror()));
@@ -51,6 +53,7 @@ Window:: Window()
     decorateMenu->addAction("Photo Collage", this, SLOT(createPhotoCollage()));
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
     decorateBtn->setMenu(decorateMenu);
+    // Filters menu
     QMenu *fxMenu = new QMenu(effectsBtn);
     fxMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     QMenu *colorMenu = fxMenu->addMenu("Color");
@@ -64,11 +67,15 @@ Window:: Window()
     QMenu *noiseMenu = fxMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
-    fxMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
     effectsBtn->setMenu(fxMenu);
+    // Tools menu
+    QMenu *toolsMenu = new QMenu(toolsBtn);
+    toolsMenu->addAction("Erase Background", this, SLOT(iScissor()));
+    toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
+    toolsBtn->setMenu(toolsMenu);
     QAction *delAction = new QAction(this);
     delAction->setShortcut(QString("Delete"));
     connect(delAction, SIGNAL(triggered()), this, SLOT(deleteFile()));
@@ -94,7 +101,6 @@ void
 Window:: connectSignals()
 {
     // For the buttons of the left side
-    connect(openBtn, SIGNAL(clicked()), this, SLOT(openFile()));
     connect(resizeBtn, SIGNAL(clicked()), this, SLOT(resizeImage()));
     connect(cropBtn, SIGNAL(clicked()), this, SLOT(cropImage()));
     connect(quitBtn, SIGNAL(clicked()), this, SLOT(close()));
@@ -326,6 +332,17 @@ Window:: magicEraser()
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
         canvas->setImage(dialog->canvas->image);
+    }
+}
+
+void
+Window:: iScissor()
+{
+    IScissorDialog *dialog = new IScissorDialog(canvas->image, this);
+    int dialog_h = screen_height - offset_y - offset_x;
+    dialog->resize(1020, dialog_h);
+    if (dialog->exec()==QDialog::Accepted) {
+        canvas->setImage( dialog->canvas->getResultImage() );
     }
 }
 

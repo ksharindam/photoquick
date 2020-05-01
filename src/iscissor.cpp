@@ -1,0 +1,755 @@
+#include "iscissor.h"
+#include "common.h"
+#include "filters.h"
+#include <QColorDialog>
+#include <cmath>
+
+// ---------------------------------------------------------------------
+//************************ Intelligent Scissor *************************
+// _____________________________________________________________________
+
+
+// *********************** IScissor Dialog ************************
+
+IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
+{
+    setupUi(this);
+    QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
+    layout->setContentsMargins(0, 0, 0, 0);
+    canvas = new IScissorCanvas(img, this);
+    layout->addWidget(canvas);
+    undoBtn->setEnabled(false);
+    redoBtn->setEnabled(false);
+    acceptBtn->setEnabled(false);
+    labelBackground->setHidden(true);
+    comboBgColor->setHidden(true);
+
+    statusbar->setText("Tip : Click to place seeds around object");
+
+    connect(acceptBtn, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(undoBtn, SIGNAL(clicked()), this, SLOT(undo()));
+    connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
+    connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomIn()));
+    connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOut()));
+    connect(smoothEdgesBtn, SIGNAL(toggled(bool)), this, SLOT(toggleSmoothMask(bool)));
+    connect(comboBgColor, SIGNAL(activated(int)), this, SLOT(setBgType(int)));
+    connect(canvas, SIGNAL(undoAvailable(bool)), undoBtn, SLOT(setEnabled(bool)));
+    connect(canvas, SIGNAL(redoAvailable(bool)), redoBtn, SLOT(setEnabled(bool)));
+    connect(canvas, SIGNAL(maskedImageReady()), this, SLOT(onMaskedImageReady()));
+    connect(canvas, SIGNAL(messageUpdated(const QString&)), statusbar, SLOT(setText(const QString&)));
+
+    // scale the canvas to fit to scrollarea width
+    int available_w = 1020 - frame->width() - 4;
+    int img_w = img.width();
+    float scale = 1.0;
+    while (img_w > available_w) {
+        scale /= 1.5;
+        img_w = roundf(scale*img.width());
+    }
+    canvas->scaleBy(scale);
+    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+}
+
+void
+IScissorDialog:: setBgType(int type)
+{
+    canvas->bg_color_type = type;
+    if (type==COLOR_OTHER) {
+        QColor clr = QColorDialog::getColor(QColor(canvas->bg_color), this);
+        if (clr.isValid())
+            canvas->bg_color = clr.rgb();
+    }
+    canvas->redraw();
+}
+
+void
+IScissorDialog:: zoomIn()
+{
+    canvas->scaleBy(1.5*canvas->scale);
+    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+}
+
+void
+IScissorDialog:: zoomOut()
+{
+    canvas->scaleBy(canvas->scale/1.5);
+    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+}
+
+void
+IScissorDialog:: undo()
+{
+    canvas->undo();
+}
+
+void
+IScissorDialog:: redo()
+{
+    canvas->redo();
+}
+
+void
+IScissorDialog:: toggleSmoothMask(bool checked)
+{
+    canvas->smooth_mask = checked;
+}
+
+void
+IScissorDialog:: keyPressEvent(QKeyEvent *ev)
+{
+    // prevent closing dialog on accidental Esc key press
+    if (ev->key() != Qt::Key_Escape)
+        return QDialog::keyPressEvent(ev);
+    ev->accept();
+}
+
+void
+IScissorDialog:: onMaskedImageReady()
+{
+    acceptBtn->setEnabled(true);
+    labelBackground->setHidden(false);
+    comboBgColor->setHidden(false);
+}
+
+void
+IScissorDialog:: done(int val)
+{
+    if (canvas->grad_map)
+        delete canvas->grad_map;
+    QDialog::done(val);
+}
+
+
+// ******************* IScissor Canvas ******************
+IScissorCanvas:: IScissorCanvas(QImage &img, QWidget *parent) : QLabel(parent)
+{
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setMouseTracking(true);
+    this->image = img;
+}
+
+void
+IScissorCanvas:: scaleImage()
+{
+    if (scale == 1.0)
+        image_scaled = image;
+    else {
+        Qt::TransformationMode mode = scale<1.0? Qt::SmoothTransformation: Qt::FastTransformation;
+        image_scaled = image.scaled(scale*image.width(), scale*image.height(),
+                        Qt::IgnoreAspectRatio, mode);
+    }
+    // make it conversion to QPixmap and drawing faster
+    if (image.format()==QImage::Format_ARGB32)
+        image_scaled = image_scaled.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+}
+
+void
+IScissorCanvas:: redraw()
+{
+    scaleImage();
+    if (masked_image_ready and seeds.empty() and bg_color_type!=TRANSPERANT) {
+        QImage img(image_scaled.width(), image_scaled.height(), QImage::Format_RGB32);
+        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
+        img.fill(clr);
+        painter.begin(&img);
+        painter.drawImage(QPoint(0,0), image_scaled);
+        painter.end();
+        setPixmap( QPixmap::fromImage(img) );
+        return;
+    }
+    drawFullPath();
+    setPixmap( QPixmap::fromImage(image_scaled) );
+}
+
+void
+IScissorCanvas:: scaleBy(float factor)
+{
+    scale = factor;
+    redraw();
+}
+
+void
+IScissorCanvas:: mousePressEvent(QMouseEvent *ev)
+{
+    QPoint pos = ev->pos()/scale;
+    // no seed was placed before so cant draw permanent path
+    if (seed_mode == NO_SEED) {
+        if (!grad_map) grad_map = new GradMap(image);
+        seeds.push_back(pos);
+        redoStack.clear();
+        seed_mode = SEED_PLACED;
+        emit undoAvailable(true);
+        emit redoAvailable(false);
+        emit messageUpdated(QString("Tip : Place more seeds until a closed loop is created"));
+    }
+    // can draw a permanent path
+    else if (seed_mode == SEED_PLACED) {
+        seeds.push_back(pos);
+        redoStack.clear();
+        emit redoAvailable(false);
+        // check if clicked on seed/path is closed
+        checkPathClosed();
+        if (seed_mode == PATH_CLOSED) {
+            calcShortPath(seeds[seeds.size()-2], seeds.back());
+            emit messageUpdated(QString("Tip : Click inside loop to erase outside of loop"));
+        }
+        fullPath.push_back(shortPath);
+        drawSeedToSeedPath();
+    }
+    // path was closed, it is time to create mask
+    else if (not fullPath.empty()){ // i.e mask not generated
+        getMaskedImage(pos);
+        seeds.clear();
+        fullPath.clear();
+        redraw();
+        emit undoAvailable(false);
+        emit messageUpdated(QString("Tip : Click accept or place more seeds and cut again"));
+        seed_mode = NO_SEED;
+    }
+}
+
+void
+IScissorCanvas:: mouseMoveEvent(QMouseEvent *ev)
+{
+    if (seed_mode != SEED_PLACED) return; //Return if mouse is not clicked
+    calcShortPath(seeds.back(), ev->pos()/scale);
+    drawSeedToCursorPath();
+}
+
+void
+IScissorCanvas:: calcShortPath(QPoint from/*seed*/, QPoint to/*cursor*/){
+    int x = to.x();
+    int y = to.y();
+    int seed_x = from.x();
+    int seed_y = from.y();
+    // Get bounding box of livewire
+    int x1 = MIN(x, seed_x); // topleft x
+    int y1 = MIN(y, seed_y);
+    int x2 = MAX(x, seed_x); // bottom right x
+    int y2 = MAX(y, seed_y);
+
+    shortPath.clear();
+    if (x1==x2) { // plot vertical line
+        for (int i=y1; i<=y2; i++)
+            shortPath.push_back(QPoint(x1, i));
+    }
+    else if (y1==y2) { // plot horizontal line
+        for (int i=x1; i<=x2; i++)
+            shortPath.push_back(QPoint(i, y1));
+    }
+    else {
+        int extend_w = (x2-x1)*0.2 + 5;
+        int extend_h = (y2-y1)*0.2 + 5;
+        if (x1==seed_x)
+            x2 = MIN(x2+extend_w, image.width()-1);
+        else
+            x1 = MAX(x1-extend_w, 0);
+        if (y1==seed_y)
+            y2 = MIN(y2+extend_h, image.height()-1);
+        else
+            y1 = MAX(y1-extend_h, 0);
+
+        IntBuffer dp_buff(x2-x1+1, y2-y1+1);
+        findOptimalPath(grad_map, dp_buff, x1, y1, seed_x, seed_y);
+        shortPath = plotShortPath(&dp_buff, x1, y1, x, y);
+    }
+}
+
+// Draw movable last line (livewire)
+void
+IScissorCanvas:: drawSeedToCursorPath()
+{
+    QPixmap pm = QPixmap::fromImage(image_scaled.copy());
+    painter.begin(&pm);
+    QPen pen(Qt::red, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(pen);
+    QPoint pt1 = shortPath[0];
+    for (uint i=1; i<shortPath.size(); i++)
+    {
+        QPoint pt2 = shortPath[i];
+        painter.drawLine(pt1*scale, pt2*scale);
+        pt1 = pt2;
+    }
+    painter.setPen(Qt::black);
+    painter.setBrush(QBrush(Qt::white));
+    painter.drawEllipse(seeds.back()*scale, 4, 4);
+    painter.end();
+    setPixmap(pm);
+}
+
+// draw last permanent non movable short path
+void
+IScissorCanvas:: drawSeedToSeedPath()
+{
+    painter.begin(&image_scaled);
+    QPen pen(Qt::blue, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(pen);
+    std::vector<QPoint> short_path = fullPath.back();
+    QPoint pt1 = short_path[0];
+    for (uint i=1; i<short_path.size(); i++)
+    {
+        QPoint pt2 = short_path[i];
+        painter.drawLine(pt1*scale, pt2*scale);
+        pt1 = pt2;
+    }
+    painter.setPen(Qt::black);
+    painter.setBrush(QBrush(Qt::white));
+    painter.drawEllipse(seeds[seeds.size()-2]*scale, 4, 4);
+    painter.end();
+    setPixmap( QPixmap::fromImage(image_scaled) );
+}
+
+// this is called when image is scaled
+void
+IScissorCanvas:: drawFullPath()
+{
+    if (fullPath.empty())
+        return;
+    painter.begin(&image_scaled);
+    QPen pen(Qt::blue, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    painter.setPen(pen);
+    for (auto short_path : fullPath) {
+        QPoint pt1 = short_path[0];
+        for (uint i=1; i<short_path.size(); i++)
+        {
+            QPoint pt2 = short_path[i];
+            painter.drawLine(pt1*scale, pt2*scale);
+            pt1 = pt2;
+        }
+    }
+    painter.setPen(Qt::black);
+    painter.setBrush(QBrush(Qt::white));
+    for (QPoint seed : seeds) {
+        painter.drawEllipse(seed*scale, 4, 4);
+    }
+    painter.end();
+}
+
+void
+IScissorCanvas:: undo()
+{
+    redoStack.push_back(seeds.back());
+    emit redoAvailable(true);
+    seeds.pop_back();
+    if (seeds.empty()) {
+        seed_mode = NO_SEED;
+        emit undoAvailable(false);
+    }
+    else {
+        seed_mode = SEED_PLACED;//change from PATH_CLOSED mode
+        fullPath.pop_back();
+    }
+    redraw();
+}
+
+void
+IScissorCanvas:: redo()
+{
+    seeds.push_back(redoStack.back());
+    emit undoAvailable(true);
+    redoStack.pop_back();
+    if (redoStack.empty())
+        emit redoAvailable(false);
+    if (seed_mode==NO_SEED)
+        seed_mode = SEED_PLACED; // first seed placed, nothing to do
+    else {
+        calcShortPath(seeds[seeds.size()-2], seeds.back());
+        fullPath.push_back(shortPath);
+    }
+    redraw();
+}
+
+#define SQR(x) ((x)*(x))
+
+void
+IScissorCanvas:: checkPathClosed()
+{
+    if (seeds.size() < 4)
+        return;
+    int x = seeds.back().x();
+    int y = seeds.back().y();
+    for (uint i=0; i<seeds.size()-3; ++i) {
+        int distance = sqrt(SQR(seeds[i].x()-x) + SQR(seeds[i].y()-y));
+        if (distance < (6/scale)) {
+            seeds.pop_back();
+            seeds.push_back(QPoint(seeds[i]));
+            seed_mode = PATH_CLOSED;
+            return;
+        }
+    }
+}
+
+// generate mask by floodfill inside path boundary
+void
+IScissorCanvas:: getMaskedImage(QPoint clicked)
+{
+    QRgb white = qRgb(255,255,255);
+    QRgb black = qRgb(0,0,0);
+    QImage mask(image.width(), image.height(), QImage::Format_ARGB32);
+    mask.fill(white);
+    for (auto points : fullPath) {
+        for (QPoint pt : points) {
+            mask.setPixel(pt, black);
+        }
+    }
+    //mask.save("mask.png");
+    floodfill(mask, clicked, white, black);
+    for (auto points : fullPath) {
+        for (QPoint pt : points) {
+            mask.setPixel(pt, white);
+        }
+    }
+    if (smooth_mask)
+        gaussianBlur(mask, 3);
+    if (image.format() != QImage::Format_ARGB32)
+        image = image.convertToFormat(QImage::Format_ARGB32);
+    for (int y=0; y<image.height(); y++){
+        QRgb *row = (QRgb*)image.scanLine(y);
+        QRgb *mask_row = (QRgb*)mask.constScanLine(y);
+        for (int x=0; x<image.width(); x++){
+            int clr = row[x];
+            int alpha = qAlpha(clr) - qRed(mask_row[x]);
+            if (alpha<0) alpha = 0;
+            row[x] = qRgba(qRed(clr), qGreen(clr), qBlue(clr), alpha);
+        }
+    }
+    masked_image_ready = true;
+    emit maskedImageReady();
+}
+
+QImage
+IScissorCanvas:: getResultImage()
+{
+    if (bg_color_type==TRANSPERANT)
+        return image;
+    else {
+        QImage img(image.width(), image.height(), QImage::Format_RGB32);
+        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
+        img.fill(clr);
+        painter.begin(&img);
+        painter.drawImage(QPoint(0,0), image);
+        painter.end();
+        image = QImage();//free memory
+        return img;
+    }
+}
+
+// marker for each of 8 neighbours.
+// looks weird order, but helps to easily determine if it is diagonal or edge pixel.
+// also, index of opposite side pixel is determined as k+4
+/*
+ * '---+---+---`
+ * | 7 | 5 | 6 |
+ * +---+---+---+
+ * | 4 |   | 0 |
+ * +---+---+---+
+ * | 2 | 1 | 3 |
+ * `---+---+---'
+ */
+/* sentinel to mark seed point in cost map */
+#define  SEED_POINT     9
+
+// how to reach a neighbour
+const int link_offset[8][2] =
+{//  x   y
+  {  1,  0 },
+  {  0,  1 },
+  { -1,  1 },
+  {  1,  1 },
+  { -1,  0 },
+  {  0, -1 },
+  {  1, -1 },
+  { -1, -1 },
+};
+// we use left 24 bytes to store pixel cost, and rest 4 bytes to store link dir
+#define  PIXEL_COST(x)     ((x) >> 4)
+#define  PIXEL_DIR(x)      ((x) & 0xf)
+
+#define PACK(x, y)      ((((y) & 0xff) << 8) | ((x) & 0xff))
+#define OFFSET(pixel)   ((int8_t)((pixel) & 0xff) + \
+                        ((int8_t)(((pixel) & 0xff00) >> 8)) * buff_w)
+
+
+void findOptimalPath(GradMap *grad_map, IntBuffer &dp_buff,
+                    int x1, int y1, int xs, int ys)
+{
+    uint  pixel[8];
+    int  cum_cost[8];
+    int  link_cost[8];
+    int  pixel_cost[8];
+    int link, offset;
+    int  buff_w = dp_buff.width;
+    int  buff_h = dp_buff.height;
+
+    uint *data = dp_buff.data;
+
+    /*  what directions are we filling the array in according to?  */
+    int dirx = (xs == x1) ? 1 : -1;
+    int diry = (ys == y1) ? 1 : -1;
+    int linkdir = (dirx * diry);
+
+    int y = ys;
+
+    for (int i = 0; i < buff_h; i++)
+    {
+      int x = xs;
+
+      uint *d = data + (y-y1) * buff_w + (x-x1);
+
+      for (int j = 0; j < buff_w; j++)
+        {
+          for (int k = 0; k < 8; k++)
+            pixel[k] = 0;
+
+          /*  Find the valid neighboring pixels  */
+          /*  the previous pixel  */
+          if (j)
+            pixel[((dirx == 1) ? 4 : 0)] = PACK(-dirx, 0);
+
+          /*  the previous row of pixels  */
+          if (i)
+            {
+              pixel[((diry == 1) ? 5 : 1)] = PACK(0, -diry);
+
+              link = (linkdir == 1) ? 3 : 2;
+              if (j)
+                pixel[((diry == 1) ? (link + 4) : link)] = PACK(-dirx, -diry);
+
+              link = (linkdir == 1) ? 2 : 3;
+              if (j != buff_w - 1)
+                pixel[((diry == 1) ? (link + 4) : link)] = PACK(dirx, -diry);
+            }
+
+          /*  find the minimum cost of going through each neighbor to reach the
+           *  seed point...
+           */
+          int min_cost = INT32_MAX;
+          link = -1;
+          for (int k = 0; k < 8; k ++)
+            if (pixel[k])
+              {
+                link_cost[k] = grad_map->linkCost(xs + j*dirx, ys + i*diry, k);
+                offset = OFFSET (pixel [k]);
+                pixel_cost[k] = PIXEL_COST (d[offset]);
+                cum_cost[k] = pixel_cost[k] + link_cost[k];
+                if (cum_cost[k] < min_cost)
+                  {
+                    min_cost = cum_cost[k];
+                    link = k;
+                  }
+              }
+          /*  If anything can be done...  */
+          if (link >= 0)
+            {
+              //  set the cumulative cost of this pixel and the new direction
+              *d = (cum_cost[link] << 4) + link;
+
+              /*  possibly change the links from the other pixels to this pixel...
+               *  these changes occur if a neighboring pixel will receive a lower
+               *  cumulative cost by going through this pixel.
+               */
+              for (int k = 0; k < 8; k ++)
+                if (pixel[k] && k != link)
+                  {
+                    /*  if the cumulative cost at the neighbor is greater than
+                     *  the cost through the link to the current pixel, change the
+                     *  neighbor's link to point to the current pixel.
+                     */
+                    int new_cost = link_cost[k] + cum_cost[link];
+                    if (pixel_cost[k] > new_cost)
+                    {
+                      /*  reverse the link direction   /--------------------\ */
+                      offset = OFFSET (pixel[k]);
+                      d[offset] = (new_cost << 4) + ((k > 3) ? k - 4 : k + 4);
+                    }
+                  }
+            }
+          /*  Set the seed point  */
+          else if (!i && !j)
+            {
+              *d = SEED_POINT;
+            }
+          /*  increment the data pointer and the x counter  */
+          d += dirx;
+          x += dirx;
+        }
+      /*  increment the y counter  */
+      y += diry;
+    }
+}
+
+std::vector<QPoint>
+            plotShortPath(IntBuffer *dp_buff, int x1, int y1, int target_x, int target_y)
+{
+    int width = dp_buff->width;
+
+    std::vector<QPoint> shortPath;
+    /*  Start the data pointer at the correct location  */
+    uint *data = (uint *) dp_buff->data + (target_y - y1)*width + (target_x - x1);
+
+    int x = target_x;
+    int y = target_y;
+
+    while (1)
+    {
+        shortPath.push_back(QPoint(x,y));
+
+        int link = PIXEL_DIR (*data);
+        if (link == SEED_POINT)
+            return shortPath;
+
+        x += link_offset[link][0];
+        y += link_offset[link][1];
+        data += link_offset[link][1] * width + link_offset[link][0];
+    }
+    return shortPath; // never reaches here
+}
+
+
+// Gradient Map
+GradMap:: GradMap(QImage img)
+{
+    width = img.width();
+    height = img.height();
+    grad_mag = (uchar*)malloc(width*height);
+    short int *grad_tmp = (short int*) malloc(width*height*sizeof(short int));
+    // create gradient map using sobel filter
+    int max_grad = 0;
+    QRgb *data = (QRgb*)img.constScanLine(0);
+    #pragma omp parallel for
+    for (int y=1; y<height-1; y++) {
+        QRgb *row1 = data + (y*width);// current row
+        QRgb *row0 = row1 - width; // prev row
+        QRgb *row2 = row1 + width; // next row
+        for (int x=1; x<width-1; x++) {
+            int clr00 = row0[x-1];
+            int clr01 = row0[x];
+            int clr02 = row0[x+1];
+            int clr10 = row1[x-1];
+            int clr12 = row1[x+1];
+            int clr20 = row2[x-1];
+            int clr21 = row2[x];
+            int clr22 = row2[x+1];
+
+            short int grad_x, grad_y, grad_x_g, grad_y_g, grad_x_b, grad_y_b;
+
+            grad_x = qRed(clr00) + 2*qRed(clr10) + qRed(clr20) -
+                    (qRed(clr02) + 2*qRed(clr12) + qRed(clr22));
+            grad_y = qRed(clr00) + 2*qRed(clr01) + qRed(clr02) -
+                    (qRed(clr20) + 2*qRed(clr21) + qRed(clr22));
+            int grad = sqrt(grad_x*grad_x + grad_y*grad_y);
+            // green channel
+            grad_x_g = qGreen(clr00) + 2*qGreen(clr10) + qGreen(clr20) -
+                    (qGreen(clr02) + 2*qGreen(clr12) + qGreen(clr22));
+            grad_y_g = qGreen(clr00) + 2*qGreen(clr01) + qGreen(clr02) -
+                    (qGreen(clr20) + 2*qGreen(clr21) + qGreen(clr22));
+            int grad_g = sqrt(grad_x_g*grad_x_g + grad_y_g*grad_y_g);
+            // blue channel
+            grad_x_b = qBlue(clr00) + 2*qBlue(clr10) + qBlue(clr20) -
+                    (qBlue(clr02) + 2*qBlue(clr12) + qBlue(clr22));
+            grad_y_b = qBlue(clr00) + 2*qBlue(clr01) + qBlue(clr02) -
+                    (qBlue(clr20) + 2*qBlue(clr21) + qBlue(clr22));
+            int grad_b = sqrt(grad_x_b*grad_x_b + grad_y_b*grad_y_b);
+
+            // use maximum value among 3 channels
+            grad = MAX(grad, MAX(grad_g, grad_b));
+            if (grad > max_grad)
+                max_grad = grad;
+            grad_tmp[y*width + x] = grad;
+        }
+    }
+    #pragma omp parallel for
+    for (int y=1; y<height-1; y++) {
+        for (int x=1; x<width-1; x++) {
+            grad_mag[y*width + x] = (1 - grad_tmp[y*width + x]/(float)max_grad)*255;
+        }
+    }
+    // duplicate top and bottom border pixels
+    memcpy(grad_mag+1, grad_mag+(width+1), width-2);
+    memcpy(grad_mag+(width*(height-1)+1), grad_mag+(width*(height-2)+1), width-2);
+    // duplicate left and right border
+    for (int i=0; i<height; i++){
+        uchar *row = grad_mag + (i*width);
+        row[0] = row[1];
+        row[width-1] = row[width-2];
+    }
+    free(grad_tmp);
+}
+
+#define SQRT2 1.414213562
+float link_weight[8] = {1,1,SQRT2,SQRT2,1,1,SQRT2,SQRT2};
+
+int
+GradMap:: linkCost(int x, int y, int link)
+{
+    x += link_offset[link][0];
+    y += link_offset[link][1];
+    return (link_weight[link] * grad_mag[y*width + x]);
+}
+
+GradMap:: ~GradMap()
+{
+    free(grad_mag);
+}
+
+// Integer Buffer
+IntBuffer:: IntBuffer(int w, int h) : width(w), height(h)
+{
+    data = (uint*) malloc(w*h*sizeof(uint));
+}
+
+IntBuffer:: ~IntBuffer()
+{
+    free(data);
+}
+
+/* Stack Based Scanline Floodfill
+   Source : http://lodev.org/cgtutor/floodfill.html#Scanline_Floodfill_Algorithm_With_Stack
+*/
+void
+floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor)
+{
+    int x = pos.x();
+    int y = pos.y();
+    int w = img.width();
+    int h = img.height();
+
+    std::vector<QPoint> q;
+    bool spanAbove, spanBelow;
+    QRgb *row, *row_prev, *row_next;
+    q.push_back(QPoint(x, y));
+
+    while(!q.empty())
+    {
+        QPoint pt = q.back();
+        q.pop_back();
+        x = pt.x();
+        y = pt.y();
+        row = (QRgb*)img.scanLine(y);
+        row_prev = (QRgb*)img.constScanLine(y-1);
+        row_next = (QRgb*)img.constScanLine(y+1);
+        while (x >= 0 && row[x] == oldColor) x--;
+        x++;
+        spanAbove = spanBelow = 0;
+        while (x < w && row[x] == oldColor )
+        {
+            row[x] = newColor;
+            if(!spanAbove && y > 0 && row_prev[x] == oldColor){
+                q.push_back(QPoint(x, y - 1));
+                spanAbove = 1;
+            }
+            else if (spanAbove && y > 0 && row_prev[x] != oldColor){
+                spanAbove = 0;
+            }
+            if(!spanBelow && y < h - 1 && row_next[x] == oldColor){
+                q.push_back(QPoint(x, y + 1));
+                spanBelow = 1;
+            }
+            else if(spanBelow && y < h - 1 && row_next[x] != oldColor){
+                spanBelow = 0;
+            }
+            x++;
+        }
+    }
+}

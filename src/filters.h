@@ -47,3 +47,5 @@ void pencilSketch(QImage &img);
 
 // edge preserving noise reduction filter (used for artistic effects)
 void kuwaharaFilter(QImage &img, int radius);
+
+QImage expandBorder(QImage img, int width);

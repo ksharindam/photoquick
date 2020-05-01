@@ -38,6 +38,7 @@ public slots:
     void createPhotoCollage();
     // filters
     void magicEraser();
+    void iScissor();
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();

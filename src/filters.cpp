@@ -20,6 +20,7 @@ inline bool isBigEndian()
 // clamp an integer in 0-255 range
 #define Clamp(a) ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) )
 
+// Reference : http://www.easyrgb.com/en/math.php
 /* HSV colorspace utilities
 we are using 32 bit unsigned int to hold a hsv color
 first 16 bit is for hue, next 8 bit is for saturation and last
@@ -181,7 +182,7 @@ QImage expandBorder(QImage img, int width)
 {
     int w = img.width();
     int h = img.height();
-    QImage dst = QImage(w+2*width, h+2*width, QImage::Format_ARGB32);
+    QImage dst = QImage(w+2*width, h+2*width, img.format());
     // copy all image pixels at the center
     QRgb *row, *dstRow;
     for (int y=0; y<h; y++) {
@@ -454,6 +455,8 @@ void convolve(QImage &img, float kernel[], int width/*of kernel*/)
 
 
 //*************---------- Gaussian Blur ---------***************//
+// 1D Gaussian kernel -> g(x)   = 1/{sqrt(2.pi)*sigma} * e^{-(x^2)/(2.sigma^2)}
+// 2D Gaussian kernel -> g(x,y) = 1/(2.pi.sigma^2) * e^{-(x^2 +y^2)/(2.sigma^2)}
 
 void gaussianBlur(QImage &img, int radius, float sigma/*standard deviation*/)
 {
@@ -1078,6 +1081,7 @@ void pencilSketch(QImage &img)
             int top = qRed(top_line[x]);
             if (back==255 || top==0) continue;
             // blend topImg and img using color dodge blend
+            // i.e divide the top layer by inverted bottom layer
             int val = MIN(255, (top<<8)/(255-back));
             line[x] = qRgba(val,val,val, qAlpha(line[x]));
         }

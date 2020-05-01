@@ -1024,13 +1024,14 @@ InpaintCanvas:: inpaint()
     int factor = masksize_max/masksize_min;
     //qDebug()<< masked_count << covered << factor;
 
+    // calculate how much to increase each size
     int inc;
     if (factor>2) // narrow mask vertical or horizontal
         inc = 3*masksize_min;
     else if (covered<0.25) // narrow mask diagonal
         inc = masksize_min/2;
     else    // thick mask
-        inc = masksize_min*3;
+        inc = masksize_min*2;
 
     int x = MAX(min_x - inc, 0);
     int y = MAX(min_y - inc, 0);
