@@ -28,5 +28,8 @@
     <file>images/resize.png</file>
     <file>images/rotateleft.png</file>
     <file>images/rotateright.png</file>
+    <file>images/cursor-cross.png</file>
+    <file>images/eraser.png</file>
+    <file>images/scissor.png</file>
   </qresource>
 </RCC>

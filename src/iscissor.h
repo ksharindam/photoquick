@@ -1,22 +1,11 @@
 #pragma once
-//*************** Intelligent Scissor GUI *******************
+/* Intelligent Scissor and Manual eraser for background removal */
+
 #include "ui_iscissor_dialog.h"
-#include <QImage>
+#include "canvas.h"
 #include <QPainter>
-#include <QMouseEvent>
+#include <QTimer>
 #include <vector>
-
-typedef unsigned int uint;
-
-class IntBuffer
-{
-public:
-    uint *data;
-    int width;
-    int height;
-    IntBuffer(int width, int height);
-    ~IntBuffer();
-};
 
 class GradMap
 {
@@ -30,6 +19,11 @@ public:
 };
 
 typedef enum {
+    TOOL_ISCISSOR=1,
+    TOOL_ERASER=2
+} ToolType;
+
+typedef enum {
     NO_SEED,
     SEED_PLACED,
     PATH_CLOSED
@@ -41,20 +35,41 @@ typedef enum {
     COLOR_OTHER
 } BgColorType;
 
-class IScissorCanvas : public QLabel
+class IScissorDialog : public QDialog, public Ui_IScissorDialog
 {
     Q_OBJECT
 public:
     QImage image; // original unchanged image
     QImage image_scaled;
-    float scale = 1.0;
+    float scale;
     QPainter painter;
+    PaintCanvas *canvas;
 
-    GradMap *grad_map = 0;
-    bool smooth_mask = true;
-    bool masked_image_ready = false;
     int bg_color_type = TRANSPERANT;
     QRgb bg_color = 0x80ccff; //light blue
+
+    int tool_type = 0;
+
+    void scaleImage();
+    void redraw();
+
+    // eraser related functions
+    QImage image_tmp;
+    bool mouse_pressed = false;
+    QPoint mouse_pos;
+    int min_x, min_y, max_x, max_y;
+    QImage brush, brush_scaled;
+    QTimer *timer;
+    void onMousePress_Eraser(QPoint pos);
+    void onMouseRelease_Eraser(QPoint pos);
+    void onMouseMove_Eraser(QPoint pos);
+    void eraseAt(int x, int y);
+    void undo_Eraser();
+    void redo_Eraser();
+    QList<HistoryItem> undoStack_Eraser; // maximum 10 steps undo
+    QList<HistoryItem> redoStack_Eraser;
+    // Scissor related variables and functions
+    GradMap *grad_map = 0;
 
     SeedMode seed_mode = NO_SEED;
     std::vector<QPoint> seeds;
@@ -62,34 +77,17 @@ public:
     std::vector<std::vector<QPoint>> fullPath;
     std::vector<QPoint> redoStack;
 
-    IScissorCanvas(QImage &img, QWidget *parent);
-    void scaleBy(float factor);
-    void scaleImage();
-    void redraw();
-    void mousePressEvent(QMouseEvent *ev);
-    void mouseMoveEvent(QMouseEvent *ev);
-    void undo();
-    void redo();
+    void undo_iScissor();
+    void redo_iScissor();
+    void onMousePress_iScissor(QPoint pos);
+    void onMouseMove_iScissor(QPoint pos);
     void drawSeedToCursorPath();
     void drawSeedToSeedPath();
     void drawFullPath();
     void calcShortPath(QPoint from, QPoint to);
     void checkPathClosed();
     void getMaskedImage(QPoint click_pos);
-    QImage getResultImage();
-signals:
-    void undoAvailable(bool);
-    void redoAvailable(bool);
-    void maskedImageReady();
-    void messageUpdated(const QString&);
-};
 
-
-class IScissorDialog : public QDialog, public Ui_IScissorDialog
-{
-    Q_OBJECT
-public:
-    IScissorCanvas *canvas;
     IScissorDialog(QImage &img, QWidget *parent);
     void keyPressEvent(QKeyEvent *ev);
     void done(int);
@@ -98,14 +96,26 @@ public slots:
     void redo();
     void zoomIn();
     void zoomOut();
-    void setBgType(int type);
-    void toggleSmoothMask(bool checked);
-    void onMaskedImageReady();
+    void onToolClick(int);
+    void setBgColor(int type, QRgb clr);
+    void setEraserSize(int val);
+    void updateEraserSize();
+    void onMousePress(QPoint);
+    void onMouseRelease(QPoint);
+    void onMouseMove(QPoint);
+    void confirmAccept();
 };
 
-void findOptimalPath(GradMap *grad_map, IntBuffer &dp_buff,
-                    int x1, int y1, int xs, int ys);
-std::vector<QPoint> plotShortPath(IntBuffer *dp_buff, int x1, int y1,
-                    int target_x, int target_y);
+class BgColorDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    BgColorDialog(QWidget *parent);
+    int bg_type = TRANSPERANT;
+    QRgb bg_color = 0x80ccff;
+public slots:
+    void setBgType(int val);
+signals:
+    void bgColorSelected(int, QRgb);
+};
 
-void floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor);

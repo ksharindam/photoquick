@@ -1,5 +1,5 @@
 # PhotoQuick (for Linux and Windows)
-A simple image viewer with some useful features (written in qt4).
+A simple handy image viewer and editor with some useful features (written in qt4).
 
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
@@ -10,16 +10,14 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
  * Create photo grid for printing  
  * Add Border  
  * Filters  
-  * Grayscale  
   * Scan Page  
-  * Blur  
-  * Sharpen  
   * Auto Contrast  
   * White Balance
-  * Despeckle  
   * Reduce Noise  
   * Pencil Sketch  
-  * Magic Eraser (inpainting)  
+ * Magic Eraser (inpainting)  
+ * Intelligent Scissor  
+
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
 

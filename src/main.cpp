@@ -73,7 +73,7 @@ Window:: Window()
     effectsBtn->setMenu(fxMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
-    toolsMenu->addAction("Erase Background", this, SLOT(iScissor()));
+    toolsMenu->addAction("Background Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     toolsBtn->setMenu(toolsMenu);
     QAction *delAction = new QAction(this);
@@ -331,7 +331,7 @@ Window:: magicEraser()
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
-        canvas->setImage(dialog->canvas->image);
+        canvas->setImage(dialog->image);
     }
 }
 
@@ -342,7 +342,7 @@ Window:: iScissor()
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
-        canvas->setImage( dialog->canvas->getResultImage() );
+        canvas->setImage( dialog->image );
     }
 }
 

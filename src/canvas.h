@@ -1,13 +1,12 @@
 #pragma once
-/*
-Image Label Object to display the image.
-*/
+/* Image Label Object to display the image. */
 
 #include <QLabel>
 #include <QMovie>
 #include <QMouseEvent>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QCursor>
 
 
 //This is the widget responsible for displaying image
@@ -40,3 +39,30 @@ signals:
     void mouseMoved(QPoint);
     void imageUpdated();
 };
+
+
+// It is a drawing area for some dialogs
+
+class PaintCanvas : public QLabel
+{
+    Q_OBJECT
+public:
+    PaintCanvas(QWidget *parent);
+    void mousePressEvent(QMouseEvent *ev);
+    void mouseMoveEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
+    void setImage(QImage image);
+signals:
+    void mousePressed(QPoint);
+    void mouseMoved(QPoint);
+    void mouseReleased(QPoint);
+};
+
+QCursor roundCursor(int width);
+
+// a QList<HistoryItem> is used as Undo or Redo stack
+typedef struct {
+    int x;
+    int y;
+    QImage image;// this image is replaced by new image at pos (x,y)
+} HistoryItem;

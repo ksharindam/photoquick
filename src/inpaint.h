@@ -1,7 +1,8 @@
 #pragma once
-#include <QImage>
-#include <QList>
+/* Inpainting Algorithm to Heal damaged photo or erase object */
 
+#include "canvas.h"
+#include <QList>
 
 class MaskedImage
 {
@@ -79,13 +80,8 @@ void MaximizationStep(MaskedImage* target, double** vote);
 #include <QPainter>
 #include <QMouseEvent>
 
-typedef struct {
-    int x;
-    int y;
-    QImage image;// this image is replaced by new image at pos (x,y)
-} HistoryItem;
 
-class InpaintCanvas : public QLabel
+class InpaintDialog : public QDialog, public Ui_InpaintDialog
 {
     Q_OBJECT
 public:
@@ -101,30 +97,18 @@ public:
     QPen eraser_pen;
     QPen brush_pen;
     QPainter painter;
-    InpaintCanvas(QImage img, QWidget *parent);
+    PaintCanvas *canvas;
+    QList<HistoryItem> undoStack; // maximum 10 steps undo
+    QList<HistoryItem> redoStack;
+
     void setBrushSize(int size);
     void scaleBy(float factor);
-    void mousePressEvent(QMouseEvent *ev);
-    void mouseReleaseEvent(QMouseEvent *ev);
-    void mouseMoveEvent(QMouseEvent *ev);
     void drawMask(QPoint start, QPoint end);
     void eraseMask(QPoint start, QPoint end);
     void updateMaskedArea(QPoint start, QPoint end);
     void updateImageArea(int x, int y, QImage part);
     void initMask();
-public slots:
-    void inpaint();
-signals:
-    void inpaintingDone(int x, int y, QImage part);
-};
 
-class InpaintDialog : public QDialog, public Ui_InpaintDialog
-{
-    Q_OBJECT
-public:
-    QList<HistoryItem> undoStack; // maximum 10 steps undo
-    QList<HistoryItem> redoStack;
-    InpaintCanvas *canvas;
     InpaintDialog(QImage &img, QWidget *parent);
     void keyPressEvent(QKeyEvent *ev);
 public slots:
@@ -134,5 +118,8 @@ public slots:
     void redo();
     void zoomIn();
     void zoomOut();
-    void onInpaintingDone(int x, int y, QImage part);
+    void inpaint();
+    void onMousePress(QPoint pos);
+    void onMouseRelease(QPoint pos);
+    void onMouseMove(QPoint pos);
 };

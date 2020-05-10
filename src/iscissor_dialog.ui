@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Intelligent Scissor</string>
+   <string>Erase Background</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="horizontalSpacing">
@@ -33,7 +33,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>508</width>
+        <width>495</width>
         <height>429</height>
        </rect>
       </property>
@@ -51,6 +51,12 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="minimumSize">
+      <size>
+       <width>160</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>
@@ -58,6 +64,12 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="leftMargin">
+       <number>2</number>
+      </property>
+      <property name="rightMargin">
+       <number>2</number>
+      </property>
       <item>
        <widget class="QLabel" name="zoomLabel">
         <property name="text">
@@ -73,6 +85,9 @@
          </property>
          <property name="leftMargin">
           <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>2</number>
          </property>
          <property name="rightMargin">
           <number>0</number>
@@ -148,6 +163,9 @@
          <property name="leftMargin">
           <number>0</number>
          </property>
+         <property name="topMargin">
+          <number>2</number>
+         </property>
          <property name="rightMargin">
           <number>0</number>
          </property>
@@ -207,6 +225,80 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Tool :</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget_4" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="spacing">
+          <number>16</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>2</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QToolButton" name="iScissorBtn">
+           <property name="toolTip">
+            <string>Edge fitting Intelligent Scissor</string>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/images/scissor.png</normaloff>:/images/scissor.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="eraserBtn">
+           <property name="toolTip">
+            <string>Eraser (manually erase)</string>
+           </property>
+           <property name="text">
+            <string>...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/images/eraser.png</normaloff>:/images/eraser.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="smoothEdgesBtn">
         <property name="text">
          <string>Smooth Edges</string>
@@ -217,29 +309,29 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="labelBackground">
-        <property name="text">
-         <string>Background :</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBgColor">
-        <item>
-         <property name="text">
-          <string>Transperant</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>White</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Choose Color</string>
-         </property>
-        </item>
+       <widget class="QWidget" name="eraserSettingsWidget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="eraserSizeLabel">
+           <property name="text">
+            <string>Eraser Size : 48</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="eraserSizeSlider">
+           <property name="minimum">
+            <number>8</number>
+           </property>
+           <property name="value">
+            <number>48</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>

@@ -1,10 +1,10 @@
-/*
-This file is a part of photoquick program, which is GPLv3 licensed
-*/
+/* This file is a part of photoquick program, which is GPLv3 licensed */
+
 #include "canvas.h"
 #include <QDebug>
 #include <QSizePolicy>
 #include <QTransform>
+#include <QPainter>
 #include <cmath>
 
 
@@ -91,4 +91,50 @@ Canvas:: mouseMoveEvent(QMouseEvent *ev)
     // Handle click and drag to scroll
     vScrollbar->setValue(v_scrollbar_pos + clk_global.y() - ev->globalY());
     hScrollbar->setValue(h_scrollbar_pos + clk_global.x() - ev->globalX());
+}
+
+
+
+// ******************* Paint Canvas ******************
+PaintCanvas:: PaintCanvas(QWidget *parent) : QLabel(parent)
+{
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setMouseTracking(true);
+}
+
+void
+PaintCanvas:: mousePressEvent(QMouseEvent *ev)
+{
+    emit mousePressed(ev->pos());
+}
+
+void
+PaintCanvas:: mouseMoveEvent(QMouseEvent *ev)
+{
+    emit mouseMoved(ev->pos());
+}
+
+void
+PaintCanvas:: mouseReleaseEvent(QMouseEvent *ev)
+{
+    emit mouseReleased(ev->pos());
+}
+
+void
+PaintCanvas:: setImage(QImage img)
+{
+    setPixmap(QPixmap::fromImage(img));
+}
+
+
+QCursor roundCursor(int width)
+{
+    QPixmap pm(width, width);
+    pm.fill(QColor(0,0,0,0));
+    QPainter painter(&pm);
+    painter.drawEllipse(0,0, width-1, width-1);
+    painter.setPen(Qt::white);
+    painter.drawEllipse(1,1, width-3, width-3);
+    painter.end();
+    return QCursor(pm);
 }

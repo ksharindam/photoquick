@@ -1,98 +1,127 @@
+/* This file is a part of photoquick program, which is GPLv3 licensed */
+
 #include "iscissor.h"
 #include "common.h"
 #include "filters.h"
 #include <QColorDialog>
+#include <QButtonGroup>
+#include <QComboBox>
+#include <QDialogButtonBox>
 #include <cmath>
 
 // ---------------------------------------------------------------------
-//************************ Intelligent Scissor *************************
+//*************** Intelligent Scissor and Manual Eraser ****************
 // _____________________________________________________________________
+
+typedef unsigned int uint;
+
+class IntBuffer
+{
+public:
+    uint *data;
+    int width;
+    int height;
+    IntBuffer(int width, int height);
+    ~IntBuffer();
+};
+
+void findOptimalPath(GradMap *grad_map, IntBuffer &dp_buff,
+                    int x1, int y1, int xs, int ys);
+std::vector<QPoint> plotShortPath(IntBuffer *dp_buff, int x1, int y1,
+                    int target_x, int target_y);
+
+void floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor);
+
+
+void updateImageArea(QImage &dst, QImage &src, int pos_x, int pos_y);
 
 
 // *********************** IScissor Dialog ************************
 
 IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
 {
+    this->image = img;
+    timer = new QTimer(this);
+    timer->setSingleShot(true);
     setupUi(this);
+    QButtonGroup *btnGrp = new QButtonGroup(frame);
+    btnGrp->addButton(iScissorBtn, 1);
+    btnGrp->addButton(eraserBtn, 2);
+
+    eraserSettingsWidget->setHidden(true);
+
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    canvas = new IScissorCanvas(img, this);
+    canvas = new PaintCanvas(this);
     layout->addWidget(canvas);
+
     undoBtn->setEnabled(false);
     redoBtn->setEnabled(false);
-    acceptBtn->setEnabled(false);
-    labelBackground->setHidden(true);
-    comboBgColor->setHidden(true);
 
-    statusbar->setText("Tip : Click to place seeds around object");
-
-    connect(acceptBtn, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(acceptBtn, SIGNAL(clicked()), this, SLOT(confirmAccept()));
     connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
     connect(undoBtn, SIGNAL(clicked()), this, SLOT(undo()));
     connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
     connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomIn()));
     connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOut()));
-    connect(smoothEdgesBtn, SIGNAL(toggled(bool)), this, SLOT(toggleSmoothMask(bool)));
-    connect(comboBgColor, SIGNAL(activated(int)), this, SLOT(setBgType(int)));
-    connect(canvas, SIGNAL(undoAvailable(bool)), undoBtn, SLOT(setEnabled(bool)));
-    connect(canvas, SIGNAL(redoAvailable(bool)), redoBtn, SLOT(setEnabled(bool)));
-    connect(canvas, SIGNAL(maskedImageReady()), this, SLOT(onMaskedImageReady()));
-    connect(canvas, SIGNAL(messageUpdated(const QString&)), statusbar, SLOT(setText(const QString&)));
+    connect(btnGrp, SIGNAL(buttonClicked(int)), this, SLOT(onToolClick(int)));
+    connect(canvas, SIGNAL(mousePressed(QPoint)), this, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), this, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), this, SLOT(onMouseMove(QPoint)));
+    connect(eraserSizeSlider, SIGNAL(valueChanged(int)), this, SLOT(setEraserSize(int)));
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateEraserSize()));
 
     // scale the canvas to fit to scrollarea width
     int available_w = 1020 - frame->width() - 4;
     int img_w = img.width();
-    float scale = 1.0;
+    scale = 1.0;
     while (img_w > available_w) {
         scale /= 1.5;
         img_w = roundf(scale*img.width());
     }
-    canvas->scaleBy(scale);
-    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+    zoomLabel->setText(QString("Zoom : %1x").arg(scale));
+    onToolClick(1);//redraw
 }
 
-void
-IScissorDialog:: setBgType(int type)
-{
-    canvas->bg_color_type = type;
-    if (type==COLOR_OTHER) {
-        QColor clr = QColorDialog::getColor(QColor(canvas->bg_color), this);
-        if (clr.isValid())
-            canvas->bg_color = clr.rgb();
-    }
-    canvas->redraw();
-}
 
 void
 IScissorDialog:: zoomIn()
 {
-    canvas->scaleBy(1.5*canvas->scale);
-    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+    scale *= 1.5;
+    redraw();
+    zoomLabel->setText(QString("Zoom : %1x").arg(scale));
+    if (tool_type==TOOL_ERASER) {
+        updateEraserSize();
+    }
 }
 
 void
 IScissorDialog:: zoomOut()
 {
-    canvas->scaleBy(canvas->scale/1.5);
-    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+    scale /= 1.5;
+    redraw();
+    zoomLabel->setText(QString("Zoom : %1x").arg(scale));
+    if (tool_type==TOOL_ERASER) {
+        updateEraserSize();
+    }
 }
 
 void
 IScissorDialog:: undo()
 {
-    canvas->undo();
+    if (tool_type==TOOL_ISCISSOR)
+        undo_iScissor();
+    else
+        undo_Eraser();
 }
 
 void
 IScissorDialog:: redo()
 {
-    canvas->redo();
-}
-
-void
-IScissorDialog:: toggleSmoothMask(bool checked)
-{
-    canvas->smooth_mask = checked;
+    if (tool_type==TOOL_ISCISSOR)
+        redo_iScissor();
+    else
+        redo_Eraser();
 }
 
 void
@@ -105,32 +134,57 @@ IScissorDialog:: keyPressEvent(QKeyEvent *ev)
 }
 
 void
-IScissorDialog:: onMaskedImageReady()
+IScissorDialog:: confirmAccept()
 {
-    acceptBtn->setEnabled(true);
-    labelBackground->setHidden(false);
-    comboBgColor->setHidden(false);
+    // set Background color
+    QDialog *dlg = new BgColorDialog(this);
+    connect(dlg, SIGNAL(bgColorSelected(int,QRgb)), this, SLOT(setBgColor(int,QRgb)));
+    if (dlg->exec()==QDialog::Rejected) {
+        redraw();
+        return;
+    }
+    if (bg_color_type!=TRANSPERANT)
+    {
+        QImage img(image.width(), image.height(), QImage::Format_RGB32);
+        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
+        img.fill(clr);
+        painter.begin(&img);
+        painter.drawImage(QPoint(0,0), image);
+        painter.end();
+        image = img;
+    }
+    QDialog::accept();
 }
 
 void
 IScissorDialog:: done(int val)
 {
-    if (canvas->grad_map)
-        delete canvas->grad_map;
+    if (grad_map)
+        delete grad_map;
     QDialog::done(val);
 }
 
-
-// ******************* IScissor Canvas ******************
-IScissorCanvas:: IScissorCanvas(QImage &img, QWidget *parent) : QLabel(parent)
+void
+IScissorDialog:: setBgColor(int type, QRgb bg_clr)
 {
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setMouseTracking(true);
-    this->image = img;
+    bg_color_type = type;
+    bg_color = bg_clr;
+    if (type==TRANSPERANT)
+        redraw();
+    else {
+        //scaleImage();
+        QImage img(image_scaled.width(), image_scaled.height(), QImage::Format_RGB32);
+        QRgb clr = (type==COLOR_WHITE) ? 0xffffff : bg_clr;
+        img.fill(clr);
+        painter.begin(&img);
+        painter.drawImage(QPoint(0,0), image_scaled);
+        painter.end();
+        canvas->setImage(img);
+    }
 }
 
 void
-IScissorCanvas:: scaleImage()
+IScissorDialog:: scaleImage()
 {
     if (scale == 1.0)
         image_scaled = image;
@@ -145,54 +199,281 @@ IScissorCanvas:: scaleImage()
 }
 
 void
-IScissorCanvas:: redraw()
+IScissorDialog:: redraw()
 {
     scaleImage();
-    if (masked_image_ready and seeds.empty() and bg_color_type!=TRANSPERANT) {
-        QImage img(image_scaled.width(), image_scaled.height(), QImage::Format_RGB32);
-        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
-        img.fill(clr);
-        painter.begin(&img);
-        painter.drawImage(QPoint(0,0), image_scaled);
-        painter.end();
-        setPixmap( QPixmap::fromImage(img) );
-        return;
-    }
-    drawFullPath();
-    setPixmap( QPixmap::fromImage(image_scaled) );
+    if (tool_type==TOOL_ISCISSOR)
+        drawFullPath();
+    canvas->setImage(image_scaled);
 }
 
 void
-IScissorCanvas:: scaleBy(float factor)
+IScissorDialog:: onToolClick(int btn_id)
 {
-    scale = factor;
+    if (tool_type == btn_id)
+        return;
+    // finish previously selected button
+    if (tool_type==TOOL_ISCISSOR) {
+        smoothEdgesBtn->setHidden(true);
+        seeds.clear();
+        shortPath.clear();
+        fullPath.clear();
+        redoStack.clear();
+        if (grad_map) {
+            delete grad_map;
+            grad_map = 0;
+        }
+        statusbar->setText("");
+    }
+    else if (tool_type==TOOL_ERASER) {
+        eraserSettingsWidget->setHidden(true);
+        undoStack_Eraser.clear();
+        redoStack_Eraser.clear();
+    }
+    // init currently selected button
+    tool_type = btn_id;
+    if (tool_type==TOOL_ISCISSOR) {
+        smoothEdgesBtn->show();
+        canvas->setCursor(QCursor(QPixmap(":/images/cursor-cross.png")));
+        statusbar->setText("Tip : Click to place seeds around object");
+        seed_mode = NO_SEED;
+    }
+    else if (tool_type==TOOL_ERASER) {
+        eraserSettingsWidget->show();
+        eraserSizeSlider->setMaximum((image.width()/850+1)*100);
+        eraserSizeSlider->setValue((image.width()/850+1)*48);
+        setEraserSize(eraserSizeSlider->value());
+        if (image.format()!=QImage::Format_ARGB32)
+            image = image.convertToFormat(QImage::Format_ARGB32);
+    }
+    undoBtn->setEnabled(false);
+    redoBtn->setEnabled(false);
     redraw();
 }
 
 void
-IScissorCanvas:: mousePressEvent(QMouseEvent *ev)
+IScissorDialog:: setEraserSize(int val)
 {
-    QPoint pos = ev->pos()/scale;
+    eraserSizeLabel->setText(QString("Eraser Size : %1").arg(val));
+    timer->start(400); // calls updateEraserSize
+}
+
+void
+IScissorDialog:: updateEraserSize()
+{
+    int val = eraserSizeSlider->value();
+    // create brush mask
+    brush = QImage(val, val, QImage::Format_RGB32);
+    brush.fill(Qt::black);
+    painter.begin(&brush);
+    painter.setBrush(QBrush(Qt::white));
+    painter.drawEllipse(QPoint(val/2, val/2), (val*3)/8, (val*3)/8);
+    painter.end();
+    gaussianBlur(brush, val/8);
+    //brush.save("brush2.png");
+    brush_scaled = brush.scaledToWidth(val*scale, Qt::SmoothTransformation );
+    canvas->setCursor(roundCursor(scale*(val*7)/8));
+}
+
+void
+IScissorDialog:: onMousePress(QPoint pos)
+{
+    mouse_pressed = true;
+    mouse_pos = pos/scale;
+    if (tool_type==TOOL_ISCISSOR)
+        onMousePress_iScissor(mouse_pos);
+    else
+        onMousePress_Eraser(mouse_pos);
+}
+
+void
+IScissorDialog:: onMouseMove(QPoint pos)
+{
+    pos = pos/scale;
+    if (tool_type==TOOL_ISCISSOR)
+        onMouseMove_iScissor(pos);
+    else
+        onMouseMove_Eraser(pos);
+    mouse_pos = pos;
+}
+
+void
+IScissorDialog:: onMouseRelease(QPoint pos)
+{
+    mouse_pressed = false;
+    if (tool_type==TOOL_ERASER)
+        onMouseRelease_Eraser(pos/scale);
+}
+
+void
+IScissorDialog:: onMousePress_Eraser(QPoint pos)
+{
+    min_x = max_x = pos.x();
+    min_y = max_y = pos.y();
+    image_tmp = image.copy();
+}
+
+void
+IScissorDialog:: onMouseRelease_Eraser(QPoint)
+{
+    redraw();
+    min_x = MAX(min_x - brush.width()/2, 0);
+    min_y = MAX(min_y - brush.width()/2, 0);
+    max_x = MIN(max_x + brush.width()/2, image.width()-1);
+    max_y = MIN(max_y + brush.width()/2, image.height()-1);
+    int w = max_x - min_x + 1;
+    int h = max_y - min_y + 1;
+
+    redoStack_Eraser.clear();
+    redoBtn->setEnabled(false);
+    HistoryItem undoItem = { min_x, min_y, image_tmp.copy(min_x, min_y, w, h) };
+    undoStack_Eraser.append(undoItem);
+    undoBtn->setEnabled(true);
+    if (undoStack_Eraser.size()>10)
+        undoStack_Eraser.removeFirst();
+    image_tmp = QImage();
+}
+
+void
+IScissorDialog:: onMouseMove_Eraser(QPoint pos)
+{
+    if (not mouse_pressed)
+        return;
+    int x0 = mouse_pos.x();
+    int y0 = mouse_pos.y();
+    int x = pos.x();
+    int y = pos.y();
+
+    min_x = MIN(x, min_x);
+    min_y = MIN(y, min_y);
+    max_x = MAX(x, max_x);
+    max_y = MAX(y, max_y);
+
+    float d = sqrtf((x-x0)*(x-x0) + (y-y0)*(y-y0));
+
+    for (int dt=10; dt < d; dt+=10) {
+        float t = dt/d;
+        int xt = x0 + t*(x-x0);
+        int yt = y0 + t*(y-y0);
+        eraseAt(xt, yt);
+    }
+    eraseAt(x,y);
+    canvas->setImage(image_scaled);
+}
+
+
+void
+IScissorDialog:: eraseAt(int pos_x, int pos_y)
+{
+    // draw mask over original image
+    int x = pos_x - brush.width()/2;
+    int y = pos_y - brush.width()/2;
+
+    int min_j = x<0 ? -x : 0;
+    int min_i = y<0 ? -y : 0;
+
+    int max_i = y + brush.width() > image.height()? image.height()-1-y : brush.height()-1;
+    int max_j = x + brush.width() > image.width() ? image.width() -1-x : brush.width() -1;
+
+    #pragma omp parallel for
+    for (int i=min_i; i<=max_i; i++) {
+        QRgb *row, *brush_row;
+        #pragma omp critical
+        {row = (QRgb*)image.scanLine(y+i);
+         brush_row = (QRgb*)brush.constScanLine(i);}
+        for (int j=min_j; j<=max_j; j++) {
+            int clr = row[x+j];
+            int alpha = MAX(qAlpha(clr) - qRed(brush_row[j]), 0);
+            row[x+j] = ((alpha & 0xff) << 24) | (clr & 0xffffff);
+        }
+    }
+    // draw over scaled image for display
+    int brush_w = brush_scaled.width();
+    int img_w = image_scaled.width();
+    int img_h = image_scaled.height();
+
+    x = pos_x*scale - brush_w/2;
+    y = pos_y*scale - brush_w/2;
+
+    min_j = x<0 ? -x : 0;
+    min_i = y<0 ? -y : 0;
+
+    max_i = y + brush_w > img_h ? img_h-1-y : brush_w-1;
+    max_j = x + brush_w > img_w ? img_w-1-x : brush_w-1;
+
+    #pragma omp parallel for
+    for (int i=min_i; i<=max_i; i++) {
+        QRgb *row, *brush_row;
+        #pragma omp critical
+        {row = (QRgb*)image_scaled.scanLine(y+i);
+         brush_row = (QRgb*)brush_scaled.constScanLine(i);}
+        for (int j=min_j; j<=max_j; j++) {
+            int clr = row[x+j];
+            if (qAlpha(clr)==0) {
+                row[x+j] = 0;
+                continue;
+            }
+            int alpha = MAX(qAlpha(clr) - qRed(brush_row[j]), 0);
+            // set alpha channel for ARGB32 Premultiplied format
+            int r = (qRed(clr)*alpha)/qAlpha(clr);
+            int g = (qGreen(clr)*alpha)/qAlpha(clr);
+            int b = (qBlue(clr)*alpha)/qAlpha(clr);
+            row[x+j] = qRgba(r,g,b, alpha);
+        }
+    }
+}
+
+void
+IScissorDialog:: undo_Eraser()
+{
+    if (undoStack_Eraser.isEmpty()) return;
+    HistoryItem item = undoStack_Eraser.takeLast();
+    HistoryItem redoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    redoStack_Eraser.append(redoItem);
+    redoBtn->setEnabled(true);
+    undoBtn->setEnabled(not undoStack_Eraser.isEmpty());
+    updateImageArea(image, item.image, item.x, item.y);
+    redraw();
+}
+
+void
+IScissorDialog:: redo_Eraser()
+{
+    if (redoStack_Eraser.isEmpty()) return;
+    HistoryItem item = redoStack_Eraser.takeLast();
+    HistoryItem undoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    undoStack_Eraser.append(undoItem);
+    undoBtn->setEnabled(true);
+    redoBtn->setEnabled(not redoStack_Eraser.isEmpty());
+    updateImageArea(image, item.image, item.x, item.y);
+    redraw();
+}
+
+// ****************** Intelligent Scissor Tool *******************
+
+void
+IScissorDialog:: onMousePress_iScissor(QPoint pos)
+{
     // no seed was placed before so cant draw permanent path
     if (seed_mode == NO_SEED) {
         if (!grad_map) grad_map = new GradMap(image);
         seeds.push_back(pos);
         redoStack.clear();
         seed_mode = SEED_PLACED;
-        emit undoAvailable(true);
-        emit redoAvailable(false);
-        emit messageUpdated(QString("Tip : Place more seeds until a closed loop is created"));
+        undoBtn->setEnabled(true);
+        redoBtn->setEnabled(false);
+        statusbar->setText("Tip : Place more seeds until a closed loop is created");
     }
     // can draw a permanent path
     else if (seed_mode == SEED_PLACED) {
         seeds.push_back(pos);
         redoStack.clear();
-        emit redoAvailable(false);
+        redoBtn->setEnabled(false);
         // check if clicked on seed/path is closed
         checkPathClosed();
         if (seed_mode == PATH_CLOSED) {
             calcShortPath(seeds[seeds.size()-2], seeds.back());
-            emit messageUpdated(QString("Tip : Click inside loop to erase outside of loop"));
+            statusbar->setText("Tip : Click inside loop to erase outside of loop");
         }
         fullPath.push_back(shortPath);
         drawSeedToSeedPath();
@@ -203,22 +484,22 @@ IScissorCanvas:: mousePressEvent(QMouseEvent *ev)
         seeds.clear();
         fullPath.clear();
         redraw();
-        emit undoAvailable(false);
-        emit messageUpdated(QString("Tip : Click accept or place more seeds and cut again"));
+        undoBtn->setEnabled(false);
+        statusbar->setText("Tip : Click accept or place more seeds and cut again");
         seed_mode = NO_SEED;
     }
 }
 
 void
-IScissorCanvas:: mouseMoveEvent(QMouseEvent *ev)
+IScissorDialog:: onMouseMove_iScissor(QPoint pos)
 {
     if (seed_mode != SEED_PLACED) return; //Return if mouse is not clicked
-    calcShortPath(seeds.back(), ev->pos()/scale);
+    calcShortPath(seeds.back(), pos);
     drawSeedToCursorPath();
 }
 
 void
-IScissorCanvas:: calcShortPath(QPoint from/*seed*/, QPoint to/*cursor*/){
+IScissorDialog:: calcShortPath(QPoint from/*seed*/, QPoint to/*cursor*/){
     int x = to.x();
     int y = to.y();
     int seed_x = from.x();
@@ -258,7 +539,7 @@ IScissorCanvas:: calcShortPath(QPoint from/*seed*/, QPoint to/*cursor*/){
 
 // Draw movable last line (livewire)
 void
-IScissorCanvas:: drawSeedToCursorPath()
+IScissorDialog:: drawSeedToCursorPath()
 {
     QPixmap pm = QPixmap::fromImage(image_scaled.copy());
     painter.begin(&pm);
@@ -275,12 +556,12 @@ IScissorCanvas:: drawSeedToCursorPath()
     painter.setBrush(QBrush(Qt::white));
     painter.drawEllipse(seeds.back()*scale, 4, 4);
     painter.end();
-    setPixmap(pm);
+    canvas->setPixmap(pm);
 }
 
 // draw last permanent non movable short path
 void
-IScissorCanvas:: drawSeedToSeedPath()
+IScissorDialog:: drawSeedToSeedPath()
 {
     painter.begin(&image_scaled);
     QPen pen(Qt::blue, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
@@ -297,12 +578,12 @@ IScissorCanvas:: drawSeedToSeedPath()
     painter.setBrush(QBrush(Qt::white));
     painter.drawEllipse(seeds[seeds.size()-2]*scale, 4, 4);
     painter.end();
-    setPixmap( QPixmap::fromImage(image_scaled) );
+    canvas->setImage(image_scaled);
 }
 
 // this is called when image is scaled
 void
-IScissorCanvas:: drawFullPath()
+IScissorDialog:: drawFullPath()
 {
     if (fullPath.empty())
         return;
@@ -327,14 +608,14 @@ IScissorCanvas:: drawFullPath()
 }
 
 void
-IScissorCanvas:: undo()
+IScissorDialog:: undo_iScissor()
 {
     redoStack.push_back(seeds.back());
-    emit redoAvailable(true);
+    redoBtn->setEnabled(true);
     seeds.pop_back();
     if (seeds.empty()) {
         seed_mode = NO_SEED;
-        emit undoAvailable(false);
+        undoBtn->setEnabled(false);
     }
     else {
         seed_mode = SEED_PLACED;//change from PATH_CLOSED mode
@@ -344,13 +625,13 @@ IScissorCanvas:: undo()
 }
 
 void
-IScissorCanvas:: redo()
+IScissorDialog:: redo_iScissor()
 {
     seeds.push_back(redoStack.back());
-    emit undoAvailable(true);
+    undoBtn->setEnabled(true);
     redoStack.pop_back();
     if (redoStack.empty())
-        emit redoAvailable(false);
+        redoBtn->setEnabled(false);
     if (seed_mode==NO_SEED)
         seed_mode = SEED_PLACED; // first seed placed, nothing to do
     else {
@@ -363,7 +644,7 @@ IScissorCanvas:: redo()
 #define SQR(x) ((x)*(x))
 
 void
-IScissorCanvas:: checkPathClosed()
+IScissorDialog:: checkPathClosed()
 {
     if (seeds.size() < 4)
         return;
@@ -382,7 +663,7 @@ IScissorCanvas:: checkPathClosed()
 
 // generate mask by floodfill inside path boundary
 void
-IScissorCanvas:: getMaskedImage(QPoint clicked)
+IScissorDialog:: getMaskedImage(QPoint clicked)
 {
     QRgb white = qRgb(255,255,255);
     QRgb black = qRgb(0,0,0);
@@ -400,7 +681,7 @@ IScissorCanvas:: getMaskedImage(QPoint clicked)
             mask.setPixel(pt, white);
         }
     }
-    if (smooth_mask)
+    if (smoothEdgesBtn->isChecked())
         gaussianBlur(mask, 3);
     if (image.format() != QImage::Format_ARGB32)
         image = image.convertToFormat(QImage::Format_ARGB32);
@@ -414,26 +695,8 @@ IScissorCanvas:: getMaskedImage(QPoint clicked)
             row[x] = qRgba(qRed(clr), qGreen(clr), qBlue(clr), alpha);
         }
     }
-    masked_image_ready = true;
-    emit maskedImageReady();
 }
 
-QImage
-IScissorCanvas:: getResultImage()
-{
-    if (bg_color_type==TRANSPERANT)
-        return image;
-    else {
-        QImage img(image.width(), image.height(), QImage::Format_RGB32);
-        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
-        img.fill(clr);
-        painter.begin(&img);
-        painter.drawImage(QPoint(0,0), image);
-        painter.end();
-        image = QImage();//free memory
-        return img;
-    }
-}
 
 // marker for each of 8 neighbours.
 // looks weird order, but helps to easily determine if it is diagonal or edge pixel.
@@ -753,3 +1016,52 @@ floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor)
         }
     }
 }
+
+
+
+BgColorDialog:: BgColorDialog(QWidget *parent) : QDialog(parent)
+{
+    this->resize(250, 120);
+    this->setWindowTitle("Background Color");
+    QVBoxLayout *vLayout = new QVBoxLayout(this);
+    QLabel *label = new QLabel("Select Background Color :", this);
+    QComboBox *combo = new QComboBox(this);
+    combo->addItem("Transperant");
+    combo->addItem("White Color");
+    combo->addItem("Choose Other");
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    vLayout->addWidget(label);
+    vLayout->addWidget(combo);
+    vLayout->addWidget(btnBox);
+    connect(combo, SIGNAL(activated(int)), this, SLOT(setBgType(int)));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+void
+BgColorDialog:: setBgType(int type)
+{
+    bg_type = type;
+    if (bg_type==2) {
+        QColor clr = QColorDialog::getColor(QColor(bg_color), this);
+        if (clr.isValid())
+            bg_color = clr.rgb();
+    }
+    emit bgColorSelected(bg_type, bg_color);
+}
+
+
+void updateImageArea(QImage &dst, QImage &src, int pos_x, int pos_y)
+{
+    #pragma omp parallel for
+    for (int y=0; y<src.height(); y++) {
+        QRgb *row_dst, *row_src;
+        #pragma omp critical
+        { row_dst = (QRgb*)dst.scanLine(y+pos_y);
+          row_src = (QRgb*)src.constScanLine(y); }
+        for (int x=0; x<src.width(); x++) {
+            row_dst[x+pos_x] = row_src[x];
+        }
+    }
+}
+

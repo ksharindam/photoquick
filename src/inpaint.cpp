@@ -1,3 +1,5 @@
+/* This file is a part of photoquick program, which is GPLv3 licensed */
+
 #include "inpaint.h"
 #include "common.h"
 #include <cmath>
@@ -6,6 +8,8 @@
 #define TIME_STOP auto end = std::chrono::steady_clock::now();\
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\
     qDebug() << "Execution Time :" << elapse;
+
+//Explanation -> https://github.com/YuanTingHsieh/Image_Completion
 
 
 // the maximum value returned by distanceMaskedImage()
@@ -759,10 +763,11 @@ int distanceMaskedImage(MaskedImage *source,int xs,int ys, MaskedImage *target,i
 
 InpaintDialog:: InpaintDialog(QImage &img, QWidget *parent) : QDialog(parent)
 {
+    this->image = img;
     setupUi(this);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    canvas = new InpaintCanvas(img, this);
+    canvas = new PaintCanvas(this);
     layout->addWidget(canvas);
     undoBtn->setEnabled(false);
     redoBtn->setEnabled(false);
@@ -773,76 +778,72 @@ InpaintDialog:: InpaintDialog(QImage &img, QWidget *parent) : QDialog(parent)
     connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
     connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomIn()));
     connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOut()));
-    connect(eraseBtn, SIGNAL(clicked()), canvas, SLOT(inpaint()));
+    connect(eraseBtn, SIGNAL(clicked()), this, SLOT(inpaint()));
     connect(acceptBtn, SIGNAL(clicked()), this, SLOT(accept()));
     connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
-    connect(canvas, SIGNAL(inpaintingDone(int,int,QImage)), this, SLOT(onInpaintingDone(int,int,QImage)));
+    connect(canvas, SIGNAL(mousePressed(QPoint)), this, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), this, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), this, SLOT(onMouseMove(QPoint)));
 
     brushSizeLabel->setText("Brush Size : 16");
+
+    brush_pen = QPen(Qt::white);
+    brush_pen.setCapStyle(Qt::RoundCap);
+    eraser_pen = QPen(Qt::black);
+    eraser_pen.setCapStyle(Qt::RoundCap);
+    setBrushSize(16);
+    scaleBy(1.0);
 }
 
 void
 InpaintDialog:: changeDrawMode(bool checked)
 {
-    canvas->draw_mask = checked;
+    this->draw_mask = checked;
 }
 
 void
 InpaintDialog:: changeBrushSize(int size)
 {
-    canvas->setBrushSize(size);
+    setBrushSize(size);
     brushSizeLabel->setText(QString("Brush Size : %1").arg(size));
 }
 
 void
 InpaintDialog:: zoomIn()
 {
-    canvas->scaleBy(2*canvas->scale);
-    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+    scaleBy(2*scale);
+    zoomLabel->setText(QString("Zoom : %1x").arg(scale));
 }
 
 void
 InpaintDialog:: zoomOut()
 {
-    canvas->scaleBy(canvas->scale/2);
-    zoomLabel->setText(QString("Zoom : %1x").arg(canvas->scale));
+    scaleBy(scale/2);
+    zoomLabel->setText(QString("Zoom : %1x").arg(scale));
 }
 
 void
 InpaintDialog:: undo()
 {
-    if (undoStack.isEmpty() or !canvas->mask.isNull()) return;
+    if (undoStack.isEmpty() or !mask.isNull()) return;
     HistoryItem item = undoStack.takeLast();
-    HistoryItem redoItem = {item.x, item.y, canvas->image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    HistoryItem redoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
     redoStack.append(redoItem);
     redoBtn->setEnabled(true);
     undoBtn->setEnabled(not undoStack.isEmpty());
-    canvas->updateImageArea(item.x, item.y, item.image);
+    updateImageArea(item.x, item.y, item.image);
 }
 
 void
 InpaintDialog:: redo()
 {
-    if (redoStack.isEmpty() or !canvas->mask.isNull()) return;
+    if (redoStack.isEmpty() or !mask.isNull()) return;
     HistoryItem item = redoStack.takeLast();
-    HistoryItem undoItem = {item.x, item.y, canvas->image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    HistoryItem undoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
     undoStack.append(undoItem);
     undoBtn->setEnabled(true);
     redoBtn->setEnabled(not redoStack.isEmpty());
-    canvas->updateImageArea(item.x, item.y, item.image);
-}
-
-void
-InpaintDialog:: onInpaintingDone(int x, int y, QImage partImage)
-{
-    if (not redoStack.isEmpty())
-        redoStack.clear();
-    HistoryItem item = {x, y, partImage};
-    undoStack.append(item);
-    undoBtn->setEnabled(true);
-    if (undoStack.size()>10)
-        undoStack.removeFirst();
-    drawMaskBtn->setChecked(true);
+    updateImageArea(item.x, item.y, item.image);
 }
 
 void
@@ -854,22 +855,8 @@ InpaintDialog:: keyPressEvent(QKeyEvent *ev)
     ev->accept();
 }
 
-// ******************* Inpaint Canvas ******************
-InpaintCanvas:: InpaintCanvas(QImage img, QWidget *parent) : QLabel(parent)
-{
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setMouseTracking(true);
-    this->image = img;
-    brush_pen = QPen(Qt::white);
-    brush_pen.setCapStyle(Qt::RoundCap);
-    eraser_pen = QPen(Qt::black);
-    eraser_pen.setCapStyle(Qt::RoundCap);
-    setBrushSize(16);
-    scaleBy(1.0);
-}
-
 void
-InpaintCanvas:: scaleBy(float factor)
+InpaintDialog:: scaleBy(float factor)
 {
     if (not mask.isNull())
         return;
@@ -881,11 +868,11 @@ InpaintCanvas:: scaleBy(float factor)
         this->main_pixmap = QPixmap::fromImage(image.scaled(scale*image.width(), scale*image.height(),
                         Qt::IgnoreAspectRatio, mode));
     }
-    setPixmap(main_pixmap);
+    canvas->setPixmap(main_pixmap);
 }
 
 void
-InpaintCanvas:: setBrushSize(int size)
+InpaintDialog:: setBrushSize(int size)
 {
     eraser_pen.setWidth(size);
     brush_pen.setWidth(size);
@@ -897,12 +884,12 @@ InpaintCanvas:: setBrushSize(int size)
     painter.setPen(Qt::white);
     painter.drawEllipse(1,1, size-3, size-3);
     painter.end();
-    setCursor(QCursor(pm));
+    canvas->setCursor(QCursor(pm));
 }
 
 // this is called when mask is null and drawing started
 void
-InpaintCanvas:: initMask()
+InpaintDialog:: initMask()
 {
     if (scale==1.0)
         this->image_scaled = image;
@@ -919,34 +906,34 @@ InpaintCanvas:: initMask()
 }
 
 void
-InpaintCanvas:: mousePressEvent(QMouseEvent *ev)
+InpaintDialog:: onMousePress(QPoint pos)
 {
-    start_pos = ev->pos();
+    start_pos = pos;
     mouse_pressed = true;
 }
 
 void
-InpaintCanvas:: mouseReleaseEvent(QMouseEvent *)
+InpaintDialog:: onMouseRelease(QPoint)
 {
     mouse_pressed = false;
 }
 
 void
-InpaintCanvas:: mouseMoveEvent(QMouseEvent *ev)
+InpaintDialog:: onMouseMove(QPoint pos)
 {
     if (not mouse_pressed) return;
     // create mask and lock zooming
     if (mask.isNull())
         initMask();
     if (draw_mask)
-        drawMask(start_pos, ev->pos());
+        drawMask(start_pos, pos);
     else
-        eraseMask(start_pos, ev->pos());
-    start_pos = ev->pos();
+        eraseMask(start_pos, pos);
+    start_pos = pos;
 }
 
 void
-InpaintCanvas:: drawMask(QPoint start, QPoint end)
+InpaintDialog:: drawMask(QPoint start, QPoint end)
 {
     painter.begin(&mask);
     painter.setPen(brush_pen);
@@ -961,7 +948,7 @@ InpaintCanvas:: drawMask(QPoint start, QPoint end)
 }
 
 void
-InpaintCanvas:: eraseMask(QPoint start, QPoint end)
+InpaintDialog:: eraseMask(QPoint start, QPoint end)
 {
     painter.begin(&mask);
     painter.setPen(eraser_pen);
@@ -971,7 +958,7 @@ InpaintCanvas:: eraseMask(QPoint start, QPoint end)
 }
 
 void
-InpaintCanvas:: updateMaskedArea(QPoint start, QPoint end)
+InpaintDialog:: updateMaskedArea(QPoint start, QPoint end)
 {
     int mask_x = MAX(MIN(start.x(), end.x())-brush_pen.width()/2, 0);
     int mask_y = MAX(MIN(start.y(), end.y())-brush_pen.width()/2, 0);
@@ -994,11 +981,11 @@ InpaintCanvas:: updateMaskedArea(QPoint start, QPoint end)
     painter.begin(&main_pixmap);
     painter.drawImage(QPoint(mask_x, mask_y), img);
     painter.end();
-    setPixmap(main_pixmap);
+    canvas->setPixmap(main_pixmap);
 }
 
 void
-InpaintCanvas:: inpaint()
+InpaintDialog:: inpaint()
 {
     if (mask.isNull()) return;
     // check if there is masked pixel
@@ -1057,7 +1044,7 @@ InpaintCanvas:: inpaint()
     painter.setPen(Qt::black);
     painter.drawRect(x*scale, y*scale, w*scale-1, h*scale-1);
     painter.end();
-    setPixmap(main_pixmap);
+    canvas->setPixmap(main_pixmap);
     waitFor(30);
     // get mask and input image for inpaint
     QImage input_img = image.copy(x, y, w, h);
@@ -1071,12 +1058,20 @@ InpaintCanvas:: inpaint()
     // apply inpaint function
 	Inpaint inp;
 	QImage output = inp.inpaint(input_img, mask_img, 2);
-    emit inpaintingDone(x, y, image.copy(x, y, output.width(), output.height()));
+    // add to undo stack
+    redoStack.clear();
+    redoBtn->setEnabled(false);
+    HistoryItem item = {x, y, image.copy(x, y, output.width(), output.height())};
+    undoStack.append(item);
+    undoBtn->setEnabled(true);
+    if (undoStack.size()>10)
+        undoStack.removeFirst();
+    drawMaskBtn->setChecked(true);
     updateImageArea(x, y, output);
 }
 
 void
-InpaintCanvas:: updateImageArea(int x, int y, QImage part)
+InpaintDialog:: updateImageArea(int x, int y, QImage part)
 {
     painter.begin(&image);
     painter.drawImage(QPoint(x,y), part);

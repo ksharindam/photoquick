@@ -11,6 +11,8 @@
     qDebug() << "Execution Time :" << elapse;
 
 #define PI 3.141592654
+
+#define BLEND(top, btm, alpha_top) ((top)*(alpha_top) + (btm)*(1-alpha_top));
 // Byte order is ARGB if big endian else BGRA
 inline bool isBigEndian()
 {
@@ -882,8 +884,8 @@ void despeckle(QImage &img)
 }
 
 
-// ******** ---------- Reduce Salt & Pepper noise ---------**********//
-// Edge preserving noise reduction filter.
+// ******** ---------- Median Filter ---------**********//
+// Edge preserving noise reduction filter to Reduce Salt & Pepper noise.
 // Algorithm implemented from graphicsmagick source which is based on the
 // paper "Skip Lists: A probabilistic Alternative to Balanced Trees"
 // by William Pugh (1990)
