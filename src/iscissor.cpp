@@ -682,7 +682,7 @@ IScissorDialog:: getMaskedImage(QPoint clicked)
         }
     }
     if (smoothEdgesBtn->isChecked())
-        gaussianBlur(mask, 3);
+        gaussianBlur(mask, (mask.width()/640+1)*3);
     if (image.format() != QImage::Format_ARGB32)
         image = image.convertToFormat(QImage::Format_ARGB32);
     for (int y=0; y<image.height(); y++){

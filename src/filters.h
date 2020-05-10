@@ -26,7 +26,7 @@ void boxFilter(QImage &img, int radius=1);
 void medianFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
-void sharpen(QImage &img);
+void sharpen(QImage &img, float factor=1.0, int thresh=5);
 
 // Sigmoidal Contrast to enhance low light images
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);

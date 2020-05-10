@@ -406,6 +406,7 @@ void adaptiveThreshold(QImage &img)
 //*********---------- Apply Convolution Matrix ---------**********//
 // Kernel Width Must Be An Odd Number
 // Image must be larger than Kernel Width
+#if (0)
 void convolve(QImage &img, float kernel[], int width/*of kernel*/)
 {
     int radius = width/2;
@@ -450,11 +451,80 @@ void convolve(QImage &img, float kernel[], int width/*of kernel*/)
                     b += normal_kernel[i][j] * qBlue(clr);
                 }
             }
-            row[x] = qRgb(round(r), round(g), round(b));
+            row[x] = qRgba(round(r), round(g), round(b), qAlpha(row[x]));
         }
     }
 }
+#endif
+// convolve a 1D kernel first left to right and then top to bottom
+void convolve1D(QImage &img, float kernel[], int width/*of kernel*/)
+{
+    /* Build normalized kernel */
+    float normal_kernel[width]; // = {}; // Throws error in C99 compiler
+    memset(normal_kernel, 0, width * sizeof(float));
 
+    float normalize = 0.0;
+    for (int i=0; i < width; i++)
+        normalize += kernel[i];
+    // if (abs(normalize) == 0) normalize=1.0;
+    normalize = 1.0/normalize;
+    for (int i=0; i < (width); i++) {
+        normal_kernel[i] = normalize * kernel[i];
+    }
+
+    int radius = width/2;
+    int w = img.width();
+    int h = img.height();
+    /* Convolve image */
+    QImage src_img = expandBorder(img, radius);
+    int src_w = src_img.width();
+
+    QRgb *data_src = (QRgb*)src_img.constScanLine(0);
+    QRgb *data_dst = (QRgb*)img.scanLine(0);
+
+    #pragma omp parallel for
+    for (int y=0; y < h; y++)
+    {
+        QRgb *row_dst = data_dst + (y*w);
+        QRgb *row_src = data_src + (src_w*(y+radius));
+
+        for (int x=0; x < w; x++)
+        {
+            float r=0, g=0, b=0;
+            for (int i=0; i < width; i++)
+            {
+                QRgb clr = row_src[x+i];
+                r += normal_kernel[i] * qRed(clr);
+                g += normal_kernel[i] * qGreen(clr);
+                b += normal_kernel[i] * qBlue(clr);
+            }
+            row_dst[x] = qRgba(round(r), round(g), round(b), qAlpha(row_dst[x]));
+        }
+    }
+    // Convolve from top to bottom
+    src_img = expandBorder(img, radius);
+    data_src = (QRgb*)src_img.constScanLine(0);
+
+    #pragma omp parallel for
+    for (int y=0; y < h; y++)
+    {
+        QRgb *row_dst = data_dst + (y*w);
+
+        for (int x=0; x < w; x++)
+        {
+            float r=0, g=0, b=0;
+            for (int i=0; i < width; i++)
+            {
+                QRgb *row_src = data_src + (src_w*(y+i));
+                QRgb clr = row_src[x+radius];
+                r += normal_kernel[i] * qRed(clr);
+                g += normal_kernel[i] * qGreen(clr);
+                b += normal_kernel[i] * qBlue(clr);
+            }
+            row_dst[x] = qRgba( round(r), round(g), round(b), qAlpha(row_dst[x]) );
+        }
+    }
+}
 
 //*************---------- Gaussian Blur ---------***************//
 // 1D Gaussian kernel -> g(x)   = 1/{sqrt(2.pi)*sigma} * e^{-(x^2)/(2.sigma^2)}
@@ -464,18 +534,16 @@ void gaussianBlur(QImage &img, int radius, float sigma/*standard deviation*/)
 {
     if (sigma==0)  sigma = radius/2.0 ;
     int kernel_width = 2*radius + 1;
-    float kernel[kernel_width*kernel_width];
-    int i=0;
-    for (int v=-radius; v <= radius; v++)
+    // build 1D gaussian kernel
+    float kernel[kernel_width];
+
+    for (int i=0; i<kernel_width; i++)
     {
-        for (int u=-radius; u <= radius; u++)
-        {
-            double alpha = exp(-((double) u*u+v*v)/(2.0*sigma*sigma));
-            kernel[i]=alpha/(2.0*PI*sigma*sigma);
-            i++;
-        }
+        int u = i - radius;
+        double alpha = exp(-(u*u)/(2.0*sigma*sigma));
+        kernel[i] = alpha/(sqrt(2*PI)*sigma);
     }
-    convolve(img, kernel, kernel_width);
+    convolve1D(img, kernel, kernel_width);
 }
 
 
@@ -485,73 +553,58 @@ void boxFilter(QImage &img, int r/*blur radius*/)
 {
     int w = img.width();
     int h = img.height();
-    QImage tmp = QImage(w,h,QImage::Format_ARGB32);// temporary image
-    // Run blur in horizontal direction
+    int kernel_w = 2*r + 1;
+
+    QImage src_img = expandBorder(img, r);
+    int src_w = src_img.width();
+    QRgb *data_src = (QRgb*) src_img.constScanLine(0);
+    QRgb *data_dst = (QRgb*) img.scanLine(0);
+
     #pragma omp parallel for
     for (int y=0; y<h; ++y)
     {
-        int x, sum_r,sum_g,sum_b, count;
-        QRgb *row, *tmp_row;
-        #pragma omp critical
-        { row = (QRgb*)img.constScanLine(y);
-          tmp_row = (QRgb*)tmp.scanLine(y); }
-        sum_r = sum_g = sum_b = 0;
-        for (x=0; x<=r; x++) {
-            sum_r += qRed(row[x]); sum_g += qGreen(row[x]); sum_b += qBlue(row[x]);
+        QRgb *row_dst = data_dst + (y*w);
+        QRgb *row_src = data_src + ((y+r)*src_w);
+
+        int sum_r = 0, sum_g = 0, sum_b = 0;
+        for (int x=0; x<kernel_w; x++) {
+            int clr = row_src[x];
+            sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
         }
-        count = r+1;
-        tmp_row[0] = qRgb(sum_r/count, sum_g/count, sum_b/count);
-        for (x=1; x<=r; x++) {
-            sum_r += qRed(row[x+r]); sum_g += qGreen(row[x+r]); sum_b += qBlue(row[x+r]);
-            count += 1;
-            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
-        }
-        for (x=r+1; x<w-r; x++) {
-            sum_r += qRed(row[x+r]) - qRed(row[x-r-1]);
-            sum_g += qGreen(row[x+r]) - qGreen(row[x-r-1]);
-            sum_b += qBlue(row[x+r]) - qBlue(row[x-r-1]);
-            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
-        }
-        for (x=w-r; x<w; x++) {
-            sum_r -= qRed(row[x-r-1]); sum_g -= qGreen(row[x-r-1]); sum_b -= qBlue(row[x-r-1]);
-            count -= 1;
-            tmp_row[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        row_dst[0] = qRgba(sum_r/kernel_w, sum_g/kernel_w, sum_b/kernel_w, qAlpha(row_dst[0]));
+
+        for (int x=1; x<w; x++) {
+            int left = row_src[x-1];
+            int right = row_src[x+r+r];
+            sum_r += qRed(right) - qRed(left);
+            sum_g += qGreen(right) - qGreen(left);
+            sum_b += qBlue(right) - qBlue(left);
+            row_dst[x] = qRgba(sum_r/kernel_w, sum_g/kernel_w, sum_b/kernel_w, qAlpha(row_dst[x]));
         }
     }
-    // Run blur in vertical direction
-    QRgb *data = (QRgb*)img.scanLine(0);
-    QRgb* tmpData = (QRgb*)tmp.constScanLine(0);
+    src_img = expandBorder(img, r);
+    data_src = (QRgb*) src_img.constScanLine(0);
+
     #pragma omp parallel for
     for (int x=0; x<w; ++x)
     {
-        QRgb clr, clr2;
-        int y, sum_r,sum_g,sum_b, count;
-        sum_r = sum_g = sum_b = 0;
-        for (y=0; y<=r; ++y) {
-            clr = (tmpData + (w*y))[x];
+        int sum_r = 0, sum_g = 0, sum_b = 0;
+
+        for (int y=0; y<kernel_w; y++) {
+            int clr = (data_src + (y*src_w))[x+r];
             sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
         }
-        count = r+1;
-        data[x] = qRgb(sum_r/count, sum_g/count, sum_b/count); // first row
-        for (y=1; y<=r; y++) {
-            clr = (tmpData + (w*(y+r)))[x];
-            sum_r += qRed(clr); sum_g += qGreen(clr); sum_b += qBlue(clr);
-            count += 1;
-            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
-        }
-        for (y=r+1; y<h-r; y++) {
-            clr = (tmpData + (w*(y+r)))[x];
-            clr2 = (tmpData + (w*(y-r-1)))[x];
-            sum_r += qRed(clr) - qRed(clr2);
-            sum_g += qGreen(clr) - qGreen(clr2);
-            sum_b += qBlue(clr) - qBlue(clr2);
-            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
-        }
-        for (y=h-r; y<h; y++) {
-            clr = (tmpData + (w*(y-r-1)))[x];
-            sum_r -= qRed(clr); sum_g -= qGreen(clr); sum_b -= qBlue(clr);
-            count -= 1;
-            (data + (w*y))[x] = qRgb(sum_r/count, sum_g/count, sum_b/count);
+        (data_dst)[x] = qRgba(sum_r/kernel_w, sum_g/kernel_w, sum_b/kernel_w,
+                                qAlpha((data_dst)[x]));//first row
+
+        for (int y=1; y<h; y++) {
+            int clr_top = (data_src + ((y-1)*src_w))[x+r];
+            int clr_btm = (data_src + ((y+r+r)*src_w))[x+r];
+            sum_r += qRed(clr_btm) - qRed(clr_top);
+            sum_g += qGreen(clr_btm) - qGreen(clr_top);
+            sum_b += qBlue(clr_btm) - qBlue(clr_top);
+            (data_dst + (y*w))[x] = qRgba(sum_r/kernel_w, sum_g/kernel_w, sum_b/kernel_w,
+                                        qAlpha((data_dst + (y*w))[x]));
         }
     }
 }
@@ -559,9 +612,9 @@ void boxFilter(QImage &img, int r/*blur radius*/)
 
 //*************------------ Sharpen ------------****************
 // Using unsharp masking
-// output_image = input_image + (input_image - blur_image)
+// output_image = input_image + factor*(input_image - blur_image)
 
-void sharpen(QImage &img)
+void sharpen(QImage &img, float factor, int thresh)
 {
     QImage mask = img.copy();
     boxFilter(mask, 1);
@@ -579,11 +632,11 @@ void sharpen(QImage &img)
             int r_diff = (qRed(row[x]) - qRed(row_mask[x]));
             int g_diff = (qGreen(row[x]) - qGreen(row_mask[x]));
             int b_diff = (qBlue(row[x]) - qBlue(row_mask[x]));
-            // threshold = 5, factor = 1.0
-            int r = r_diff > 5? qRed(row[x])   + 1.0*r_diff : qRed(row[x]);
-            int g = g_diff > 5? qGreen(row[x]) + 1.0*g_diff : qGreen(row[x]);
-            int b = b_diff > 5? qBlue(row[x])  + 1.0*b_diff : qBlue(row[x]);
-            row[x] = qRgb(Clamp(r), Clamp(g), Clamp(b));
+            // default threshold = 5, factor = 1.0
+            int r = r_diff > thresh? qRed(row[x])   + factor*r_diff : qRed(row[x]);
+            int g = g_diff > thresh? qGreen(row[x]) + factor*g_diff : qGreen(row[x]);
+            int b = b_diff > thresh? qBlue(row[x])  + factor*b_diff : qBlue(row[x]);
+            row[x] = qRgba(Clamp(r), Clamp(g), Clamp(b), qAlpha(row[x]));
         }
     }
 }
@@ -618,7 +671,7 @@ void sigmoidalContrast(QImage &img, float midpoint)
             int r = histogram[qRed(clr)];
             int g = histogram[qGreen(clr)];
             int b = histogram[qBlue(clr)];
-            row[x] = qRgb(r,g,b);
+            row[x] = qRgba(r,g,b, qAlpha(clr));
         }
     }
 }
