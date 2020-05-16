@@ -42,6 +42,8 @@ Window:: Window()
     saveMenu->addAction("Overwrite", this, SLOT(overwrite()));
     saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     saveMenu->addAction("Save As...", this, SLOT(saveAs()));
+    saveMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
+    saveMenu->addSeparator();
     saveMenu->addAction("Open Image", this, SLOT(openFile()));
     saveBtn->setMenu(saveMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
@@ -190,7 +192,7 @@ Window:: saveImage(QString filename)
     setWindowTitle(QFileInfo(filename).fileName());
     this->filename = filename;
     Notifier *notifier = new Notifier(this);
-    notifier->notify("Image Saved !", "Successfully Saved Image");
+    notifier->notify("Image Saved !", QFileInfo(filename).fileName());
 }
 
 void
@@ -213,27 +215,48 @@ Window:: saveAs()
 void
 Window:: saveACopy()    // generate a new filename and save
 {
+    QString path = getNewFileName(filename);
+    saveImage(path);
+}
+
+void
+Window:: autoResizeAndSave()
+{
+    if (canvas->image.isNull())
+        return;
+    float res1 = canvas->image.width();
+    float size1 = getJpgFileSize(canvas->image)/1024.0;
+    float res2 = res1/2;
+    QImage scaled = canvas->image.scaledToWidth(res2, Qt::SmoothTransformation);
+    float size2 = getJpgFileSize(scaled)/1024.0;
+    bool ok;
+    float sizeOut = QInputDialog::getInt(this, "File Size", "Maximum File Size (kB) :", size1/2, 1, size1, 1, &ok);
+    if (not ok)
+        return;
+    float resOut = log10(res1/res2)/log10(size1/size2) * log10(sizeOut/size1) + log10(res1);
+    resOut = pow(10, resOut);
+    scaled = canvas->image.scaledToWidth(resOut, Qt::SmoothTransformation);
+    size2 = getJpgFileSize(scaled)/1024.0;
+    for (float frac=0.95; size2>sizeOut; frac-=0.05){
+        scaled = canvas->image.scaledToWidth(resOut*frac, Qt::SmoothTransformation);
+        size2 = getJpgFileSize(scaled)/1024.0;
+    }
+    // ensure that saved image is jpg
     QFileInfo fi(filename);
     QString dir = fi.dir().path();
     QString basename = fi.completeBaseName();
-    QString ext = fi.suffix().isEmpty()? ".jpg": "."+fi.suffix();
-    // extract the num just before the file extension
-    QRegExp rx("(.*\\D)*(\\d*)");
-    int pos = rx.indexIn(basename);
-    if (pos==-1) return;
-    int num = rx.cap(2).isEmpty()? 1: rx.cap(2).toInt();
-    QString path;
-    do {
-        path = dir+ '/' + rx.cap(1) + QString::number(num++) + ext;
-    }
-    while (QFileInfo(path).exists());
-    saveImage(path);
+    QString path = dir + "/" + basename + ".jpg";
+    path = getNewFileName(path);
+
+    scaled.save(path);
+    Notifier *notifier = new Notifier(this);
+    notifier->notify("Image Saved !", QFileInfo(path).fileName());
 }
 
 void
 Window:: deleteFile()
 {
-    QString nextfile = getNextFilename(filename); // must be called before deleting
+    QString nextfile = getNextFileName(filename); // must be called before deleting
     QFile fi(filename);
     if (not fi.exists()) return;
     if (QMessageBox::warning(this, "Delete File?", "Are you sure to permanently delete this image?",
@@ -454,7 +477,7 @@ Window:: openPrevImage()
 void
 Window:: openNextImage()
 {
-    QString nextfile = getNextFilename(filename);
+    QString nextfile = getNextFileName(filename);
     if (!nextfile.isNull())
         openImage(nextfile);
 }
@@ -665,7 +688,7 @@ Window:: closeEvent(QCloseEvent *ev)
 }
 
 // other functions
-QString getNextFilename(QString current)
+QString getNextFileName(QString current)
 {
     QFileInfo fi(current);
     if (not fi.exists())
@@ -679,6 +702,27 @@ QString getNextFilename(QString current)
     int index = image_list.indexOf(filename);
     if (index >= image_list.count()-1) index = -1;
     return basedir + '/' + image_list[index+1];
+}
+
+QString getNewFileName(QString filename)
+{
+    // assuming filename is valid string
+    QFileInfo fi(filename);
+    QString dir = fi.dir().path();
+    if (not dir.isEmpty()) dir += "/";
+    QString basename = fi.completeBaseName();
+    QString ext = fi.suffix().isEmpty()? ".jpg": "."+fi.suffix();
+    // extract the num just before the file extension
+    QRegExp rx("(.*\\D)*(\\d*)");
+    int pos = rx.indexIn(basename);
+    if (pos==-1) return getNewFileName(dir + "newimage.jpg");
+    int num = rx.cap(2).isEmpty()? 1: rx.cap(2).toInt();
+    QString path;
+    do {
+        path = dir + rx.cap(1) + QString::number(num++) + ext;
+    }
+    while (QFileInfo(path).exists());
+    return path;
 }
 
 // ************* main function ****************

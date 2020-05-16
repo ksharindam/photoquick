@@ -18,6 +18,10 @@ void waitFor(int millisec);
 // load an image from file
 // Returns an autorotated image according to exif data
 QImage loadImage(QString filename);
+
+// get filesize in bytes when a QImage is saved as jpeg
+int getJpgFileSize(QImage img, int quality=-1);
+
 // get jpeg image orientation from exif
 int getOrientation(FILE *f);
 

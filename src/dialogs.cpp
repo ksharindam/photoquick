@@ -3,8 +3,6 @@
 #include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QGridLayout>
-#include <QBuffer>
-#include <QByteArray>
 #include <cmath>
 
 // Dialog to set JPG image quality for saving
@@ -55,13 +53,7 @@ QualityDialog:: toggleCheckSize(bool checked)
 void
 QualityDialog:: checkFileSize()
 {
-	QByteArray bArray;
-	QBuffer buffer(&bArray);
-	buffer.open(QIODevice::WriteOnly);
-	image.save(&buffer, "JPG", qualitySpin->value());
-	int filesize = bArray.size();
-	bArray.clear();
-	buffer.close();
+	int filesize = getJpgFileSize(image, qualitySpin->value());
 	QString text = "Size : %1 KB";
 	sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
 }

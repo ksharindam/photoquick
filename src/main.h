@@ -28,6 +28,7 @@ public slots:
     void overwrite();
     void saveAs();
     void saveACopy();
+    void autoResizeAndSave();
     void deleteFile();
     void resizeImage();
     void cropImage();
@@ -65,4 +66,5 @@ public slots:
     void updateStatus();
 };
 
-QString getNextFilename(QString current);
+QString getNextFileName(QString current);
+QString getNewFileName(QString filename);

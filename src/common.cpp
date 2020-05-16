@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <QEventLoop>
 #include <QFile>
+#include <QBuffer>
 #include <QTransform>
 #include <QIcon>
 #include <cmath>
@@ -68,6 +69,22 @@ QImage loadImage(QString fileName)
     }
     return img;
 }
+
+
+int getJpgFileSize(QImage image, int quality)
+{
+    if (image.isNull()) return 0;
+
+	QByteArray bArray;
+	QBuffer buffer(&bArray);
+	buffer.open(QIODevice::WriteOnly);
+	image.save(&buffer, "JPG", quality);
+	int filesize = bArray.size();
+	bArray.clear();
+	buffer.close();
+    return filesize;
+}
+
 
 Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/image.png"), parent)
 {

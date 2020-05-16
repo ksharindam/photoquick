@@ -261,18 +261,18 @@ IScissorDialog:: setEraserSize(int val)
 void
 IScissorDialog:: updateEraserSize()
 {
-    int val = eraserSizeSlider->value();
+    int w = eraserSizeSlider->value();
     // create brush mask
-    brush = QImage(val, val, QImage::Format_RGB32);
+    brush = QImage(w, w, QImage::Format_RGB32);
     brush.fill(Qt::black);
     painter.begin(&brush);
     painter.setBrush(QBrush(Qt::white));
-    painter.drawEllipse(QPoint(val/2, val/2), (val*3)/8, (val*3)/8);
+    painter.drawEllipse(QPoint(w/2, w/2), w*3/8.0, w*3/8.0);
     painter.end();
-    gaussianBlur(brush, val/8);
+    gaussianBlur(brush, w/8);
     //brush.save("brush2.png");
-    brush_scaled = brush.scaledToWidth(val*scale, Qt::SmoothTransformation );
-    canvas->setCursor(roundCursor(scale*(val*7)/8));
+    brush_scaled = brush.scaledToWidth(w*scale, Qt::SmoothTransformation );
+    canvas->setCursor(roundCursor(scale * w*7/8.0));
 }
 
 void
@@ -682,7 +682,7 @@ IScissorDialog:: getMaskedImage(QPoint clicked)
         }
     }
     if (smoothEdgesBtn->isChecked())
-        gaussianBlur(mask, (mask.width()/640+1)*3);
+        gaussianBlur(mask, 3);
     if (image.format() != QImage::Format_ARGB32)
         image = image.convertToFormat(QImage::Format_ARGB32);
     for (int y=0; y<image.height(); y++){
