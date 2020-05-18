@@ -137,7 +137,7 @@ void
 IScissorDialog:: confirmAccept()
 {
     // set Background color
-    QDialog *dlg = new BgColorDialog(this);
+    BgColorDialog *dlg = new BgColorDialog(this);
     connect(dlg, SIGNAL(bgColorSelected(int,QRgb)), this, SLOT(setBgColor(int,QRgb)));
     if (dlg->exec()==QDialog::Rejected) {
         redraw();
@@ -267,7 +267,7 @@ IScissorDialog:: updateEraserSize()
     brush.fill(Qt::black);
     painter.begin(&brush);
     painter.setBrush(QBrush(Qt::white));
-    painter.drawEllipse(QPoint(w/2, w/2), w*3/8.0, w*3/8.0);
+    painter.drawEllipse(QPoint(w/2, w/2), (w*3)/8, (w*3)/8);
     painter.end();
     gaussianBlur(brush, w/8);
     //brush.save("brush2.png");

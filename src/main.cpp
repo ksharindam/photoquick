@@ -24,6 +24,7 @@
 #include "inpaint.h"
 #include "iscissor.h"
 #include "filters.h"
+#include "pdfwriter.h"
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -33,6 +34,7 @@
 #include <QSettings>
 #include <QMenu>
 #include <QRegExp>
+#include <QBuffer>
 #include <cmath>
 
 Window:: Window()
@@ -43,6 +45,8 @@ Window:: Window()
     saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     saveMenu->addAction("Save As...", this, SLOT(saveAs()));
     saveMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
+    saveMenu->addSeparator();
+    saveMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
     saveMenu->addSeparator();
     saveMenu->addAction("Open Image", this, SLOT(openFile()));
     saveBtn->setMenu(saveMenu);
@@ -71,7 +75,7 @@ Window:: Window()
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
+    //fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
     effectsBtn->setMenu(fxMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
@@ -254,6 +258,96 @@ Window:: autoResizeAndSave()
 }
 
 void
+Window:: exportToPdf()
+{
+    if (canvas->image.isNull()) return;
+    QImage image = canvas->image;
+    // get or calculate paper size
+    PaperSizeDialog *dlg = new PaperSizeDialog(this);
+    if (dlg->exec()==QDialog::Rejected) return;
+    float pdf_w, pdf_h;
+    switch (dlg->combo->currentIndex()) {
+    case 1:
+        pdf_w = 595.0;
+        pdf_h = 842.0;
+        break;
+    case 2:
+        pdf_w = 842.0;
+        pdf_h = 595.0;
+        break;
+    default:
+        pdf_w = 595.0;
+        pdf_h = ceilf((pdf_w*image.height())/image.width());
+        break;
+    }
+    // get image dimension and position
+    int img_w = pdf_w;
+    int img_h = round((pdf_w/image.width())*image.height());
+    if (img_h > pdf_h) {
+        img_h = pdf_h;
+        img_w = round((pdf_h/image.height())*image.width());
+    }
+    int x = (pdf_w-img_w)/2;
+    int y = (pdf_h-img_h)/2;
+    //qDebug()<< x<<img_w<<y<<img_h;
+
+    // remove transperancy
+    if (image.format()==QImage::Format_ARGB32) {
+        QImage new_img(image.width(), image.height(), QImage::Format_ARGB32);
+        new_img.fill(Qt::white);
+        QPainter painter(&new_img);
+        painter.drawImage(0,0, image);
+        painter.end();
+        image = new_img;
+    }
+
+    QFileInfo fi(filename);
+    QString dir = fi.dir().path();
+    QString basename = fi.completeBaseName();
+    QString path = dir + "/" + basename + ".pdf";
+    path = getNewFileName(path);
+    std::string path_str = path.toUtf8().constData();
+
+    PdfWriter writer;
+    writer.begin(path_str);
+    PdfObj cont;
+    PdfDict resources;
+    PdfDict imgs;
+    PdfObj img;
+    img.set("Type", "/XObject");
+    img.set("Subtype", "/Image");
+    img.set("ColorSpace", "/DeviceRGB");
+    img.set("BitsPerComponent", "8");
+    img.set("Filter", "/DCTDecode"); // jpg = DCTDecode, for png = FlateDecode
+    img.set("Width", image.width());
+    img.set("Height", image.height());
+
+    QByteArray bArray;
+    QBuffer buffer(&bArray);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "JPG");
+    std::string data(bArray.data(), bArray.size());
+    writer.addObj(img, data);
+    bArray.clear();
+    buffer.close();
+
+    std::string matrix = imgMatrix(x, y, img_w, img_h, 0);
+    std::string cont_strm = format("q %s /img0 Do Q\n", matrix.c_str());
+    imgs.set("img0", img.byref());
+
+    writer.addObj(cont, cont_strm);
+    resources.set("XObject", imgs);
+    PdfObj page = writer.createPage(pdf_w, pdf_h);
+    page.set("Contents", cont);
+    page.set("Resources", resources);
+    writer.addPage(page);
+    writer.finish();
+
+    Notifier *notifier = new Notifier(this);
+    notifier->notify("PDF Saved !", QFileInfo(path).fileName());
+}
+
+void
 Window:: deleteFile()
 {
     QString nextfile = getNextFileName(filename); // must be called before deleting
@@ -406,7 +500,7 @@ Window:: blur()
 void
 Window:: sharpenImage()
 {
-    sharpen(canvas->image);
+    unsharpMask(canvas->image);
     canvas->showScaled();
 }
 
@@ -451,12 +545,12 @@ Window:: enhanceColors()
     canvas->showScaled();
 }
 
-void
+/*void
 Window:: pencilSketchFilter()
 {
     pencilSketch(canvas->image);
     canvas->showScaled();
-}
+}*/
 
 void
 Window:: openPrevImage()
@@ -716,12 +810,13 @@ QString getNewFileName(QString filename)
     QRegExp rx("(.*\\D)*(\\d*)");
     int pos = rx.indexIn(basename);
     if (pos==-1) return getNewFileName(dir + "newimage.jpg");
-    int num = rx.cap(2).isEmpty()? 1: rx.cap(2).toInt();
-    QString path;
-    do {
-        path = dir + rx.cap(1) + QString::number(num++) + ext;
+
+    int num = rx.cap(2).isEmpty()? 0: rx.cap(2).toInt();
+
+    QString path(dir + basename + ext);
+    while (QFileInfo(path).exists()){
+        path = dir + rx.cap(1) + QString::number(++num) + ext;
     }
-    while (QFileInfo(path).exists());
     return path;
 }
 

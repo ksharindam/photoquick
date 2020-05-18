@@ -2,6 +2,7 @@
 #include <QDialog>
 #include <QLabel>
 #include <QSpinBox>
+#include <QComboBox>
 #include <QImage>
 #include <QTimer>
 
@@ -19,3 +20,12 @@ public slots:
     void checkFileSize();
     void toggleCheckSize(bool checked);
 };
+
+// dialog to choose paper size
+class PaperSizeDialog : public QDialog
+{
+public:
+    QComboBox *combo;
+    PaperSizeDialog(QWidget *parent);
+};
+

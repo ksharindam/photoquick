@@ -740,7 +740,8 @@ CollagePaper:: savePdf()
         img.set("Width", item->img_w);
         img.set("Height", item->img_h);
         if (item->jpgOnDisk()) {
-            writer.addObj(img, readFile(item->filename.toStdString()));
+            std::string path_str = item->filename.toUtf8().constData();
+            writer.addObj(img, readFile(path_str) );
         }
         else {
             QByteArray bArray;

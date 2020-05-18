@@ -2,7 +2,8 @@
 This file is a part of photoquick program, which is GPLv3 licensed
 */
 #include "transform.h"
-#include <QDebug>
+#include "common.h"
+#include <QSettings>
 #include <QPainter>
 #include <QPushButton>
 #include <QMenu>
@@ -211,10 +212,15 @@ Crop:: setCropMode(QAction *action)
         crop_mode = FIXED_RESOLUTION;
     }
     else if (action->text()==QString("Ratio - Custom")) {
-        CropRatioDialog *dlg = new CropRatioDialog(canvas, 3.5,4.5);
+        QSettings settings;
+        ratio_w = settings.value("CropRatioX", 3.5).toFloat();
+        ratio_h = settings.value("CropRatioY", 4.5).toFloat();
+        CropRatioDialog *dlg = new CropRatioDialog(canvas, ratio_w, ratio_h);
         dlg->exec();
         ratio_w = dlg->widthSpin->value();
         ratio_h = dlg->heightSpin->value();
+        settings.setValue("CropRatioX", ratio_w);
+        settings.setValue("CropRatioY", ratio_h);
         crop_mode = FIXED_RATIO;
     }
     else if (action->text()==QString("Ratio - 3.5:4.5")) {
@@ -520,8 +526,11 @@ ResizeDialog:: toggleAdvanced(bool checked)
 {
     if (checked)
         frame->show();
-    else
+    else {
         frame->hide();
+        waitFor(50);
+        resize(353, 200);
+    }
 }
 
 void

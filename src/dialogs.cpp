@@ -58,4 +58,22 @@ QualityDialog:: checkFileSize()
 	sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
 }
 
+// dialog to choose paper size
+PaperSizeDialog:: PaperSizeDialog(QWidget *parent) : QDialog(parent)
+{
+    this->resize(250, 120);
+    this->setWindowTitle("Paper Size");
+    QVBoxLayout *vLayout = new QVBoxLayout(this);
+    QLabel *label = new QLabel("Select Paper Size :", this);
+    combo = new QComboBox(this);
+    combo->addItem("Automatic");
+    combo->addItem("A4");
+    combo->addItem("A4 Landscape");
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    vLayout->addWidget(label);
+    vLayout->addWidget(combo);
+    vLayout->addWidget(btnBox);
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
 

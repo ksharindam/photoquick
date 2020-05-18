@@ -4,19 +4,19 @@ A simple handy image viewer and editor with some useful features (written in qt4
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
 
- * Resize  
+ * Export to PDF
+ * Auto Resize to file size  
  * Crop in particular ratio  
- * Rotate  
- * Create photo grid for printing  
+ * Rotate, mirror, perspective transform  
  * Add Border  
+ * Create photo grid for printing  
+ * Magic Eraser (inpainting)  
+ * Intelligent Scissor  
  * Filters  
   * Scan Page  
   * Auto Contrast  
-  * White Balance
+  * White Balance  
   * Reduce Noise  
-  * Pencil Sketch  
- * Magic Eraser (inpainting)  
- * Intelligent Scissor  
 
 
 This image viewer is tested on Raspberry Pi (Raspbian).  

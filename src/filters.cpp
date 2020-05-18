@@ -614,7 +614,7 @@ void boxFilter(QImage &img, int r/*blur radius*/)
 // Using unsharp masking
 // output_image = input_image + factor*(input_image - blur_image)
 
-void sharpen(QImage &img, float factor, int thresh)
+void unsharpMask(QImage &img, float factor, int thresh)
 {
     QImage mask = img.copy();
     boxFilter(mask, 1);
@@ -1116,8 +1116,11 @@ void medianFilter(QImage &img, int radius)
 }
 
 
-//*********** ------------ Pencil Sketch ------------ ************* //
 
+// ********************* Experimental Features  ********************* //
+
+//*********** ------------ Pencil Sketch ------------ ************* //
+#if (0)
 void pencilSketch(QImage &img)
 {
     grayScale(img);
@@ -1142,10 +1145,7 @@ void pencilSketch(QImage &img)
         }
     }
 }
-
-
-
-// ********************* Experimental Features  ********************* //
+#endif
 
 //*********** ------------ Kuwahara Filter ------------ ************* //
 #if (0)

@@ -29,6 +29,7 @@ public slots:
     void saveAs();
     void saveACopy();
     void autoResizeAndSave();
+    void exportToPdf();
     void deleteFile();
     void resizeImage();
     void cropImage();
@@ -37,9 +38,10 @@ public slots:
     void addBorder();
     void createPhotoGrid();
     void createPhotoCollage();
-    // filters
+    // tools
     void magicEraser();
     void iScissor();
+    // filters
     void toGrayScale();
     void toBlacknWhite();
     void adaptiveThresh();
@@ -51,7 +53,7 @@ public slots:
     void enhanceLight();
     void whiteBalance();
     void enhanceColors();
-    void pencilSketchFilter();
+    //void pencilSketchFilter();
     // file and view options
     void openPrevImage();
     void openNextImage();
