@@ -69,6 +69,8 @@ std::string format(const char* fmt, Args... args)
     return str;
 }
 
+std::string getPngIdat(char *rawdata, int rawdata_size);
+
 std::string readFile(std::string filename);
 
 std::string imgMatrix(float x, float y, float w, float h, int rotation);

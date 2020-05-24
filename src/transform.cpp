@@ -60,13 +60,16 @@ Crop:: Crop(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
     ratioMenu->addAction(action7);
     setRatioBtn->setMenu(ratioMenu);
     connect(ratioActions, SIGNAL(triggered(QAction*)), this, SLOT(setCropMode(QAction*)));
+    QWidget *spacer = new QWidget(statusbar);
+    spacer->setMinimumWidth(40);
+    statusbar->addPermanentWidget(spacer);
     QPushButton *cropnowBtn = new QPushButton("Crop Now", statusbar);
     statusbar->addPermanentWidget(cropnowBtn);
     QPushButton *cropcancelBtn = new QPushButton("Cancel", statusbar);
     statusbar->addPermanentWidget(cropcancelBtn);
     connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(crop()));
     connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(finish()));
-    crop_widgets << setRatioBtn << cropnowBtn << cropcancelBtn;
+    crop_widgets << setRatioBtn << spacer << cropnowBtn << cropcancelBtn;
     drawCropBox();
 }
 
@@ -337,6 +340,7 @@ PerspectiveTransform(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
     connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(transform()));
     connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(finish()));
     crop_widgets << cropnowBtn << cropcancelBtn;
+    statusbar->showMessage("Drag corners to fit edges around tilted image/document");
     drawCropBox();
 }
 
@@ -508,7 +512,7 @@ ResizeDialog:: ResizeDialog(QWidget *parent, int img_width, int img_height) : QD
 {
     setupUi(this);
     frame->hide();
-    resize(353, 200);
+    resize(350, 100);
     QIntValidator validator(this);
     widthEdit->setValidator(&validator);
     heightEdit->setValidator(&validator);
@@ -529,7 +533,7 @@ ResizeDialog:: toggleAdvanced(bool checked)
     else {
         frame->hide();
         waitFor(50);
-        resize(353, 200);
+        resize(350, 100);
     }
 }
 

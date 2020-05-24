@@ -3,6 +3,7 @@
 #include <QLabel>
 #include <QSpinBox>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QImage>
 #include <QTimer>
 
@@ -26,6 +27,7 @@ class PaperSizeDialog : public QDialog
 {
 public:
     QComboBox *combo;
-    PaperSizeDialog(QWidget *parent);
+    QCheckBox *landscape;
+    PaperSizeDialog(QWidget *parent, bool landscapeMode);
 };
 

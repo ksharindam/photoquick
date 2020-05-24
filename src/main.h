@@ -14,9 +14,9 @@ public:
     void adjustWindowSize(bool animation=false);
     //Variables declaration
     Canvas *canvas;
+    QString filename;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
-    QString filename;
 private:
     void connectSignals();
     float fitToScreenScale(QImage img);
@@ -64,7 +64,7 @@ public slots:
     void rotateRight();
     void playPause();
     // others
-    void hideButtons();
+    void onEditingFinished();
     void updateStatus();
 };
 

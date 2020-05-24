@@ -1,6 +1,5 @@
 #include "dialogs.h"
 #include "common.h"
-#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QGridLayout>
 #include <cmath>
@@ -8,13 +7,14 @@
 // Dialog to set JPG image quality for saving
 QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
 {
-    setWindowTitle("Set Quality");
+    setWindowTitle("Set Compression");
 	timer = new QTimer(this);
 	timer->setSingleShot(true);
 	timer->setInterval(800);
-    QLabel *qualityLabel = new QLabel("Set Image Quality (%):", this);
+    QLabel *qualityLabel = new QLabel("Compression Level :", this);
     qualitySpin = new QSpinBox(this);
     qualitySpin->setAlignment(Qt::AlignHCenter);
+    qualitySpin->setSuffix(" %");
     qualitySpin->setRange(10,100);
     qualitySpin->setValue(75);
     QCheckBox *showSizeCheck = new QCheckBox("Show File Size", this);
@@ -59,7 +59,7 @@ QualityDialog:: checkFileSize()
 }
 
 // dialog to choose paper size
-PaperSizeDialog:: PaperSizeDialog(QWidget *parent) : QDialog(parent)
+PaperSizeDialog:: PaperSizeDialog(QWidget *parent, bool landscapeMode) : QDialog(parent)
 {
     this->resize(250, 120);
     this->setWindowTitle("Paper Size");
@@ -68,10 +68,13 @@ PaperSizeDialog:: PaperSizeDialog(QWidget *parent) : QDialog(parent)
     combo = new QComboBox(this);
     combo->addItem("Automatic");
     combo->addItem("A4");
-    combo->addItem("A4 Landscape");
+    combo->addItem("A5");
+    landscape = new QCheckBox("Landscape", this);
+    landscape->setChecked(landscapeMode);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
     vLayout->addWidget(label);
     vLayout->addWidget(combo);
+    vLayout->addWidget(landscape);
     vLayout->addWidget(btnBox);
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));

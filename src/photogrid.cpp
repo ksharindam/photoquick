@@ -141,6 +141,22 @@ ThumbnailGroup:: selectThumbnail()
     qobject_cast<Thumbnail*>(sender())->select(true);
 }
 
+// calculates number of rows and cols of items in grid paper
+void calcRowsCols(int &paperW, int &paperH, int W, int H, int &rows, int &cols)
+{
+    rows = paperH/H;
+    cols = paperW/W;
+    int rows2 = paperW/H;
+    int cols2 = paperH/W;
+    if (rows*cols < rows2*cols2) {
+        int tmp = paperW;
+        paperW = paperH;
+        paperH = tmp;
+        rows = rows2;
+        cols = cols2;
+    }
+}
+
 // GridPaper class methods
 GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 {
@@ -149,13 +165,12 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
     setAcceptDrops(true);
     add_border = true;
     QSettings settings(this);
-    DPI = settings.value("DPI", 300).toInt();
-    paperW = settings.value("PaperWidth", 1800).toInt();
-    paperH = settings.value("PaperHeight", 1200).toInt();
-    W = settings.value("ImageWidth", 413).toInt();
-    H = settings.value("ImageHeight", 531).toInt();
-    cols = settings.value("Cols", 4).toInt();
-    rows = settings.value("Rows", 2).toInt();  // total no. of columns and rows
+    DPI = settings.value("DPI", 300).toInt(); // used to calc scale of paper on screen
+    paperW = settings.value("GridPaperW", 1800).toInt();
+    paperH = settings.value("GridPaperH", 1200).toInt();
+    W = settings.value("GridCellW", 354).toInt();
+    H = settings.value("GridCellH", 472).toInt();
+    calcRowsCols(paperW, paperH, W, H, rows, cols);
     setupGrid();
 }
 
@@ -273,7 +288,7 @@ GridPaper:: mousePressEvent(QMouseEvent *ev)
 void
 GridPaper:: createFinalGrid()
 {
-    photo_grid = QImage(paperW, paperH, QImage::Format_ARGB32);
+    photo_grid = QImage(paperW, paperH, QImage::Format_RGB32);
     photo_grid.fill(Qt::white);
     QPainter painter(&photo_grid);
     foreach (int index, image_dict.keys()) {
@@ -301,34 +316,18 @@ GridSetupDialog:: accept()
     units << 1 << 1/2.54 << 1/25.4 ;
     DPI = spinDPI->value();
     float unit_mult = units[paperSizeUnit->currentIndex()];
-    int paper_w = spinPaperWidth->value()*unit_mult*DPI;
-    int paper_h = spinPaperHeight->value()*unit_mult*DPI;
+    paperW = spinPaperWidth->value()*unit_mult*DPI;
+    paperH = spinPaperHeight->value()*unit_mult*DPI;
     W = spinPhotoWidth->value()*DPI/2.54;
     H = spinPhotoHeight->value()*DPI/2.54;
-    int rows1 = paper_h/H;
-    int cols1 = paper_w/W;
-    int rows2 = paper_w/H;
-    int cols2 = paper_h/W;
-    if (rows1*cols1 >= rows2*cols2) {
-        paperW = paper_w;
-        paperH = paper_h;
-        rows = rows1;
-        cols = cols1;
-    }
-    else {
-        paperW = paper_h;
-        paperH = paper_w;
-        rows = rows2;
-        cols = cols2;
-    }
+    calcRowsCols(paperW, paperH, W, H, rows, cols);
+
     QSettings settings(this);
     settings.setValue("DPI", DPI);
-    settings.setValue("PaperWidth", paperW);
-    settings.setValue("PaperHeight", paperH);
-    settings.setValue("ImageWidth", W);
-    settings.setValue("ImageHeight", H);
-    settings.setValue("Rows", rows);
-    settings.setValue("Cols", cols);
+    settings.setValue("GridPaperW", paperW);
+    settings.setValue("GridPaperH", paperH);
+    settings.setValue("GridCellW", W);
+    settings.setValue("GridCellH", H);
     QDialog::accept();
 }
 
@@ -750,7 +749,7 @@ CollagePaper:: savePdf()
             QImage image = item->image();
             // remove transperancy
             if (image.format()==QImage::Format_ARGB32) {
-                QImage new_img(image.width(), image.height(), QImage::Format_ARGB32);
+                QImage new_img(image.width(), image.height(), QImage::Format_RGB32);
                 new_img.fill(Qt::white);
                 QPainter painter(&new_img);
                 painter.drawImage(0,0, image);

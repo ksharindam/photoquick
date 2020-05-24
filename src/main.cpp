@@ -51,8 +51,8 @@ Window:: Window()
     saveMenu->addAction("Open Image", this, SLOT(openFile()));
     saveBtn->setMenu(saveMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
-    transformMenu->addAction("Mirror", this, SLOT(mirror()));
-    transformMenu->addAction("Straighten", this, SLOT(perspectiveTransform()));
+    transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
+    transformMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
     transformBtn->setMenu(transformMenu);
     QMenu *decorateMenu = new QMenu(decorateBtn);
     decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
@@ -180,7 +180,7 @@ Window:: saveImage(QString filename)
     int quality = -1;
     if (filename.endsWith(".jpg", Qt::CaseInsensitive)) {
         if (img.hasAlphaChannel()) { // converts background to white
-            img = QImage(img.width(), img.height(), QImage::Format_ARGB32);
+            img = QImage(img.width(), img.height(), QImage::Format_RGB32);
             img.fill(Qt::white);
             QPainter painter(&img);
             painter.drawImage(0,0, canvas->image);
@@ -234,7 +234,7 @@ Window:: autoResizeAndSave()
     QImage scaled = canvas->image.scaledToWidth(res2, Qt::SmoothTransformation);
     float size2 = getJpgFileSize(scaled)/1024.0;
     bool ok;
-    float sizeOut = QInputDialog::getInt(this, "File Size", "Maximum File Size (kB) :", size1/2, 1, size1, 1, &ok);
+    float sizeOut = QInputDialog::getInt(this, "File Size", "File Size below (kB) :", size1/2, 1, size1, 1, &ok);
     if (not ok)
         return;
     float resOut = log10(res1/res2)/log10(size1/size2) * log10(sizeOut/size1) + log10(res1);
@@ -257,28 +257,44 @@ Window:: autoResizeAndSave()
     notifier->notify("Image Saved !", QFileInfo(path).fileName());
 }
 
+bool isMonochrome(QImage img)
+{
+    for (int y=0; y<img.height(); y++) {
+        QRgb *row = (QRgb*) img.constScanLine(y);
+        for (int x=0; x<img.width(); x++) {
+            int clr = (row[x] & 0xffffff);
+            if (not (clr==0 or clr==0xffffff)) return false;
+        }
+    }
+    return true;
+}
+
 void
 Window:: exportToPdf()
 {
     if (canvas->image.isNull()) return;
     QImage image = canvas->image;
     // get or calculate paper size
-    PaperSizeDialog *dlg = new PaperSizeDialog(this);
+    PaperSizeDialog *dlg = new PaperSizeDialog(this, image.width()>image.height());
     if (dlg->exec()==QDialog::Rejected) return;
     float pdf_w, pdf_h;
     switch (dlg->combo->currentIndex()) {
     case 1:
         pdf_w = 595.0;
-        pdf_h = 842.0;
+        pdf_h = 841.0;
         break;
     case 2:
-        pdf_w = 842.0;
+        pdf_w = 420.0;
         pdf_h = 595.0;
         break;
     default:
         pdf_w = 595.0;
         pdf_h = ceilf((pdf_w*image.height())/image.width());
-        break;
+    }
+    if (dlg->combo->currentIndex()!=0 and dlg->landscape->isChecked() ) {
+        int tmp = pdf_w;
+        pdf_w = pdf_h;
+        pdf_h = tmp;
     }
     // get image dimension and position
     int img_w = pdf_w;
@@ -289,17 +305,18 @@ Window:: exportToPdf()
     }
     int x = (pdf_w-img_w)/2;
     int y = (pdf_h-img_h)/2;
-    //qDebug()<< x<<img_w<<y<<img_h;
 
     // remove transperancy
     if (image.format()==QImage::Format_ARGB32) {
-        QImage new_img(image.width(), image.height(), QImage::Format_ARGB32);
+        QImage new_img(image.width(), image.height(), QImage::Format_RGB32);
         new_img.fill(Qt::white);
         QPainter painter(&new_img);
         painter.drawImage(0,0, image);
         painter.end();
         image = new_img;
     }
+    if (isMonochrome(image))
+        image = image.convertToFormat(QImage::Format_Mono);
 
     QFileInfo fi(filename);
     QString dir = fi.dir().path();
@@ -316,20 +333,42 @@ Window:: exportToPdf()
     PdfObj img;
     img.set("Type", "/XObject");
     img.set("Subtype", "/Image");
-    img.set("ColorSpace", "/DeviceRGB");
-    img.set("BitsPerComponent", "8");
-    img.set("Filter", "/DCTDecode"); // jpg = DCTDecode, for png = FlateDecode
     img.set("Width", image.width());
     img.set("Height", image.height());
-
-    QByteArray bArray;
-    QBuffer buffer(&bArray);
-    buffer.open(QIODevice::WriteOnly);
-    image.save(&buffer, "JPG");
-    std::string data(bArray.data(), bArray.size());
-    writer.addObj(img, data);
-    bArray.clear();
-    buffer.close();
+    // using PNG compression is best for Monochrome images
+    if (image.format()==QImage::Format_Mono) {
+        img.set("ColorSpace", "[/Indexed /DeviceRGB 1 <ffffff000000>]");
+        img.set("BitsPerComponent", "1");
+        img.set("Filter", "/FlateDecode");
+        PdfDict decode_params;
+        decode_params.set("Predictor", 15);
+        decode_params.set("Columns", image.width());
+        decode_params.set("BitsPerComponent", 1);
+        decode_params.set("Colors", 1);
+        img.set("DecodeParms", decode_params);
+        QByteArray bArray;
+        QBuffer buffer(&bArray);
+        buffer.open(QIODevice::WriteOnly);
+        image.save(&buffer, "PNG");
+        std::string data = getPngIdat(bArray.data(), bArray.size());
+        writer.addObj(img, data);
+        bArray.clear();
+        buffer.close();
+    }
+    // Embed image as whole JPEG image
+    else {
+        img.set("ColorSpace", "/DeviceRGB");
+        img.set("BitsPerComponent", "8");
+        img.set("Filter", "/DCTDecode"); // jpg = DCTDecode
+        QByteArray bArray;
+        QBuffer buffer(&bArray);
+        buffer.open(QIODevice::WriteOnly);
+        image.save(&buffer, "JPG");
+        std::string data(bArray.data(), bArray.size());
+        writer.addObj(img, data);
+        bArray.clear();
+        buffer.close();
+    }
 
     std::string matrix = imgMatrix(x, y, img_w, img_h, 0);
     std::string cont_strm = format("q %s /img0 Do Q\n", matrix.c_str());
@@ -389,12 +428,13 @@ Window:: resizeImage()
 void
 Window:: cropImage()
 {
-    hideButtons();
+    frame->hide();
+    frame_2->hide();
     Crop *crop = new Crop(canvas, statusbar);
     connect(canvas, SIGNAL(mousePressed(QPoint)), crop, SLOT(onMousePress(QPoint)));
     connect(canvas, SIGNAL(mouseReleased(QPoint)), crop, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), crop, SLOT(onMouseMove(QPoint)));
-    connect(crop, SIGNAL(finished()), this, SLOT(hideButtons()));
+    connect(crop, SIGNAL(finished()), this, SLOT(onEditingFinished()));
 }
 
 void
@@ -657,12 +697,14 @@ Window:: mirror()
 void
 Window:: perspectiveTransform()
 {
-    hideButtons();
+    frame->hide();
+    frame_2->hide();
+    setWindowTitle("Perspective Transform");
     PerspectiveTransform *transform = new PerspectiveTransform(canvas, statusbar);
     connect(canvas, SIGNAL(mousePressed(QPoint)), transform, SLOT(onMousePress(QPoint)));
     connect(canvas, SIGNAL(mouseReleased(QPoint)), transform, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), transform, SLOT(onMouseMove(QPoint)));
-    connect(transform, SIGNAL(finished()), this, SLOT(hideButtons()));
+    connect(transform, SIGNAL(finished()), this, SLOT(onEditingFinished()));
 }
 
 void
@@ -750,10 +792,11 @@ Window:: updateStatus()
 
 // hide if not hidden, unhide if hidden
 void
-Window:: hideButtons()
+Window:: onEditingFinished()
 {
-    frame->setHidden(frame->isVisible());
-    frame_2->setHidden(frame_2->isVisible());
+    frame->show();
+    frame_2->show();
+    setWindowTitle(QFileInfo(filename).fileName());
 }
 
 void
@@ -763,6 +806,7 @@ Window:: disableButtons(bool disable)
     cropBtn->setDisabled(disable);
     transformBtn->setDisabled(disable);
     decorateBtn->setDisabled(disable);
+    toolsBtn->setDisabled(disable);
     effectsBtn->setDisabled(disable);
     zoomInBtn->setDisabled(disable);
     zoomOutBtn->setDisabled(disable);

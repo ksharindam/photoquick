@@ -176,29 +176,37 @@ PdfDict:: toString()
     return strng;
 }
 
-/*
-def parse_png(rawdata):
-    pngidat = b""
-    palette = []
-    i = 16
-    while i < len(rawdata):
-        # once we can require Python >= 3.2 we can use int.from_bytes() instead
-        n, = struct.unpack(">I", rawdata[i - 8 : i - 4])
-        if i + n > len(rawdata):
-            raise Exception("invalid png: %d %d %d" % (i, n, len(rawdata)))
-        if rawdata[i - 4 : i] == b"IDAT":
-            pngidat += rawdata[i : i + n]
-        elif rawdata[i - 4 : i] == b"PLTE":
-            for j in range(i, i + n, 3):
-                # with int.from_bytes() we would not have to prepend extra
-                # zeroes
-                color, = struct.unpack(">I", b"\x00" + rawdata[j : j + 3])
-                palette.append(color)
-        i += n
-        i += 12
-    bitPerComponent = rawdata[24]
-    return pngidat, palette, bitPerComponent
-*/
+
+// read 4 bytes (for network byte order)
+#define read32(a, arr) \
+do {\
+    char aa_=0, bb_=0, cc_=0, dd_=0; \
+    aa_= arr[0]; bb_= arr[1]; cc_= arr[2]; dd_= arr[3]; \
+    (a) = (aa_<<24) + (bb_<<16) + (cc_<<8) + (dd_); \
+    data += 4; \
+} while(0)
+
+std::string getPngIdat(char *rawdata, int rawdata_size)
+{
+    // the png must be complete and valid png
+    std::string idat;
+
+    char *data = rawdata + 8; // 1st 8 byte is png signature
+    int word;
+    int size = 0;
+    for (int i=8; i<rawdata_size; i+= size+12) { // iterate over each chunk
+        read32(size, data); // chunk size
+        read32(word, data); // Chunk Header
+        //printf("Header : %c%c%c%c\n", word>>24,word>>16,word>>8,word);
+        //printf("Data Size : %d\n", size);
+        if (word==0x49444154) { // IDAT
+            idat += std::string(data, size);
+        }
+        data += (size+4); // CRC = 4 bytes
+    }
+    return idat;
+}
+
 std::string readFile(std::string filename)
 {
     std::ifstream inFile(filename);
