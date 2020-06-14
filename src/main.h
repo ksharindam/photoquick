@@ -54,6 +54,7 @@ public slots:
     void whiteBalance();
     void enhanceColors();
     //void pencilSketchFilter();
+    void bimodalThreshold();
     // file and view options
     void openPrevImage();
     void openNextImage();

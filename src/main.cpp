@@ -76,6 +76,7 @@ Window:: Window()
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     //fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
+    fxMenu->addAction("Bimodal Threshold", this, SLOT(bimodalThreshold()));
     effectsBtn->setMenu(fxMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
@@ -593,6 +594,18 @@ Window:: pencilSketchFilter()
 }*/
 
 void
+Window:: bimodalThreshold()
+{
+    BimodThreshDialog *dlg = new BimodThreshDialog(this);
+    if (dlg->exec()==QDialog::Accepted) {
+        int count = dlg->countSpin->value();
+        int delta = dlg->deltaSpin->value();
+        thresholdBimod(canvas->image, count, delta, dlg->grayBtn->isChecked());
+        canvas->showScaled();
+    }
+}
+
+void
 Window:: openPrevImage()
 {
     QFileInfo fi(filename);
@@ -871,7 +884,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setOrganizationName("photoquick");
     app.setApplicationName("photoquick");
-#ifdef WIN32
+#ifdef _WIN32
+    // this is needed to load imageformat plugins
 	app.addLibraryPath(app.applicationDirPath());
 #endif
     Window *win = new Window();

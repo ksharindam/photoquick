@@ -45,6 +45,8 @@ void despeckle(QImage &img);
 
 void pencilSketch(QImage &img);
 
+void thresholdBimod(QImage &img, int tcount=5, int tdelta=0, bool tgray=false);
+
 // edge preserving noise reduction filter (used for artistic effects)
 void kuwaharaFilter(QImage &img, int radius);
 

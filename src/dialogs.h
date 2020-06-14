@@ -31,3 +31,12 @@ public:
     PaperSizeDialog(QWidget *parent, bool landscapeMode);
 };
 
+class BimodThreshDialog : public QDialog
+{
+public:
+    QSpinBox *countSpin;
+    QSpinBox *deltaSpin;
+    QCheckBox *grayBtn;
+
+    BimodThreshDialog(QWidget *parent);
+};

@@ -739,8 +739,7 @@ void autoWhiteBalance(QImage &img)
     unsigned int histogram_b[256] = {};
     for (int y=0; y<h; y++)
     {
-        QRgb *row;
-        row = (QRgb*)img.constScanLine(y);
+        QRgb *row = (QRgb*)img.constScanLine(y);
         for (int x=0; x<w; x++) {
             ++histogram_r[qRed(row[x])];
             ++histogram_g[qGreen(row[x])];
@@ -1146,6 +1145,128 @@ void pencilSketch(QImage &img)
     }
 }
 #endif
+
+// ********************** Bimodal Threshold *********************
+
+float threshold_bimod(unsigned int hist[], int tsize, float tpart) {
+    float T = tsize * tpart;
+    float Tn = 0;
+    while (T != Tn) {
+        Tn = T;
+        int Tb=0, ib=0;
+        for (int c=0; c<int(T + 0.5); c++) {
+            Tb += hist[c] * c;
+            ib += hist[c];
+        }
+        int Tw=0, iw=0;
+        for (int c=int(T + 0.5); c<int(tsize); c++) {
+            Tw += hist[c] * c;
+            iw += hist[c];
+        }
+        if ((iw + ib) == 0)
+            T = Tn;
+        else if (iw == 0)
+            T = Tb / ib;
+        else if (ib == 0)
+            T = Tw / iw;
+        else
+            T = ((Tw / iw) * tpart + (Tb / ib) * (1.0 - tpart));
+    }
+    return T;
+}
+
+int histogram_darkest(unsigned int hist[], int size)
+{
+    for (int i=0; i<size; i++) {
+        if (hist[i]!=0)
+            return i;
+    }
+    return size-1;
+}
+
+void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
+{
+    int Tmax = 256;
+    int srcWidth = img.width();
+    int srcHeight = img.height();
+    // Calc Histogram
+    unsigned int hist_r[256] = {};
+    unsigned int hist_g[256] = {};
+    unsigned int hist_b[256] = {};
+    for (int y=0; y<srcHeight; y++)
+    {
+        QRgb *row = (QRgb*)img.constScanLine(y);
+        for (int x=0; x<srcWidth; x++) {
+            ++hist_r[qRed(row[x])];
+            ++hist_g[qGreen(row[x])];
+            ++hist_b[qBlue(row[x])];
+        }
+    }
+    // Threshold
+    int thres_r[tcount+1] = {-1};
+    int thres_g[tcount+1] = {-1};
+    int thres_b[tcount+1] = {-1};
+
+    for (int tt=1; tt<tcount; tt++) {
+        float part = 1.0 * tt / tcount; // ??
+        thres_r[tt] = int(threshold_bimod(hist_r, Tmax, part) + 0.5 + tdelta);
+        thres_g[tt] = int(threshold_bimod(hist_g, Tmax, part) + 0.5 + tdelta);
+        thres_b[tt] = int(threshold_bimod(hist_b, Tmax, part) + 0.5 + tdelta);
+    }
+    int newval_r[tcount + 1] = {};
+    int newval_g[tcount + 1] = {};
+    int newval_b[tcount + 1] = {};
+
+    if (tgray) {
+        thres_r[0] = histogram_darkest(hist_r, 256);
+        thres_g[0] = histogram_darkest(hist_g, 256);
+        thres_b[0] = histogram_darkest(hist_b, 256);
+        thres_r[tcount] = percentile(hist_r, 100, srcWidth*srcHeight); // get max
+        thres_g[tcount] = percentile(hist_g, 100, srcWidth*srcHeight);
+        thres_b[tcount] = percentile(hist_b, 100, srcWidth*srcHeight);
+        for (int tt=0; tt<tcount; tt++) {
+            newval_r[tt] = Clamp((thres_r[tt] + thres_r[tt + 1]) / 2);
+            newval_g[tt] = Clamp((thres_g[tt] + thres_g[tt + 1]) / 2);
+            newval_b[tt] = Clamp((thres_b[tt] + thres_b[tt + 1]) / 2);
+        }
+        thres_r[0] = -1;
+        thres_g[0] = -1;
+        thres_b[0] = -1;
+    }
+    else {
+        for (int tt=0; tt<tcount; tt++) {
+            newval_r[tt] = Clamp(255 * tt / (tcount - 1)); // ??
+            newval_g[tt] = newval_r[tt];
+            newval_b[tt] = newval_r[tt];
+        }
+    }
+
+    int thresval_r[Tmax] = {};
+    int thresval_g[Tmax] = {};
+    int thresval_b[Tmax] = {};
+
+    for (int t=0; t<Tmax; t++) {
+        for (int tt=0; tt<tcount; tt++) {
+            if (t > thres_r[tt])
+                thresval_r[t] = newval_r[tt];
+            if (t > thres_g[tt])
+                thresval_g[t] = newval_g[tt];
+            if (t > thres_b[tt])
+                thresval_b[t] = newval_b[tt];
+        }
+    }
+    // Final loop
+    for (int y=0; y<srcHeight; y++) {
+        QRgb *row = (QRgb*)img.constScanLine(y);
+        for (int x=0; x<srcWidth; x++) {
+            int clr = row[x];
+            int r = thresval_r[qRed(clr)];
+            int g = thresval_g[qGreen(clr)];
+            int b = thresval_b[qBlue(clr)];
+            row[x] = qRgba(r,g,b, qAlpha(clr));
+        }
+    }
+}
 
 //*********** ------------ Kuwahara Filter ------------ ************* //
 #if (0)
