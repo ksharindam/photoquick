@@ -311,8 +311,8 @@ int calcOtsuThresh(QImage img)
         sumB += (idx * histogram[idx]);
 
         const double m1m2 =
-            (double)sumB / q1 -			// Mean Background
-            (double)(sum - sumB) / q2;	// Mean Forground
+            (double)sumB / q1 -         // Mean Background
+            (double)(sum - sumB) / q2;  // Mean Forground
 
         // Note - There is an insidious casting situation going on here.
         // If one were to multiple by q1 or q2 first, an explicit cast would be required!
@@ -440,7 +440,7 @@ void convolve(QImage &img, float kernel[], int width/*of kernel*/)
         for (int x=0; x < w; x++)
         {
             float r=0, g=0, b=0;
-		    for (int i=0; i < width; i++)
+            for (int i=0; i < width; i++)
             {
                 QRgb *tmpRow = tmpData+(tmp_w*(y+i));
                 for (int j=0; j < width; j++)
@@ -1190,6 +1190,7 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
     int srcWidth = img.width();
     int srcHeight = img.height();
     // Calc Histogram
+    tcount = (tcount < Tmax) ? tcount : (Tmax - 1);
     unsigned int hist_r[256] = {};
     unsigned int hist_g[256] = {};
     unsigned int hist_b[256] = {};
@@ -1203,9 +1204,9 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
         }
     }
     // Threshold
-    int thres_r[tcount+1] = {-1};
-    int thres_g[tcount+1] = {-1};
-    int thres_b[tcount+1] = {-1};
+    int thres_r[256] = {-1};
+    int thres_g[256] = {-1};
+    int thres_b[256] = {-1};
 
     for (int tt=1; tt<tcount; tt++) {
         float part = 1.0 * tt / tcount; // ??
@@ -1213,9 +1214,9 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
         thres_g[tt] = int(threshold_bimod(hist_g, Tmax, part) + 0.5 + tdelta);
         thres_b[tt] = int(threshold_bimod(hist_b, Tmax, part) + 0.5 + tdelta);
     }
-    int newval_r[tcount + 1] = {};
-    int newval_g[tcount + 1] = {};
-    int newval_b[tcount + 1] = {};
+    int newval_r[256] = {};
+    int newval_g[256] = {};
+    int newval_b[256] = {};
 
     if (tgray) {
         thres_r[0] = histogram_darkest(hist_r, 256);
@@ -1241,9 +1242,9 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
         }
     }
 
-    int thresval_r[Tmax] = {};
-    int thresval_g[Tmax] = {};
-    int thresval_b[Tmax] = {};
+    int thresval_r[256] = {};
+    int thresval_g[256] = {};
+    int thresval_b[256] = {};
 
     for (int t=0; t<Tmax; t++) {
         for (int tt=0; tt<tcount; tt++) {
