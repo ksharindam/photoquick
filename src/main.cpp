@@ -65,6 +65,7 @@ Window:: Window()
     QMenu *colorMenu = fxMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
         colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+        colorMenu->addAction("Threshold Bimod", this, SLOT(bimodalThreshold()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     QMenu *brightnessMenu = fxMenu->addMenu("Brightness");
@@ -76,7 +77,6 @@ Window:: Window()
     fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     //fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
-    fxMenu->addAction("Bimodal Threshold", this, SLOT(bimodalThreshold()));
     effectsBtn->setMenu(fxMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
@@ -600,7 +600,7 @@ Window:: bimodalThreshold()
     if (dlg->exec()==QDialog::Accepted) {
         int count = dlg->countSpin->value();
         int delta = dlg->deltaSpin->value();
-        thresholdBimod(canvas->image, count, delta, dlg->grayBtn->isChecked());
+        thresholdBimod(canvas->image, count, delta, dlg->medianBtn->isChecked());
         canvas->showScaled();
     }
 }
