@@ -36,7 +36,7 @@ class BimodThreshDialog : public QDialog
 public:
     QSpinBox *countSpin;
     QSpinBox *deltaSpin;
-    QCheckBox *grayBtn;
+    QCheckBox *medianBtn;
 
     BimodThreshDialog(QWidget *parent);
 };

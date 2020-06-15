@@ -1184,13 +1184,11 @@ int histogram_darkest(unsigned int hist[], int size)
     return size-1;
 }
 
-void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
+void thresholdBimod(QImage &img, int tcount, int tdelta, bool median)
 {
-    int Tmax = 256;
     int srcWidth = img.width();
     int srcHeight = img.height();
     // Calc Histogram
-    tcount = (tcount < Tmax) ? tcount : (Tmax - 1);
     unsigned int hist_r[256] = {};
     unsigned int hist_g[256] = {};
     unsigned int hist_b[256] = {};
@@ -1204,21 +1202,21 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
         }
     }
     // Threshold
-    int thres_r[256] = {-1};
+    int thres_r[256] = {-1}; //tcount+1 for c++11 compiler
     int thres_g[256] = {-1};
     int thres_b[256] = {-1};
 
     for (int tt=1; tt<tcount; tt++) {
-        float part = 1.0 * tt / tcount; // ??
-        thres_r[tt] = int(threshold_bimod(hist_r, Tmax, part) + 0.5 + tdelta);
-        thres_g[tt] = int(threshold_bimod(hist_g, Tmax, part) + 0.5 + tdelta);
-        thres_b[tt] = int(threshold_bimod(hist_b, Tmax, part) + 0.5 + tdelta);
+        float part = (float)tt / tcount;
+        thres_r[tt] = int(threshold_bimod(hist_r, 256, part) + 0.5 + tdelta);
+        thres_g[tt] = int(threshold_bimod(hist_g, 256, part) + 0.5 + tdelta);
+        thres_b[tt] = int(threshold_bimod(hist_b, 256, part) + 0.5 + tdelta);
     }
-    int newval_r[256] = {};
+    int newval_r[256] = {}; //tcount
     int newval_g[256] = {};
     int newval_b[256] = {};
 
-    if (tgray) {
+    if (median) {
         thres_r[0] = histogram_darkest(hist_r, 256);
         thres_g[0] = histogram_darkest(hist_g, 256);
         thres_b[0] = histogram_darkest(hist_b, 256);
@@ -1236,7 +1234,7 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
     }
     else {
         for (int tt=0; tt<tcount; tt++) {
-            newval_r[tt] = Clamp(255 * tt / (tcount - 1)); // ??
+            newval_r[tt] = Clamp((255 * tt) / (tcount - 1));
             newval_g[tt] = newval_r[tt];
             newval_b[tt] = newval_r[tt];
         }
@@ -1246,7 +1244,7 @@ void thresholdBimod(QImage &img, int tcount, int tdelta, bool tgray)
     int thresval_g[256] = {};
     int thresval_b[256] = {};
 
-    for (int t=0; t<Tmax; t++) {
+    for (int t=0; t<256; t++) {
         for (int tt=0; tt<tcount; tt++) {
             if (t > thres_r[tt])
                 thresval_r[t] = newval_r[tt];

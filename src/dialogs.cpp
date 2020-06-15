@@ -88,7 +88,7 @@ BimodThreshDialog:: BimodThreshDialog(QWidget *parent) : QDialog(parent)
 
     QGridLayout *gridLayout = new QGridLayout(this);
 
-    QLabel *label = new QLabel("Count :", this);
+    QLabel *label = new QLabel("Colors Count :", this);
     gridLayout->addWidget(label, 0, 0, 1, 1);
 
     countSpin = new QSpinBox(this);
@@ -105,8 +105,8 @@ BimodThreshDialog:: BimodThreshDialog(QWidget *parent) : QDialog(parent)
     deltaSpin->setValue(0);
     gridLayout->addWidget(deltaSpin, 1, 1, 1, 1);
 
-    grayBtn = new QCheckBox("Gray", this);
-    gridLayout->addWidget(grayBtn, 2, 0, 1, 1);
+    medianBtn = new QCheckBox("Use Median", this);
+    gridLayout->addWidget(medianBtn, 2, 0, 1, 1);
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox(Qt::Horizontal, this);
     buttonBox->setStandardButtons(QDialogButtonBox::Cancel|QDialogButtonBox::Ok);
