@@ -1153,12 +1153,12 @@ float threshold_bimod(unsigned int hist[], int tsize, float tpart) {
     float Tn = 0;
     while (T != Tn) {
         Tn = T;
-        int Tb=0, ib=0;
+        long long Tb=0, ib=0;
         for (int c=0; c<int(T + 0.5); c++) {
             Tb += hist[c] * c;
             ib += hist[c];
         }
-        int Tw=0, iw=0;
+        long long Tw=0, iw=0;
         for (int c=int(T + 0.5); c<int(tsize); c++) {
             Tw += hist[c] * c;
             iw += hist[c];
