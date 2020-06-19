@@ -87,6 +87,10 @@ Window:: Window()
     delAction->setShortcut(QString("Delete"));
     connect(delAction, SIGNAL(triggered()), this, SLOT(deleteFile()));
     this->addAction(delAction);
+    QAction *reloadAction = new QAction(this);
+    reloadAction->setShortcut(QString("R"));
+    connect(reloadAction, SIGNAL(triggered()), this, SLOT(reloadImage()));
+    this->addAction(reloadAction);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     canvas = new Canvas(this, scrollArea);
@@ -138,6 +142,9 @@ Window:: openFile()
 void
 Window:: openImage(QString filepath)
 {
+    QFileInfo fileinfo(filepath);
+    if (not fileinfo.exists()) return;
+
     QImageReader img_reader(filepath);
     int frame_count = img_reader.imageCount();
     if (frame_count==1) {  // For still images
@@ -160,15 +167,14 @@ Window:: openImage(QString filepath)
           disableButtons(true);
         }
     }
-    else {
-        statusbar->showMessage(QString("Invalid frame count : %1").arg(frame_count));
+    else { // unsupported file
+        statusbar->showMessage("Unsupported File format");
         return;
     }
     this->filename = filepath;
-    QFileInfo fi(filename);
-    QString dir = fi.dir().path();
+    QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
-    setWindowTitle(fi.fileName());
+    setWindowTitle(fileinfo.fileName());
 }
 
 void
@@ -402,6 +408,12 @@ Window:: deleteFile()
     }
     if (!nextfile.isNull())
         openImage(nextfile);
+}
+
+void
+Window:: reloadImage()
+{
+    openImage(this->filename);
 }
 
 void
@@ -892,9 +904,7 @@ int main(int argc, char *argv[])
     win->show();
     if (argc > 1) {
         QString path = QString::fromUtf8(argv[1]);
-        QFileInfo fileinfo(path);
-        if (fileinfo.exists())
-            win->openImage(path);
+        win->openImage(path);
     }
     else {
         QImage img = QImage(":/images/photoquick.jpg");
