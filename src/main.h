@@ -31,6 +31,7 @@ public slots:
     void autoResizeAndSave();
     void exportToPdf();
     void deleteFile();
+    void reloadImage();
     void resizeImage();
     void cropImage();
     void mirror();

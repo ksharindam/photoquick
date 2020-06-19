@@ -62,3 +62,8 @@ To run this program...
 
 To open image.jpg with it...  
 `photoquick image.jpg`  
+
+### Keyboard Shortcuts
+Reload Image : R  
+Delete Image : Delete  
+
