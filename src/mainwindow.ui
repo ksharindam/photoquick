@@ -44,9 +44,9 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QToolButton" name="saveBtn">
+        <widget class="QToolButton" name="fileBtn">
          <property name="toolTip">
-          <string>Save Image</string>
+          <string>Open &amp; Save Image</string>
          </property>
          <property name="text">
           <string>...</string>
@@ -176,9 +176,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="effectsBtn">
+        <widget class="QToolButton" name="filterBtn">
          <property name="toolTip">
-          <string>Effects</string>
+          <string>Filter</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">

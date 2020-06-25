@@ -14,9 +14,9 @@ public:
     void adjustWindowSize(bool animation=false);
     //Variables declaration
     Canvas *canvas;
-    QString filename;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
+    QMap<QString, QMenu*> menu_dict;
 private:
     void connectSignals();
     float fitToScreenScale(QImage img);
@@ -54,7 +54,6 @@ public slots:
     void enhanceLight();
     void whiteBalance();
     void enhanceColors();
-    //void pencilSketchFilter();
     void bimodalThreshold();
     // file and view options
     void openPrevImage();
@@ -66,6 +65,9 @@ public slots:
     void rotateRight();
     void playPause();
     // others
+    void loadPlugins();
+    void resizeToOptimum();
+    void showNotification(QString title, QString message);
     void onEditingFinished();
     void updateStatus();
 };

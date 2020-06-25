@@ -18,6 +18,7 @@
 */
 #include "main.h"
 #include "common.h"
+#include "plugin.h"
 #include "dialogs.h"
 #include "transform.h"
 #include "photogrid.h"
@@ -40,16 +41,16 @@
 Window:: Window()
 {
     setupUi(this);
-    QMenu *saveMenu = new QMenu(saveBtn);
-    saveMenu->addAction("Overwrite", this, SLOT(overwrite()));
-    saveMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
-    saveMenu->addAction("Save As...", this, SLOT(saveAs()));
-    saveMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
-    saveMenu->addSeparator();
-    saveMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
-    saveMenu->addSeparator();
-    saveMenu->addAction("Open Image", this, SLOT(openFile()));
-    saveBtn->setMenu(saveMenu);
+    QMenu *fileMenu = new QMenu(fileBtn);
+    fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
+    fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
+    fileMenu->addAction("Save As...", this, SLOT(saveAs()));
+    fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
+    fileMenu->addSeparator();
+    fileMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
+    fileMenu->addSeparator();
+    fileMenu->addAction("Open Image", this, SLOT(openFile()));
+    fileBtn->setMenu(fileMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
     transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
     transformMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
@@ -60,29 +61,29 @@ Window:: Window()
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
     decorateBtn->setMenu(decorateMenu);
     // Filters menu
-    QMenu *fxMenu = new QMenu(effectsBtn);
-    fxMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
-    QMenu *colorMenu = fxMenu->addMenu("Color");
+    QMenu *filterMenu = new QMenu(filterBtn);
+    filterMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
+    QMenu *colorMenu = filterMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
         colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
         colorMenu->addAction("Threshold Bimod", this, SLOT(bimodalThreshold()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
-    QMenu *brightnessMenu = fxMenu->addMenu("Brightness");
+    QMenu *brightnessMenu = filterMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
         brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
-    QMenu *noiseMenu = fxMenu->addMenu("Noise Removal");
+    QMenu *noiseMenu = filterMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
-    fxMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    fxMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    //fxMenu->addAction("Pencil Sketch", this, SLOT(pencilSketchFilter()));
-    effectsBtn->setMenu(fxMenu);
+    filterMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
+    filterMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    filterBtn->setMenu(filterMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
     toolsMenu->addAction("Background Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     toolsBtn->setMenu(toolsMenu);
+
     QAction *delAction = new QAction(this);
     delAction->setShortcut(QString("Delete"));
     connect(delAction, SIGNAL(triggered()), this, SLOT(deleteFile()));
@@ -91,6 +92,7 @@ Window:: Window()
     reloadAction->setShortcut(QString("R"));
     connect(reloadAction, SIGNAL(triggered()), this, SLOT(reloadImage()));
     this->addAction(reloadAction);
+
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     canvas = new Canvas(this, scrollArea);
@@ -101,11 +103,20 @@ Window:: Window()
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    filename = QString("photoquick.jpg");
+    canvas->filename = QString("photoquick.jpg");
     QSettings settings;
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
     btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
+
+    menu_dict["File"] = fileMenu;
+    menu_dict["Transform"] = transformMenu;
+    menu_dict["Tools"] = toolsMenu;
+    menu_dict["Filter"] = filterMenu;
+    menu_dict["Filter/Color"] = colorMenu;
+    menu_dict["Filter/Brightness"] = brightnessMenu;
+    menu_dict["Filter/Noise Removal"] = noiseMenu;
+    loadPlugins();
 }
 
 void
@@ -129,12 +140,77 @@ Window:: connectSignals()
     connect(canvas, SIGNAL(imageUpdated()), this, SLOT(updateStatus()));
 }
 
+QAction* addPluginMenuItem(QString menu_path, QMap<QString, QMenu *> &menu_dict)
+{
+    if (menu_path.isNull())
+        return NULL;
+    QStringList list = menu_path.split("/");
+    if (list.count()<2)
+        return NULL;
+    QString path = list[0];
+    if (not menu_dict.contains(path))
+        return NULL;
+    QMenu *menu = menu_dict[path]; // button menu
+    for (int i=1; i<list.count()-1; i++) { // create intermediate menus
+        path += "/" + list[i];
+        if (not menu_dict.contains(path)) {
+            menu = menu->addMenu(list[i]);
+            menu_dict[path] = menu;
+        }
+        menu = menu_dict[path];
+    }
+    return menu->addAction(list.last());
+}
+
+void
+Window:: loadPlugins()
+{
+    int max_window_w = screen_width - 2*offset_x;
+    int max_window_h = screen_height - offset_y - offset_x;
+
+    QDir pluginsDir(qApp->applicationDirPath());
+    pluginsDir.cd("../plugins");
+
+    QStringList filter = {"*.so"};
+    foreach (QString fileName, pluginsDir.entryList(filter, QDir::Files, QDir::Name)) {
+        QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
+        qDebug() << "Loading :" << fileName;
+        QObject *pluginObj = pluginLoader.instance();
+        if (not pluginObj) {
+            qDebug()<< fileName << ": create instance failed";
+            continue;
+        }
+        Plugin *plugin = qobject_cast<Plugin *>(pluginObj);
+        if (not plugin) {
+            qDebug()<< fileName << ": casting failed";
+            continue;
+        }
+        plugin->initialize(canvas, max_window_w, max_window_h);
+        connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(showScaled()));
+        connect(pluginObj, SIGNAL(optimumSizeRequested()), this, SLOT(resizeToOptimum()));
+        connect(pluginObj, SIGNAL(sendNotification(QString,QString)), this, SLOT(showNotification(QString,QString)));
+        // add menu items and window shortcuts
+        QAction *action = addPluginMenuItem(plugin->menuItem(), menu_dict);
+        if (action) connect(action, SIGNAL(triggered()), pluginObj, SLOT(onMenuClick()));
+        foreach (QString menu_path, plugin->menuItems()) {
+            action = addPluginMenuItem(menu_path, menu_dict);
+            if (action) plugin->handleAction(action, ACTION_MENU);
+        }
+        foreach (QString shortcut, plugin->getShortcuts()) {
+            action = new QAction(this);
+            action->setShortcut(shortcut);
+            this->addAction(action);
+            plugin->handleAction(action, ACTION_SHORTCUT);
+        }
+    }
+}
+
 void
 Window:: openFile()
 {
     QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
                          "PNG Images (*.png);;SVG Images (*.svg);;All Files (*)";
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", filename, filefilter);
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", canvas->filename, filefilter);
     if (filepath.isEmpty()) return;
     openImage(filepath);
 }
@@ -171,7 +247,7 @@ Window:: openImage(QString filepath)
         statusbar->showMessage("Unsupported File format");
         return;
     }
-    this->filename = filepath;
+    canvas->filename = filepath;
     QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
     setWindowTitle(fileinfo.fileName());
@@ -201,7 +277,7 @@ Window:: saveImage(QString filename)
     }
     img.save(filename, NULL, quality);
     setWindowTitle(QFileInfo(filename).fileName());
-    this->filename = filename;
+    canvas->filename = filename;
     Notifier *notifier = new Notifier(this);
     notifier->notify("Image Saved !", QFileInfo(filename).fileName());
 }
@@ -209,7 +285,7 @@ Window:: saveImage(QString filename)
 void
 Window:: overwrite()
 {
-    saveImage(this->filename);
+    saveImage(canvas->filename);
 }
 
 void
@@ -218,7 +294,7 @@ Window:: saveAs()
     QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
                                  "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
-    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", filename, filefilter);
+    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", canvas->filename, filefilter);
     if (filepath.isEmpty()) return;
     saveImage(filepath);
 }
@@ -226,7 +302,7 @@ Window:: saveAs()
 void
 Window:: saveACopy()    // generate a new filename and save
 {
-    QString path = getNewFileName(filename);
+    QString path = getNewFileName(canvas->filename);
     saveImage(path);
 }
 
@@ -253,7 +329,7 @@ Window:: autoResizeAndSave()
         size2 = getJpgFileSize(scaled)/1024.0;
     }
     // ensure that saved image is jpg
-    QFileInfo fi(filename);
+    QFileInfo fi(canvas->filename);
     QString dir = fi.dir().path();
     QString basename = fi.completeBaseName();
     QString path = dir + "/" + basename + ".jpg";
@@ -325,7 +401,7 @@ Window:: exportToPdf()
     if (isMonochrome(image))
         image = image.convertToFormat(QImage::Format_Mono);
 
-    QFileInfo fi(filename);
+    QFileInfo fi(canvas->filename);
     QString dir = fi.dir().path();
     QString basename = fi.completeBaseName();
     QString path = dir + "/" + basename + ".pdf";
@@ -396,8 +472,8 @@ Window:: exportToPdf()
 void
 Window:: deleteFile()
 {
-    QString nextfile = getNextFileName(filename); // must be called before deleting
-    QFile fi(filename);
+    QString nextfile = getNextFileName(canvas->filename); // must be called before deleting
+    QFile fi(canvas->filename);
     if (not fi.exists()) return;
     if (QMessageBox::warning(this, "Delete File?", "Are you sure to permanently delete this image?",
             QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
@@ -413,7 +489,7 @@ Window:: deleteFile()
 void
 Window:: reloadImage()
 {
-    openImage(this->filename);
+    openImage(canvas->filename);
 }
 
 void
@@ -598,13 +674,6 @@ Window:: enhanceColors()
     canvas->showScaled();
 }
 
-/*void
-Window:: pencilSketchFilter()
-{
-    pencilSketch(canvas->image);
-    canvas->showScaled();
-}*/
-
 void
 Window:: bimodalThreshold()
 {
@@ -620,7 +689,7 @@ Window:: bimodalThreshold()
 void
 Window:: openPrevImage()
 {
-    QFileInfo fi(filename);
+    QFileInfo fi(canvas->filename);
     if (not fi.exists()) return;
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();         // This does not include filename
@@ -636,7 +705,7 @@ Window:: openPrevImage()
 void
 Window:: openNextImage()
 {
-    QString nextfile = getNextFileName(filename);
+    QString nextfile = getNextFileName(canvas->filename);
     if (!nextfile.isNull())
         openImage(nextfile);
 }
@@ -807,6 +876,21 @@ Window:: adjustWindowSize(bool animation)
 }
 
 void
+Window:: resizeToOptimum()
+{
+    canvas->scale = fitToScreenScale(canvas->image);
+    canvas->showScaled();
+    adjustWindowSize();
+}
+
+void
+Window:: showNotification(QString title, QString message)
+{
+    Notifier *notifier = new Notifier(this);
+    notifier->notify(title, message);
+}
+
+void
 Window:: updateStatus()
 {
     int width = canvas->image.width();
@@ -821,7 +905,7 @@ Window:: onEditingFinished()
 {
     frame->show();
     frame_2->show();
-    setWindowTitle(QFileInfo(filename).fileName());
+    setWindowTitle(QFileInfo(canvas->filename).fileName());
 }
 
 void
@@ -832,7 +916,7 @@ Window:: disableButtons(bool disable)
     transformBtn->setDisabled(disable);
     decorateBtn->setDisabled(disable);
     toolsBtn->setDisabled(disable);
-    effectsBtn->setDisabled(disable);
+    filterBtn->setDisabled(disable);
     zoomInBtn->setDisabled(disable);
     zoomOutBtn->setDisabled(disable);
     origSizeBtn->setDisabled(disable);

@@ -17,13 +17,13 @@ public:
     Canvas(QWidget *parent, QScrollArea *scrollArea);
     void setAnimation(QMovie *anim);
     void setImage(QImage img);
-    void showScaled();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     // Variables
     QImage image;
     bool animation;
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
+    QString filename; // required by plugins
 private:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
@@ -33,6 +33,8 @@ private:
     int v_scrollbar_pos, h_scrollbar_pos;
     QPoint clk_global;
     QScrollBar *vScrollbar, *hScrollbar;
+public slots:
+    void showScaled();
 signals:
     void mousePressed(QPoint);
     void mouseReleased(QPoint);

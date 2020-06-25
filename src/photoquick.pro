@@ -5,7 +5,6 @@ INCLUDEPATH += .
 QMAKE_CXXFLAGS = -fopenmp -std=c++11
 QMAKE_LFLAGS += -s
 LIBS += -lgomp
-#win32:DEFINES += WIN32
 
 CONFIG -= debug
 
