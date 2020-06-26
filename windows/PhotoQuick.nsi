@@ -1,13 +1,13 @@
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "PhotoQuick"
-!define PRODUCT_VERSION "4.2.4"
+!define PRODUCT_VERSION "4.3.0"
 !define PRODUCT_PUBLISHER "Arindamsoft Co."
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\photoquick.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "${PRODUCT_NAME}${PRODUCT_VERSION}.exe"
+OutFile "${PRODUCT_NAME} ${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -42,23 +42,26 @@ SetCompressor lzma
 
 
 
-!define BUILDDIR "..\src\release"
+!define BUILDDIR      "..\src"
+!define QTLIB_DIR     "C:\Qt\4.8.7\bin"
+!define QTPLUGINS_DIR "C:\Qt\4.8.7\plugins"
+!define DEPS_DIR      "C:\mingw32\bin"
 
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite try
-  File "${BUILDDIR}\libgcc_s_dw2-1.dll"
-  File "${BUILDDIR}\libgomp-1.dll"
-  File "${BUILDDIR}\libstdc++-6.dll"
-  File "${BUILDDIR}\libwinpthread-1.dll"
-  File "${BUILDDIR}\QtCore4.dll"
-  File "${BUILDDIR}\QtGui4.dll"
+  File "${DEPS_DIR}\libgcc_s_dw2-1.dll"
+  File "${DEPS_DIR}\libgomp-1.dll"
+  File "${DEPS_DIR}\libstdc++-6.dll"
+  File "${DEPS_DIR}\libwinpthread-1.dll"
+  File "${QTLIB_DIR}\QtCore4.dll"
+  File "${QTLIB_DIR}\QtGui4.dll"
   SetOutPath "$INSTDIR\imageformats"
-  File "${BUILDDIR}\imageformats\qjpeg4.dll"
-  File "${BUILDDIR}\imageformats\qsvg4.dll"
-  File "${BUILDDIR}\imageformats\qico4.dll"
-  File "${BUILDDIR}\imageformats\qgif4.dll"
-  File "${BUILDDIR}\imageformats\qtiff4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qjpeg4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qsvg4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qico4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qgif4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qtiff4.dll"
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\photoquick.exe"
   ; Install icon and shortcut

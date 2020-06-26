@@ -6,14 +6,14 @@ QMAKE_CXXFLAGS = -fopenmp -std=c++11
 QMAKE_LFLAGS += -s
 LIBS += -lgomp
 
-CONFIG -= debug
+CONFIG -= debug_and_release
 
 # build dir
-MOC_DIR = build
-RCC_DIR = build
-UI_DIR = build
-OBJECTS_DIR = build
-mytarget.commands += $${QMAKE_MKDIR} build
+UI_DIR  =     ../build
+MOC_DIR =     ../build
+RCC_DIR =     ../build
+OBJECTS_DIR = ../build
+mytarget.commands += $${QMAKE_MKDIR} ../build
 
 # Input
 HEADERS += $$files(*.h)

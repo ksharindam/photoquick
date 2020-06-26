@@ -1,9 +1,11 @@
 # Compiled Libraries
 *.so
 *.o
+*.a
 
 # Autocreated source files
 Makefile
+moc_*.cpp
 photoquick
 build/
 

@@ -168,39 +168,49 @@ Window:: loadPlugins()
     int max_window_w = screen_width - 2*offset_x;
     int max_window_h = screen_height - offset_y - offset_x;
 
-    QDir pluginsDir(qApp->applicationDirPath());
-    pluginsDir.cd("../plugins");
-
+    QString app_dir_path = qApp->applicationDirPath();
+    QStringList dirs = { app_dir_path, app_dir_path+"/.." };
+#ifdef _WIN32
+    QStringList filter = {"*.dll"};
+#else
     QStringList filter = {"*.so"};
-    foreach (QString fileName, pluginsDir.entryList(filter, QDir::Files, QDir::Name)) {
-        QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
-        qDebug() << "Loading :" << fileName;
-        QObject *pluginObj = pluginLoader.instance();
-        if (not pluginObj) {
-            qDebug()<< fileName << ": create instance failed";
-            continue;
-        }
-        Plugin *plugin = qobject_cast<Plugin *>(pluginObj);
-        if (not plugin) {
-            qDebug()<< fileName << ": casting failed";
-            continue;
-        }
-        plugin->initialize(canvas, max_window_w, max_window_h);
-        connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(showScaled()));
-        connect(pluginObj, SIGNAL(optimumSizeRequested()), this, SLOT(resizeToOptimum()));
-        connect(pluginObj, SIGNAL(sendNotification(QString,QString)), this, SLOT(showNotification(QString,QString)));
-        // add menu items and window shortcuts
-        QAction *action = addPluginMenuItem(plugin->menuItem(), menu_dict);
-        if (action) connect(action, SIGNAL(triggered()), pluginObj, SLOT(onMenuClick()));
-        foreach (QString menu_path, plugin->menuItems()) {
-            action = addPluginMenuItem(menu_path, menu_dict);
-            if (action) plugin->handleAction(action, ACTION_MENU);
-        }
-        foreach (QString shortcut, plugin->getShortcuts()) {
-            action = new QAction(this);
-            action->setShortcut(shortcut);
-            this->addAction(action);
-            plugin->handleAction(action, ACTION_SHORTCUT);
+    dirs += {"/usr/share/photoquick", "/usr/local/share/photoquick",
+            QDir::homePath()+"/.local/share/photoquick"};
+#endif
+    for (QString dir : dirs) {
+        QDir pluginsDir(dir + "/plugins");
+        qDebug()<< dir + "/plugins";
+        if (not pluginsDir.exists()) continue;
+        for (QString fileName : pluginsDir.entryList(filter, QDir::Files, QDir::Name)) {
+            QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
+            qDebug() << "Loading :" << fileName;
+            QObject *pluginObj = pluginLoader.instance();
+            if (not pluginObj) {
+                qDebug()<< fileName << ": create instance failed";
+                continue;
+            }
+            Plugin *plugin = qobject_cast<Plugin *>(pluginObj);
+            if (not plugin) {
+                qDebug()<< fileName << ": casting failed";
+                continue;
+            }
+            plugin->initialize(canvas, max_window_w, max_window_h);
+            connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(showScaled()));
+            connect(pluginObj, SIGNAL(optimumSizeRequested()), this, SLOT(resizeToOptimum()));
+            connect(pluginObj, SIGNAL(sendNotification(QString,QString)), this, SLOT(showNotification(QString,QString)));
+            // add menu items and window shortcuts
+            QAction *action = addPluginMenuItem(plugin->menuItem(), menu_dict);
+            if (action) connect(action, SIGNAL(triggered()), pluginObj, SLOT(onMenuClick()));
+            for (QString menu_path : plugin->menuItems()) {
+                action = addPluginMenuItem(menu_path, menu_dict);
+                if (action) plugin->handleAction(action, ACTION_MENU);
+            }
+            for (QString shortcut : plugin->getShortcuts()) {
+                action = new QAction(this);
+                action->setShortcut(shortcut);
+                this->addAction(action);
+                plugin->handleAction(action, ACTION_SHORTCUT);
+            }
         }
     }
 }
@@ -275,11 +285,13 @@ Window:: saveImage(QString filename)
         }
         else return;
     }
-    img.save(filename, NULL, quality);
+    if (not img.save(filename, NULL, quality)) {
+        showNotification("Failed !", "Could not save the image");
+        return;
+    }
     setWindowTitle(QFileInfo(filename).fileName());
     canvas->filename = filename;
-    Notifier *notifier = new Notifier(this);
-    notifier->notify("Image Saved !", QFileInfo(filename).fileName());
+    showNotification("Image Saved !", QFileInfo(filename).fileName());
 }
 
 void
@@ -336,8 +348,7 @@ Window:: autoResizeAndSave()
     path = getNewFileName(path);
 
     scaled.save(path);
-    Notifier *notifier = new Notifier(this);
-    notifier->notify("Image Saved !", QFileInfo(path).fileName());
+    showNotification("Image Saved !", QFileInfo(path).fileName());
 }
 
 bool isMonochrome(QImage img)
@@ -465,8 +476,7 @@ Window:: exportToPdf()
     writer.addPage(page);
     writer.finish();
 
-    Notifier *notifier = new Notifier(this);
-    notifier->notify("PDF Saved !", QFileInfo(path).fileName());
+    showNotification("PDF Saved !", QFileInfo(path).fileName());
 }
 
 void
