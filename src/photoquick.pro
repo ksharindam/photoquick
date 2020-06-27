@@ -25,7 +25,7 @@ FORMS += $$files(*.ui)
 RESOURCES += resources.qrc
 
 # install
-!win32 {
+unix {
     INSTALLS += target
     target.path = /usr/local/bin
 }

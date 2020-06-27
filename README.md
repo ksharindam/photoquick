@@ -13,10 +13,10 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
  * Magic Eraser (inpainting)  
  * Intelligent Scissor  
  * Filters  
-  * Scan Page  
-  * Auto Contrast  
-  * White Balance  
-  * Reduce Noise  
+ * Scan Page  
+ * Auto Contrast  
+ * White Balance  
+ * Reduce Noise  
 
 
 This image viewer is tested on Raspberry Pi (Raspbian).  
@@ -48,13 +48,25 @@ To uninstall, run ...
 
 ### Build (Windows)
 Download Qt 4.8.7 and minGW32  
-add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
+Add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
 In src directory open Command Line.  
 Run command...  
 `qmake`  
 `make -j4`  
 
 You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/photoquick/releases).  
+
+### Plugins
+**Build (Linux and Windows) :**  
+Open terminal or command line in project root directory.  
+Then run these commands to compile...  
+```
+cd plugins  
+qmake  
+make -j4  
+```  
+**Install (Linux) :**  
+`sudo make install`  
 
 ### Usage
 To run this program...  

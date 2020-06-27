@@ -66,7 +66,6 @@ Window:: Window()
     QMenu *colorMenu = filterMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
         colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
-        colorMenu->addAction("Threshold Bimod", this, SLOT(bimodalThreshold()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     QMenu *brightnessMenu = filterMenu->addMenu("Brightness");
@@ -154,12 +153,12 @@ QAction* addPluginMenuItem(QString menu_path, QMap<QString, QMenu *> &menu_dict)
     for (int i=1; i<list.count()-1; i++) { // create intermediate menus
         path += "/" + list[i];
         if (not menu_dict.contains(path)) {
-            menu = menu->addMenu(list[i]);
+            menu = menu->addMenu( list[i].replace("%", "/") );
             menu_dict[path] = menu;
         }
         menu = menu_dict[path];
     }
-    return menu->addAction(list.last());
+    return menu->addAction(list.last().replace("%", "/"));//use % if / is needed in menu name
 }
 
 void
@@ -169,18 +168,22 @@ Window:: loadPlugins()
     int max_window_h = screen_height - offset_y - offset_x;
 
     QString app_dir_path = qApp->applicationDirPath();
-    QStringList dirs = { app_dir_path, app_dir_path+"/.." };
+    QStringList dirs = { app_dir_path };
+    if (app_dir_path.endsWith("/src"))
+        dirs += { app_dir_path+"/.." };
 #ifdef _WIN32
     QStringList filter = {"*.dll"};
 #else
     QStringList filter = {"*.so"};
-    dirs += {"/usr/share/photoquick", "/usr/local/share/photoquick",
-            QDir::homePath()+"/.local/share/photoquick"};
+    // load system libraries only if the program is installed
+    if (app_dir_path.endsWith("/bin"))
+        dirs += {"/usr/share/photoquick", "/usr/local/share/photoquick",
+                QDir::homePath()+"/.local/share/photoquick"};
 #endif
     for (QString dir : dirs) {
         QDir pluginsDir(dir + "/plugins");
-        qDebug()<< dir + "/plugins";
         if (not pluginsDir.exists()) continue;
+        qDebug()<< dir + "/plugins";
         for (QString fileName : pluginsDir.entryList(filter, QDir::Files, QDir::Name)) {
             QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
             qDebug() << "Loading :" << fileName;
@@ -682,18 +685,6 @@ Window:: enhanceColors()
 {
     enhanceColor(canvas->image);
     canvas->showScaled();
-}
-
-void
-Window:: bimodalThreshold()
-{
-    BimodThreshDialog *dlg = new BimodThreshDialog(this);
-    if (dlg->exec()==QDialog::Accepted) {
-        int count = dlg->countSpin->value();
-        int delta = dlg->deltaSpin->value();
-        thresholdBimod(canvas->image, count, delta, dlg->medianBtn->isChecked());
-        canvas->showScaled();
-    }
 }
 
 void

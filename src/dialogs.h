@@ -30,13 +30,3 @@ public:
     QCheckBox *landscape;
     PaperSizeDialog(QWidget *parent, bool landscapeMode);
 };
-
-class BimodThreshDialog : public QDialog
-{
-public:
-    QSpinBox *countSpin;
-    QSpinBox *deltaSpin;
-    QCheckBox *medianBtn;
-
-    BimodThreshDialog(QWidget *parent);
-};

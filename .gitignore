@@ -1,12 +1,14 @@
-# Compiled Libraries
+# Compiled Binaries
 *.so
 *.o
 *.a
+*.exe
 
-# Autocreated source files
+# Auto-genereated files
 Makefile
 moc_*.cpp
-photoquick
 build/
+
+src/photoquick
 
 TODO

@@ -54,7 +54,6 @@ public slots:
     void enhanceLight();
     void whiteBalance();
     void enhanceColors();
-    void bimodalThreshold();
     // file and view options
     void openPrevImage();
     void openNextImage();
