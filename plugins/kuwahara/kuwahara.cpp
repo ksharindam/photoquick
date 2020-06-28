@@ -10,7 +10,7 @@ void pencilSketch(QImage &img);
 QStringList
 FilterPlugin:: menuItems()
 {
-    return QStringList({"Filter/Artistic/Kuwahara Filter", "Filter/Artistic/Pencil Sketch"});
+    return QStringList({"Filters/Artistic/Kuwahara Filter", "Filters/Artistic/Pencil Sketch"});
 }
 
 void

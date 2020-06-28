@@ -176,9 +176,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="filterBtn">
+        <widget class="QToolButton" name="filtersBtn">
          <property name="toolTip">
-          <string>Filter</string>
+          <string>Filters</string>
          </property>
          <property name="icon">
           <iconset resource="resources.qrc">

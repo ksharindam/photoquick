@@ -9,7 +9,7 @@ QString
 FilterPlugin:: menuItem()
 {
     // if you need / in menu name, use % character. Because / is path separator here
-    return QString("Filter/Color/Invert%Negative");
+    return QString("Filters/Color/Invert%Negative");
 }
 
 void

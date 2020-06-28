@@ -1,4 +1,5 @@
 #pragma once
+/* This file is part of photoquick project, which is GPLv3 licensed */
 #include "canvas.h"
 #include <QPluginLoader>
 #include <QAction>

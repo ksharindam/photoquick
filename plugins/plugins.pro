@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = bimodal-threshold invert kuwahara
+SUBDIRS = invert kuwahara

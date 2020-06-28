@@ -61,22 +61,22 @@ Window:: Window()
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
     decorateBtn->setMenu(decorateMenu);
     // Filters menu
-    QMenu *filterMenu = new QMenu(filterBtn);
-    filterMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
-    QMenu *colorMenu = filterMenu->addMenu("Color");
+    QMenu *filtersMenu = new QMenu(filtersBtn);
+    filtersMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
+    QMenu *colorMenu = filtersMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
         colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
-    QMenu *brightnessMenu = filterMenu->addMenu("Brightness");
+    QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
         brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
-    QMenu *noiseMenu = filterMenu->addMenu("Noise Removal");
+    QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
-    filterMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    filterMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    filterBtn->setMenu(filterMenu);
+    filtersMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
+    filtersMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
     toolsMenu->addAction("Background Eraser", this, SLOT(iScissor()));
@@ -111,10 +111,10 @@ Window:: Window()
     menu_dict["File"] = fileMenu;
     menu_dict["Transform"] = transformMenu;
     menu_dict["Tools"] = toolsMenu;
-    menu_dict["Filter"] = filterMenu;
-    menu_dict["Filter/Color"] = colorMenu;
-    menu_dict["Filter/Brightness"] = brightnessMenu;
-    menu_dict["Filter/Noise Removal"] = noiseMenu;
+    menu_dict["Filters"] = filtersMenu;
+    menu_dict["Filters/Color"] = colorMenu;
+    menu_dict["Filters/Brightness"] = brightnessMenu;
+    menu_dict["Filters/Noise Removal"] = noiseMenu;
     loadPlugins();
 }
 
@@ -170,7 +170,7 @@ Window:: loadPlugins()
     QString app_dir_path = qApp->applicationDirPath();
     QStringList dirs = { app_dir_path };
     if (app_dir_path.endsWith("/src"))
-        dirs += { app_dir_path+"/.." };
+        dirs = { app_dir_path, app_dir_path+"/.." };
 #ifdef _WIN32
     QStringList filter = {"*.dll"};
 #else
@@ -917,7 +917,7 @@ Window:: disableButtons(bool disable)
     transformBtn->setDisabled(disable);
     decorateBtn->setDisabled(disable);
     toolsBtn->setDisabled(disable);
-    filterBtn->setDisabled(disable);
+    filtersBtn->setDisabled(disable);
     zoomInBtn->setDisabled(disable);
     zoomOutBtn->setDisabled(disable);
     origSizeBtn->setDisabled(disable);
