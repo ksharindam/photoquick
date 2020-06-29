@@ -37,6 +37,9 @@ void stretchContrast(QImage &img);
 // Auto white balance
 void autoWhiteBalance(QImage &img);
 
+// Color balance using a version of Gray World Algorithm
+void grayWorld(QImage &img);
+
 // Auto white balance
 void enhanceColor(QImage &img);
 

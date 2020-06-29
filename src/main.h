@@ -54,6 +54,7 @@ public slots:
     void enhanceLight();
     void whiteBalance();
     void enhanceColors();
+    void grayWorldFilter();
     // file and view options
     void openPrevImage();
     void openNextImage();

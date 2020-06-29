@@ -67,6 +67,7 @@ Window:: Window()
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
         colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
+        colorMenu->addAction("White Balance 2", this, SLOT(grayWorldFilter()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
@@ -677,6 +678,13 @@ void
 Window:: whiteBalance()
 {
     autoWhiteBalance(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: grayWorldFilter()
+{
+    grayWorld(canvas->image);
     canvas->showScaled();
 }
 
