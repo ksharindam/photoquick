@@ -1,5 +1,5 @@
 #include "invert.h"
-#include <cmath>
+
 // first parameter is name of plugin, usually same as the library file name
 Q_EXPORT_PLUGIN2(invert, FilterPlugin);
 

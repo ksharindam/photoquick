@@ -260,7 +260,7 @@ Window:: openImage(QString filepath)
         statusbar->showMessage("Unsupported File format");
         return;
     }
-    canvas->filename = filepath;
+    canvas->filename = fileinfo.absoluteFilePath();
     QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
     setWindowTitle(fileinfo.fileName());
