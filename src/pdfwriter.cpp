@@ -1,8 +1,10 @@
 #include "pdfwriter.h"
-//#include <cmath>
+#include <clocale>
 
 PdfWriter:: PdfWriter()
 {
+    // this prevents using comma (,) as decimal point in string formatting
+    setlocale(LC_NUMERIC, "C");
     version = "1.4";
     producer = "PDF Writer by Arindam";
     header = format("%%PDF-%s\n", version.c_str());
