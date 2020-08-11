@@ -725,6 +725,29 @@ void stretchContrast(QImage &img)
     }
 }
 
+// *********------------ Gamma Correction --------------**************
+#define EncodeGamma(x) (255 * pow((x)/255.0, 1.0/gamma))
+//#define DecodeGamma(x) (255 * pow((x)/255.0f, gamma))
+
+// acceptable values are between 0.1 and 10.0. But in practice values between
+// 0.8 and 2.3 are suitable. this function can be optimized by precalculting 256 values
+void applyGamma(QImage &img, float gamma)
+{
+    int w = img.width();
+    int h = img.height();
+    #pragma omp parallel for
+    for (int y=0; y < h; y++) {
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*) img.scanLine(y); }
+        for (int x=0; x < w; x++) {
+            int clr = row[x];
+            row[x] = qRgb(EncodeGamma(qRed(clr)),
+                        EncodeGamma(qGreen(clr)), EncodeGamma(qBlue(clr)) );
+        }
+    }
+}
+
 // ************* ------------ Auto White Balance -------------************
 // adopted from a stackoverflow code (white patch algorithm)
 
@@ -766,77 +789,59 @@ void autoWhiteBalance(QImage &img)
     }
 }
 
-// Color Balance using a version of Gray World Algorithm
+/*------- Color Balance using a version of Gray World Algorithm ------*/
+// here, mean of 3 channels is used as illumination estimate. then multiply
+// each pixel by avg/avg_i (avg= illumination estimate, avg_i= mean of channel i)
 void grayWorld(QImage &img)
 {
-    int y, x;
-    long long mi = 0, mr = 0, mg = 0, mb = 0, n = 0, mn;
-    float a0r = 0.0f, a0g = 0.0f, a0b = 0.0f;
-    float a1r = 1.0f, a1g = 1.0f, a1b = 1.0f;
-    float km = 0.001f / 3.0f, vm = 127.0f;
-    int vr, vg, vb;
-    QRgb* line;
+    long long sum_r = 0, sum_g = 0, sum_b = 0;
+    float a0r = 0.0, a0g = 0.0, a0b = 0.0;
+    float a1r = 1.0, a1g = 1.0, a1b = 1.0;
+    int pix_count = img.width() * img.height();
 
-    for (y = 0; y < img.height(); y++)
+    for (int y = 0; y < img.height(); y++)
     {
-        line = (QRgb*) img.scanLine(y);
-        for (x = 0; x < img.width(); x++)
+        QRgb *line = (QRgb*) img.constScanLine(y);
+        for (int x = 0; x < img.width(); x++)
         {
-            n++;
-            mr += qRed(line[x]);
-            mg += qGreen(line[x]);
-            mb += qBlue(line[x]);
+            sum_r += qRed(line[x]);
+            sum_g += qGreen(line[x]);
+            sum_b += qBlue(line[x]);
         }
     }
-    mi = (mr + mg + mb) * 1000;
-    mn = mi / n;
-    vm = km * (float)mn;
-    if (mr > 0)
-    {
-        mr = mi / mr;
-        a1r = km * (float)mr;
-    }
+    double mean_rgb = (sum_r + sum_g + sum_b)/3;
+
+    if (sum_r > 0)
+        a1r = mean_rgb / sum_r;
     else
-    {
-        a0r = vm;
-    }
-    if (mg > 0)
-    {
-        mg = mi / mg;
-        a1g = km * (float)mg;
-    }
+        a0r = mean_rgb / pix_count;
+
+    if (sum_g > 0)
+        a1g = mean_rgb / sum_g;
     else
-    {
-        a0g = vm;
-    }
-    if (mb > 0)
-    {
-        mb = mi / mb;
-        a1b = km * (float)mb;
-    }
+        a0g = mean_rgb / pix_count;
+
+    if (sum_b > 0)
+        a1b = mean_rgb / sum_b;
     else
+        a0b = mean_rgb / pix_count;
+
+    #pragma omp parallel for
+    for (int y = 0; y < img.height(); y++)
     {
-        a0b = vm;
-    }
-    for (y = 0; y < img.height(); y++)
-    {
-        line = (QRgb*) img.scanLine(y);
-        for (x = 0; x < img.width(); x++)
+        QRgb *line;
+        #pragma omp critical
+        { line = (QRgb*) img.scanLine(y); }
+        for (int x = 0; x < img.width(); x++)
         {
-            vr = qRed(line[x]);
-            vr = (int)(a1r * (float)vr + a0r);
-            vr = Clamp(vr);
-            vg = qGreen(line[x]);
-            vg = (int)(a1g * (float)vg + a0g);
-            vg = Clamp(vg);
-            vb = qBlue(line[x]);
-            vb = (int)(a1b * (float)vb + a0b);
-            vb = Clamp(vb);
-            line[x] = qRgba(vr, vg, vb, qAlpha(line[x]));
+            int clr = line[x];
+            int r = a1r * qRed(clr)   + a0r;
+            int g = a1g * qGreen(clr) + a0g;
+            int b = a1b * qBlue(clr)  + a0b;
+            line[x] = qRgba(Clamp(r), Clamp(g), Clamp(b), qAlpha(line[x]));
         }
     }
 }
-
 
 // ************ ------------ Enhance Color ----------- ************* //
 // Convert to CIE LCH colorspace, and stretch the chroma

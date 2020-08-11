@@ -72,6 +72,7 @@ Window:: Window()
     QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
         brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
+        brightnessMenu->addAction("Gamma Correction", this, SLOT(gammaCorrection()));
     QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
@@ -671,6 +672,17 @@ void
 Window:: enhanceLight()
 {
     stretchContrast(canvas->image);
+    canvas->showScaled();
+}
+
+void
+Window:: gammaCorrection()
+{
+    bool ok;
+    double gamma = QInputDialog::getDouble(this, "Apply Gamma", "Enter the value of Gamma :",
+                    1.6/*val*/, 0.1/*min*/, 10.0/*max*/, 2/*decimals*/, &ok);
+    if (not ok) return;
+    applyGamma(canvas->image, gamma);
     canvas->showScaled();
 }
 

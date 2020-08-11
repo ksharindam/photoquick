@@ -34,6 +34,9 @@ void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 // Sigmoidal Contrast to enhance low light images
 void stretchContrast(QImage &img);
 
+// Gamma Correction
+void applyGamma(QImage &img, float gamma=1.6);
+
 // Auto white balance
 void autoWhiteBalance(QImage &img);
 

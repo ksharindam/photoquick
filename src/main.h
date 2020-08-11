@@ -52,6 +52,7 @@ public slots:
     void removeDust();
     void sigmoidContrast(); // Enhance low light images
     void enhanceLight();
+    void gammaCorrection();
     void whiteBalance();
     void enhanceColors();
     void grayWorldFilter();
