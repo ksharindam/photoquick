@@ -1,3 +1,4 @@
+// this file is part of photoquick program which is GPLv3 licensed
 #include "dialogs.h"
 #include "common.h"
 #include <QDialogButtonBox>
@@ -75,6 +76,32 @@ PaperSizeDialog:: PaperSizeDialog(QWidget *parent, bool landscapeMode) : QDialog
     vLayout->addWidget(label);
     vLayout->addWidget(combo);
     vLayout->addWidget(landscape);
+    vLayout->addWidget(btnBox);
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+// dialog to choose border width and size
+ExpandBorderDialog:: ExpandBorderDialog(QWidget *parent, int border_w) : QDialog(parent)
+{
+    this->resize(250, 120);
+    this->setWindowTitle("Expand Image Border");
+    QVBoxLayout *vLayout = new QVBoxLayout(this);
+    QLabel *label = new QLabel("Expand each side by :", this);
+    widthSpin = new QSpinBox(this);
+    widthSpin->setAlignment(Qt::AlignHCenter);
+    widthSpin->setSuffix(" px");
+    widthSpin->setRange(1, border_w*5);
+    widthSpin->setValue(border_w);
+    QLabel *label2 = new QLabel("Set Border Type :", this);
+    combo = new QComboBox(this);
+    QStringList items = {"Clone Edges", "White Color", "Black Color", "Other Color"};
+    combo->addItems(items);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    vLayout->addWidget(label);
+    vLayout->addWidget(widthSpin);
+    vLayout->addWidget(label2);
+    vLayout->addWidget(combo);
     vLayout->addWidget(btnBox);
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));

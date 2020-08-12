@@ -30,3 +30,12 @@ public:
     QCheckBox *landscape;
     PaperSizeDialog(QWidget *parent, bool landscapeMode);
 };
+
+// dialog to choose border width and size
+class ExpandBorderDialog : public QDialog
+{
+public:
+    QComboBox *combo;
+    QSpinBox *widthSpin;
+    ExpandBorderDialog(QWidget *parent, int border_w);
+};

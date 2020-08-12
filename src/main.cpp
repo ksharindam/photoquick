@@ -28,6 +28,7 @@
 #include "pdfwriter.h"
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QColorDialog>
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QPainter>
@@ -59,6 +60,7 @@ Window:: Window()
     decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
     decorateMenu->addAction("Photo Collage", this, SLOT(createPhotoCollage()));
     decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
+    decorateMenu->addAction("Expand Border", this, SLOT(expandImageBorder()));
     decorateBtn->setMenu(decorateMenu);
     // Filters menu
     QMenu *filtersMenu = new QMenu(filtersBtn);
@@ -555,6 +557,43 @@ Window:: addBorder()
         painter.drawRect(width/2, width/2, canvas->image.width()-width, canvas->image.height()-width);
         canvas->showScaled();
     }
+}
+
+void
+Window:: expandImageBorder()
+{
+    ExpandBorderDialog *dlg = new ExpandBorderDialog(this, canvas->image.width()/5);
+    if (dlg->exec() != QDialog::Accepted)
+        return;
+    int w = dlg->widthSpin->value();
+    int index = dlg->combo->currentIndex();
+    if (index==0) {
+        canvas->image = expandBorder(canvas->image, w);
+        canvas->showScaled();
+        return;
+    }
+    QColor clr;
+    switch (index) {
+    case 1:
+        clr = QColor(255,255,255);
+        break;
+    case 2:
+        clr = QColor(0, 0, 0);
+        break;
+    default:
+        clr = QColorDialog::getColor(QColor(255,255,255), this);
+        if (not clr.isValid())
+            return;
+    }
+    QImage img(canvas->image.width()+2*w, canvas->image.height()+2*w, canvas->image.format());
+    img.fill(clr);
+    for (int y=0; y<canvas->image.height(); y++) {
+        QRgb *src = (QRgb*)canvas->image.constScanLine(y);
+        QRgb *dst = (QRgb*)img.scanLine(y+w);
+        memcpy(dst+w, src, 4*canvas->image.width());
+    }
+    canvas->image = img;
+    canvas->showScaled();
 }
 
 void

@@ -37,6 +37,7 @@ public slots:
     void mirror();
     void perspectiveTransform();
     void addBorder();
+    void expandImageBorder();
     void createPhotoGrid();
     void createPhotoCollage();
     // tools
