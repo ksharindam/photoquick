@@ -98,19 +98,25 @@ Window:: Window()
 
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    canvas = new Canvas(this, scrollArea);
+    canvas = new Canvas(this, scrollArea, &data);
     layout->addWidget(canvas);
     timer = new QTimer(this);
     connectSignals();
     // Initialize Variables
+    data.animation = false;
+    data.filename = QString("photoquick.jpg");
+    data.window = this;
+
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
-    canvas->filename = QString("photoquick.jpg");
     QSettings settings;
     offset_x = settings.value("OffsetX", 4).toInt();
     offset_y = settings.value("OffsetY", 26).toInt();
     btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
+    data.max_window_w = screen_width - 2*offset_x;
+    data.max_window_h = screen_height - offset_y - offset_x;
+
 
     menu_dict["File"] = fileMenu;
     menu_dict["Transform"] = transformMenu;
@@ -119,6 +125,7 @@ Window:: Window()
     menu_dict["Filters/Color"] = colorMenu;
     menu_dict["Filters/Brightness"] = brightnessMenu;
     menu_dict["Filters/Noise Removal"] = noiseMenu;
+
     loadPlugins();
 }
 
@@ -168,9 +175,6 @@ QAction* addPluginMenuItem(QString menu_path, QMap<QString, QMenu *> &menu_dict)
 void
 Window:: loadPlugins()
 {
-    int max_window_w = screen_width - 2*offset_x;
-    int max_window_h = screen_height - offset_y - offset_x;
-
     QString app_dir_path = qApp->applicationDirPath();
     QStringList dirs = { app_dir_path };
     if (app_dir_path.endsWith("/src"))
@@ -201,7 +205,7 @@ Window:: loadPlugins()
                 qDebug()<< fileName << ": casting failed";
                 continue;
             }
-            plugin->initialize(canvas, max_window_w, max_window_h);
+            plugin->initialize(&data);
             connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(showScaled()));
             connect(pluginObj, SIGNAL(optimumSizeRequested()), this, SLOT(resizeToOptimum()));
             connect(pluginObj, SIGNAL(sendNotification(QString,QString)), this, SLOT(showNotification(QString,QString)));
@@ -227,7 +231,7 @@ Window:: openFile()
 {
     QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
                          "PNG Images (*.png);;SVG Images (*.svg);;All Files (*)";
-    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", canvas->filename, filefilter);
+    QString filepath = QFileDialog::getOpenFileName(this, "Open Image", data.filename, filefilter);
     if (filepath.isEmpty()) return;
     openImage(filepath);
 }
@@ -264,7 +268,7 @@ Window:: openImage(QString filepath)
         statusbar->showMessage("Unsupported File format");
         return;
     }
-    canvas->filename = fileinfo.absoluteFilePath();
+    data.filename = fileinfo.absoluteFilePath();
     QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
     setWindowTitle(fileinfo.fileName());
@@ -273,8 +277,8 @@ Window:: openImage(QString filepath)
 void
 Window:: saveImage(QString filename)
 {
-    QImage img = canvas->image;
-    if (canvas->animation)
+    QImage img = data.image;
+    if (data.animation)
         img = canvas->movie()->currentImage();
     if (img.isNull()) return;
     int quality = -1;
@@ -283,7 +287,7 @@ Window:: saveImage(QString filename)
             img = QImage(img.width(), img.height(), QImage::Format_RGB32);
             img.fill(Qt::white);
             QPainter painter(&img);
-            painter.drawImage(0,0, canvas->image);
+            painter.drawImage(0,0, data.image);
             painter.end();
         }
         QualityDialog *dlg = new QualityDialog(this, img);
@@ -297,14 +301,14 @@ Window:: saveImage(QString filename)
         return;
     }
     setWindowTitle(QFileInfo(filename).fileName());
-    canvas->filename = filename;
+    data.filename = filename;
     showNotification("Image Saved !", QFileInfo(filename).fileName());
 }
 
 void
 Window:: overwrite()
 {
-    saveImage(canvas->filename);
+    saveImage(data.filename);
 }
 
 void
@@ -313,7 +317,7 @@ Window:: saveAs()
     QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
                                  "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
                                  "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
-    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", canvas->filename, filefilter);
+    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", data.filename, filefilter);
     if (filepath.isEmpty()) return;
     saveImage(filepath);
 }
@@ -321,19 +325,19 @@ Window:: saveAs()
 void
 Window:: saveACopy()    // generate a new filename and save
 {
-    QString path = getNewFileName(canvas->filename);
+    QString path = getNewFileName(data.filename);
     saveImage(path);
 }
 
 void
 Window:: autoResizeAndSave()
 {
-    if (canvas->image.isNull())
+    if (data.image.isNull())
         return;
-    float res1 = canvas->image.width();
-    float size1 = getJpgFileSize(canvas->image)/1024.0;
+    float res1 = data.image.width();
+    float size1 = getJpgFileSize(data.image)/1024.0;
     float res2 = res1/2;
-    QImage scaled = canvas->image.scaledToWidth(res2, Qt::SmoothTransformation);
+    QImage scaled = data.image.scaledToWidth(res2, Qt::SmoothTransformation);
     float size2 = getJpgFileSize(scaled)/1024.0;
     bool ok;
     float sizeOut = QInputDialog::getInt(this, "File Size", "File Size below (kB) :", size1/2, 1, size1, 1, &ok);
@@ -341,14 +345,14 @@ Window:: autoResizeAndSave()
         return;
     float resOut = log10(res1/res2)/log10(size1/size2) * log10(sizeOut/size1) + log10(res1);
     resOut = pow(10, resOut);
-    scaled = canvas->image.scaledToWidth(resOut, Qt::SmoothTransformation);
+    scaled = data.image.scaledToWidth(resOut, Qt::SmoothTransformation);
     size2 = getJpgFileSize(scaled)/1024.0;
     for (float frac=0.95; size2>sizeOut; frac-=0.05){
-        scaled = canvas->image.scaledToWidth(resOut*frac, Qt::SmoothTransformation);
+        scaled = data.image.scaledToWidth(resOut*frac, Qt::SmoothTransformation);
         size2 = getJpgFileSize(scaled)/1024.0;
     }
     // ensure that saved image is jpg
-    QFileInfo fi(canvas->filename);
+    QFileInfo fi(data.filename);
     QString dir = fi.dir().path();
     QString basename = fi.completeBaseName();
     QString path = dir + "/" + basename + ".jpg";
@@ -373,8 +377,8 @@ bool isMonochrome(QImage img)
 void
 Window:: exportToPdf()
 {
-    if (canvas->image.isNull()) return;
-    QImage image = canvas->image;
+    if (data.image.isNull()) return;
+    QImage image = data.image;
     // get or calculate paper size
     PaperSizeDialog *dlg = new PaperSizeDialog(this, image.width()>image.height());
     if (dlg->exec()==QDialog::Rejected) return;
@@ -419,7 +423,7 @@ Window:: exportToPdf()
     if (isMonochrome(image))
         image = image.convertToFormat(QImage::Format_Mono);
 
-    QFileInfo fi(canvas->filename);
+    QFileInfo fi(data.filename);
     QString dir = fi.dir().path();
     QString basename = fi.completeBaseName();
     QString path = dir + "/" + basename + ".pdf";
@@ -489,8 +493,8 @@ Window:: exportToPdf()
 void
 Window:: deleteFile()
 {
-    QString nextfile = getNextFileName(canvas->filename); // must be called before deleting
-    QFile fi(canvas->filename);
+    QString nextfile = getNextFileName(data.filename); // must be called before deleting
+    QFile fi(data.filename);
     if (not fi.exists()) return;
     if (QMessageBox::warning(this, "Delete File?", "Are you sure to permanently delete this image?",
             QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
@@ -506,13 +510,13 @@ Window:: deleteFile()
 void
 Window:: reloadImage()
 {
-    openImage(canvas->filename);
+    openImage(data.filename);
 }
 
 void
 Window:: resizeImage()
 {
-    ResizeDialog *dialog = new ResizeDialog(this, canvas->image.width(), canvas->image.height());
+    ResizeDialog *dialog = new ResizeDialog(this, data.image.width(), data.image.height());
     if (dialog->exec() == 1) {
         QImage img;
         Qt::TransformationMode tfmMode = dialog->smoothScaling->isChecked() ?
@@ -520,11 +524,11 @@ Window:: resizeImage()
         QString img_width = dialog->widthEdit->text();
         QString img_height = dialog->heightEdit->text();
         if ( !img_width.isEmpty() and !img_height.isEmpty() )
-            img = canvas->image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, tfmMode);
+            img = data.image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, tfmMode);
         else if (not img_width.isEmpty())
-            img = canvas->image.scaledToWidth(img_width.toInt(), tfmMode);
+            img = data.image.scaledToWidth(img_width.toInt(), tfmMode);
         else if (not img_height.isEmpty())
-            img = canvas->image.scaledToHeight(img_height.toInt(), tfmMode);
+            img = data.image.scaledToHeight(img_height.toInt(), tfmMode);
         else
             return;
         canvas->setImage(img);
@@ -549,12 +553,12 @@ Window:: addBorder()
     bool ok;
     int width = QInputDialog::getInt(this, "Add Border", "Enter Border Width :", 2, 1, 100, 1, &ok);
     if (ok) {
-        QPainter painter(&(canvas->image));
+        QPainter painter(&(data.image));
         QPen pen(Qt::black);
         pen.setWidth(width);
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
-        painter.drawRect(width/2, width/2, canvas->image.width()-width, canvas->image.height()-width);
+        painter.drawRect(width/2, width/2, data.image.width()-width, data.image.height()-width);
         canvas->showScaled();
     }
 }
@@ -562,13 +566,13 @@ Window:: addBorder()
 void
 Window:: expandImageBorder()
 {
-    ExpandBorderDialog *dlg = new ExpandBorderDialog(this, canvas->image.width()/5);
+    ExpandBorderDialog *dlg = new ExpandBorderDialog(this, data.image.width()/5);
     if (dlg->exec() != QDialog::Accepted)
         return;
     int w = dlg->widthSpin->value();
     int index = dlg->combo->currentIndex();
     if (index==0) {
-        canvas->image = expandBorder(canvas->image, w);
+        data.image = expandBorder(data.image, w);
         canvas->showScaled();
         return;
     }
@@ -585,21 +589,21 @@ Window:: expandImageBorder()
         if (not clr.isValid())
             return;
     }
-    QImage img(canvas->image.width()+2*w, canvas->image.height()+2*w, canvas->image.format());
+    QImage img(data.image.width()+2*w, data.image.height()+2*w, data.image.format());
     img.fill(clr);
-    for (int y=0; y<canvas->image.height(); y++) {
-        QRgb *src = (QRgb*)canvas->image.constScanLine(y);
+    for (int y=0; y<data.image.height(); y++) {
+        QRgb *src = (QRgb*)data.image.constScanLine(y);
         QRgb *dst = (QRgb*)img.scanLine(y+w);
-        memcpy(dst+w, src, 4*canvas->image.width());
+        memcpy(dst+w, src, 4*data.image.width());
     }
-    canvas->image = img;
+    data.image = img;
     canvas->showScaled();
 }
 
 void
 Window:: createPhotoGrid()
 {
-    GridDialog *dialog = new GridDialog(canvas->image, this);
+    GridDialog *dialog = new GridDialog(data.image, this);
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec() == 1) {
@@ -615,7 +619,7 @@ Window:: createPhotoCollage()
     CollageDialog *dialog = new CollageDialog(this);
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1050, dialog_h);
-    CollageItem *item = new CollageItem(canvas->image);
+    CollageItem *item = new CollageItem(data.image);
     dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {
         canvas->scale = fitToScreenScale(dialog->collage);
@@ -627,7 +631,7 @@ Window:: createPhotoCollage()
 void
 Window:: magicEraser()
 {
-    InpaintDialog *dialog = new InpaintDialog(canvas->image, this);
+    InpaintDialog *dialog = new InpaintDialog(data.image, this);
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
@@ -638,7 +642,7 @@ Window:: magicEraser()
 void
 Window:: iScissor()
 {
-    IScissorDialog *dialog = new IScissorDialog(canvas->image, this);
+    IScissorDialog *dialog = new IScissorDialog(data.image, this);
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
@@ -649,22 +653,22 @@ Window:: iScissor()
 void
 Window:: toGrayScale()
 {
-    grayScale(canvas->image);
+    grayScale(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: toBlacknWhite()
 {
-    int thresh = calcOtsuThresh(canvas->image);
-    threshold(canvas->image, thresh);
+    int thresh = calcOtsuThresh(data.image);
+    threshold(data.image, thresh);
     canvas->showScaled();
 }
 
 void
 Window:: adaptiveThresh()
 {
-    adaptiveThreshold(canvas->image);
+    adaptiveThreshold(data.image);
     canvas->showScaled();
 }
 
@@ -675,42 +679,42 @@ Window:: blur()
     int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
                                         1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    gaussianBlur(canvas->image, radius);
-    //boxFilter(canvas->image, radius);
+    gaussianBlur(data.image, radius);
+    //boxFilter(data.image, radius);
     canvas->showScaled();
 }
 
 void
 Window:: sharpenImage()
 {
-    unsharpMask(canvas->image);
+    unsharpMask(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: reduceSpeckleNoise()
 {
-    despeckle(canvas->image);
+    despeckle(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: removeDust()
 {
-    medianFilter(canvas->image, 1);
+    medianFilter(data.image, 1);
     canvas->showScaled();
 }
 
 void
 Window:: sigmoidContrast()
 {
-    sigmoidalContrast(canvas->image, 0.3);
+    sigmoidalContrast(data.image, 0.3);
     canvas->showScaled();
 }
 void
 Window:: enhanceLight()
 {
-    stretchContrast(canvas->image);
+    stretchContrast(data.image);
     canvas->showScaled();
 }
 
@@ -721,35 +725,35 @@ Window:: gammaCorrection()
     double gamma = QInputDialog::getDouble(this, "Apply Gamma", "Enter the value of Gamma :",
                     1.6/*val*/, 0.1/*min*/, 10.0/*max*/, 2/*decimals*/, &ok);
     if (not ok) return;
-    applyGamma(canvas->image, gamma);
+    applyGamma(data.image, gamma);
     canvas->showScaled();
 }
 
 void
 Window:: whiteBalance()
 {
-    autoWhiteBalance(canvas->image);
+    autoWhiteBalance(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: grayWorldFilter()
 {
-    grayWorld(canvas->image);
+    grayWorld(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: enhanceColors()
 {
-    enhanceColor(canvas->image);
+    enhanceColor(data.image);
     canvas->showScaled();
 }
 
 void
 Window:: openPrevImage()
 {
-    QFileInfo fi(canvas->filename);
+    QFileInfo fi(data.filename);
     if (not fi.exists()) return;
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();         // This does not include filename
@@ -765,7 +769,7 @@ Window:: openPrevImage()
 void
 Window:: openNextImage()
 {
-    QString nextfile = getNextFileName(canvas->filename);
+    QString nextfile = getNextFileName(data.filename);
     if (!nextfile.isNull())
         openImage(nextfile);
 }
@@ -782,7 +786,7 @@ Window:: zoomInImage()
     if (not wasVisibleV) relPosV=0.5;
     if (not wasVisibleH) relPosH=0.5;
     // Integer scale to view small icons
-    if (canvas->image.width() < 200 and canvas->image.height() < 200 and canvas->scale>=1)
+    if (data.image.width() < 200 and data.image.height() < 200 and canvas->scale>=1)
         canvas->scale += 1;
     else
         canvas->scale *= (6.0/5);
@@ -802,7 +806,7 @@ Window:: zoomOutImage()
     QScrollBar *horizontal = scrollArea->horizontalScrollBar();
     float relPosV = vertical->value()/(float)vertical->maximum();
     float relPosH = horizontal->value()/(float)horizontal->maximum();
-    if (canvas->image.width() < 200 and canvas->image.height() < 200 and canvas->scale>1)
+    if (data.image.width() < 200 and data.image.height() < 200 and canvas->scale>1)
         canvas->scale -= 1;
     else
         canvas->scale *= (5.0/6);
@@ -817,7 +821,7 @@ void
 Window:: origSizeImage()
 {
     if (canvas->scale == 1.0) {
-        canvas->scale = fitToWindowScale(canvas->image);
+        canvas->scale = fitToWindowScale(data.image);
         canvas->showScaled();
         origSizeBtn->setIcon(QIcon(":/images/originalsize.png"));
         return;
@@ -869,7 +873,7 @@ Window:: playPause()
         playPauseBtn->setIcon(QIcon(":/images/play.png"));
         return;
     }
-    if (canvas->animation) {
+    if (data.animation) {
         if (canvas->movie()->state()==QMovie::Running) {
             canvas->movie()->setPaused(true);
             playPauseBtn->setIcon(QIcon(":/images/play.png"));
@@ -938,7 +942,7 @@ Window:: adjustWindowSize(bool animation)
 void
 Window:: resizeToOptimum()
 {
-    canvas->scale = fitToScreenScale(canvas->image);
+    canvas->scale = fitToScreenScale(data.image);
     canvas->showScaled();
     adjustWindowSize();
 }
@@ -953,8 +957,8 @@ Window:: showNotification(QString title, QString message)
 void
 Window:: updateStatus()
 {
-    int width = canvas->image.width();
-    int height = canvas->image.height();
+    int width = data.image.width();
+    int height = data.image.height();
     QString text = "Resolution : %1x%2 , Scale : %3x";
     statusbar->showMessage(text.arg(width).arg(height).arg(roundOff(canvas->scale, 2)));
 }
@@ -965,7 +969,7 @@ Window:: onEditingFinished()
 {
     frame->show();
     frame_2->show();
-    setWindowTitle(QFileInfo(canvas->filename).fileName());
+    setWindowTitle(QFileInfo(data.filename).fileName());
 }
 
 void

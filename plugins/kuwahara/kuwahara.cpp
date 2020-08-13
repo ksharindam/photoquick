@@ -27,17 +27,17 @@ void
 FilterPlugin:: filterKuwahara()
 {
     bool ok;
-    int radius = QInputDialog::getInt(canvas, "Blur Radius", "Enter Blur Radius :",
+    int radius = QInputDialog::getInt(data->window, "Blur Radius", "Enter Blur Radius :",
                                         3/*val*/, 1/*min*/, 50/*max*/, 1/*step*/, &ok);
     if (not ok) return;
-    kuwaharaFilter(canvas->image, radius);
+    kuwaharaFilter(data->image, radius);
     emit imageChanged();
 }
 
 void
 FilterPlugin:: filterPencilSketch()
 {
-    pencilSketch(canvas->image);
+    pencilSketch(data->image);
     emit imageChanged();
 }
 

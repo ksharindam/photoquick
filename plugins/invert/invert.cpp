@@ -1,5 +1,5 @@
 #include "invert.h"
-
+#include <QDebug>
 // first parameter is name of plugin, usually same as the library file name
 Q_EXPORT_PLUGIN2(invert, FilterPlugin);
 
@@ -15,7 +15,7 @@ FilterPlugin:: menuItem()
 void
 FilterPlugin:: onMenuClick()
 {
-    invert(canvas->image);
+    invert(data->image);
     emit imageChanged();
 }
 

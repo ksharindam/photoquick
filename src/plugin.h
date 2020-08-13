@@ -1,8 +1,19 @@
 #pragma once
 /* This file is part of photoquick project, which is GPLv3 licensed */
-#include "canvas.h"
+#include <QtPlugin>
 #include <QPluginLoader>
 #include <QAction>
+#include <QImage>
+#include <QWidget>
+
+typedef struct {
+    QImage image;
+    bool animation;
+    QString filename;
+    QWidget *window;
+    int max_window_w;
+    int max_window_h;
+} ImageData;
 
 // Action Type
 enum {
@@ -18,14 +29,10 @@ enum {
 class Plugin
 {
 public:
-    Canvas *canvas = 0;   // access current QImage and filename from this
-    int max_window_w = 1200; // maximum window width
-    int max_window_h = 700;
+    ImageData *data;   // access current QImage and filename from this
 
-    virtual void initialize(Canvas *canvas, int max_window_w, int max_window_h) {
-        this->canvas = canvas;
-        this->max_window_w = max_window_w;
-        this->max_window_h = max_window_h;
+    virtual void initialize(ImageData *data) {
+        this->data = data;
     }
 
     /* returns a single menu to be created (e.g return "Filter/Color/Invert").

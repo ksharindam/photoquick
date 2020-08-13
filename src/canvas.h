@@ -1,6 +1,6 @@
 #pragma once
 /* Image Label Object to display the image. */
-
+#include "plugin.h"
 #include <QLabel>
 #include <QMovie>
 #include <QMouseEvent>
@@ -14,16 +14,14 @@ class Canvas : public QLabel
 {
     Q_OBJECT
 public:
-    Canvas(QWidget *parent, QScrollArea *scrollArea);
+    Canvas(QWidget *parent, QScrollArea *scrollArea, ImageData *img_dat);
     void setAnimation(QMovie *anim);
     void setImage(QImage img);
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     // Variables
-    QImage image;
-    bool animation;
+    ImageData *data;
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
-    QString filename; // required by plugins
 private:
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);

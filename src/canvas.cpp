@@ -8,14 +8,14 @@
 #include <cmath>
 
 
-Canvas:: Canvas(QWidget *parent, QScrollArea *scrollArea) : QLabel(parent)
+Canvas:: Canvas(QWidget *parent, QScrollArea *scrollArea, ImageData *img_dat) : QLabel(parent)
 {
     vScrollbar = scrollArea->verticalScrollBar();
     hScrollbar = scrollArea->horizontalScrollBar();
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setMouseTracking(true);
+    data = img_dat;
     mouse_pressed = false;
-    animation = false;
     drag_to_scroll = true;
     scale = 1.0;
 }
@@ -24,11 +24,11 @@ void
 Canvas:: setAnimation(QMovie *anim)
 {
     scale = 1.0;
-    if (animation)
+    if (data->animation)
         movie()->deleteLater();
     else
-        image = QImage();
-    animation = true;
+        data->image = QImage();
+    data->animation = true;
     setMovie(anim);
     anim->start();
 }
@@ -36,18 +36,18 @@ Canvas:: setAnimation(QMovie *anim)
 void
 Canvas:: setImage(QImage img)
 {
-    if (animation) {
-        animation = false;
+    if (data->animation) {
+        data->animation = false;
         movie()->deleteLater();
     }
-    image = img;
+    data->image = img;
     showScaled();
 }
 
 void
 Canvas:: showScaled()
 {
-    QPixmap pm = QPixmap::fromImage(image);
+    QPixmap pm = QPixmap::fromImage(data->image);
     if (scale != 1.0) {
         Qt::TransformationMode mode = floorf(scale) == ceilf(scale)? // integer scale
                                     Qt::FastTransformation : Qt::SmoothTransformation;
@@ -62,7 +62,7 @@ Canvas:: rotate(int degree, Qt::Axis axis)
 {
     QTransform transform;
     transform.rotate(degree, axis);
-    image = image.transformed(transform);
+    data->image = data->image.transformed(transform);
     showScaled();
 }
 

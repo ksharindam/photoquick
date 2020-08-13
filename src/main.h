@@ -14,6 +14,7 @@ public:
     void adjustWindowSize(bool animation=false);
     //Variables declaration
     Canvas *canvas;
+    ImageData data;
     int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
     QTimer *timer;      // Slideshow timer
     QMap<QString, QMenu*> menu_dict;
