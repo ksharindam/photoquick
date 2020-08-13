@@ -98,12 +98,11 @@ Window:: Window()
 
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
-    canvas = new Canvas(this, scrollArea, &data);
+    canvas = new Canvas(scrollArea, &data);
     layout->addWidget(canvas);
     timer = new QTimer(this);
     connectSignals();
     // Initialize Variables
-    data.animation = false;
     data.filename = QString("photoquick.jpg");
     data.window = this;
 
@@ -278,7 +277,7 @@ void
 Window:: saveImage(QString filename)
 {
     QImage img = data.image;
-    if (data.animation)
+    if (canvas->animation)
         img = canvas->movie()->currentImage();
     if (img.isNull()) return;
     int quality = -1;
@@ -382,15 +381,31 @@ Window:: exportToPdf()
     // get or calculate paper size
     PaperSizeDialog *dlg = new PaperSizeDialog(this, image.width()>image.height());
     if (dlg->exec()==QDialog::Rejected) return;
+    int dpi;
     float pdf_w, pdf_h;
     switch (dlg->combo->currentIndex()) {
     case 1:
-        pdf_w = 595.0;
+        pdf_w = 595.0; // A4
         pdf_h = 841.0;
         break;
     case 2:
-        pdf_w = 420.0;
+        pdf_w = 420.0; // A5
         pdf_h = 595.0;
+        break;
+    case 3:
+        pdf_w = round(image.width()/100.0*72); // 100 dpi
+        pdf_h = round(image.height()/100.0*72);
+        break;
+    case 4:
+        pdf_w = round(image.width()/300.0*72);
+        pdf_h = round(image.height()/300.0*72);
+        break;
+    case 5:
+        bool ok;
+        dpi = QInputDialog::getInt(this, "Enter Dpi", "Enter Scanned Image Dpi :", 150, 72, 1200, 50, &ok);
+        if (not ok) return;
+        pdf_w = round( image.width()*72.0/dpi );
+        pdf_h = round( image.height()*72.0/dpi );
         break;
     default:
         pdf_w = 595.0;
@@ -873,7 +888,7 @@ Window:: playPause()
         playPauseBtn->setIcon(QIcon(":/images/play.png"));
         return;
     }
-    if (data.animation) {
+    if (canvas->animation) {
         if (canvas->movie()->state()==QMovie::Running) {
             canvas->movie()->setPaused(true);
             playPauseBtn->setIcon(QIcon(":/images/play.png"));

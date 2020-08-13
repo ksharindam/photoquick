@@ -14,12 +14,13 @@ class Canvas : public QLabel
 {
     Q_OBJECT
 public:
-    Canvas(QWidget *parent, QScrollArea *scrollArea, ImageData *img_dat);
+    Canvas(QScrollArea *scrollArea, ImageData *img_dat);
     void setAnimation(QMovie *anim);
     void setImage(QImage img);
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     // Variables
     ImageData *data;
+    bool animation = false;
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
 private:

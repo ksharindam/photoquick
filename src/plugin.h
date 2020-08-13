@@ -8,7 +8,6 @@
 
 typedef struct {
     QImage image;
-    bool animation;
     QString filename;
     QWidget *window;
     int max_window_w;

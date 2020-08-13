@@ -8,7 +8,7 @@
 #include <cmath>
 
 
-Canvas:: Canvas(QWidget *parent, QScrollArea *scrollArea, ImageData *img_dat) : QLabel(parent)
+Canvas:: Canvas(QScrollArea *scrollArea, ImageData *img_dat) : QLabel(scrollArea)
 {
     vScrollbar = scrollArea->verticalScrollBar();
     hScrollbar = scrollArea->horizontalScrollBar();
@@ -24,11 +24,11 @@ void
 Canvas:: setAnimation(QMovie *anim)
 {
     scale = 1.0;
-    if (data->animation)
+    if (this->animation)
         movie()->deleteLater();
     else
         data->image = QImage();
-    data->animation = true;
+    this->animation = true;
     setMovie(anim);
     anim->start();
 }
@@ -36,8 +36,8 @@ Canvas:: setAnimation(QMovie *anim)
 void
 Canvas:: setImage(QImage img)
 {
-    if (data->animation) {
-        data->animation = false;
+    if (this->animation) {
+        this->animation = false;
         movie()->deleteLater();
     }
     data->image = img;

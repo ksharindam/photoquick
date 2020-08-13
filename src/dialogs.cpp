@@ -67,9 +67,8 @@ PaperSizeDialog:: PaperSizeDialog(QWidget *parent, bool landscapeMode) : QDialog
     QVBoxLayout *vLayout = new QVBoxLayout(this);
     QLabel *label = new QLabel("Select Paper Size :", this);
     combo = new QComboBox(this);
-    combo->addItem("Automatic");
-    combo->addItem("A4");
-    combo->addItem("A5");
+    QStringList items = { "Automatic", "A4", "A5", "100 dpi", "300 dpi", "Other dpi" };
+    combo->addItems(items);
     landscape = new QCheckBox("Landscape", this);
     landscape->setChecked(landscapeMode);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
