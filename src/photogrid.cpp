@@ -5,7 +5,6 @@
 #include "pdfwriter.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QPainter>
 #include <QPen>
 #include <QDesktopWidget>
 #include <QSettings>
@@ -13,6 +12,8 @@
 #include <QUrl>
 #include <cmath>
 
+#define UNIT_NAMES   {"in", "cm"}
+#define UNIT_FACTORS {1, 1/2.54 }
 
 GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 {
@@ -22,33 +23,70 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
     gridPaper = new GridPaper(this);
     layout->addWidget(gridPaper);
     thumbnailGr = new ThumbnailGroup(this);
-    Thumbnail *thumbnail = new Thumbnail(img, frame);
-    verticalLayout->addWidget(thumbnail);
-    thumbnail->select(true);
-    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
-    thumbnailGr->append(thumbnail);
-    QObject::connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
-    QObject::connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
-    QObject::connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
-    QObject::connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
-    QObject::connect(gridPaper, SIGNAL(addPhotoRequested(QImage)), this, SLOT(addPhoto(QImage)));
-    gridPaper->photo = img;
+
+    connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
+    connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
+    connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
+    connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
+    connect(gridPaper, SIGNAL(addPhotoRequested(QImage)), this, SLOT(addPhoto(QImage)));
+
+    addPhoto(img);
+    QSettings settings(this);
+    DPI = settings.value("DPI", 300).toInt();
+    cellW = settings.value("GridCellW", 3.0).toFloat();
+    cellH = settings.value("GridCellH", 4.0).toFloat();
+    paperW = settings.value("GridPaperW", 6.0).toFloat();
+    paperH = settings.value("GridPaperH", 4.0).toFloat();
+    unit = settings.value("GridPaperUnit", 0).toInt();
+    if (paperW<1.0 or paperW>30.0 or paperH<1.0 or paperH>30.0 or unit>1) {
+        QMessageBox::critical(parent, "Error loading settings",
+                "Error loading paper size settings.\nPlease Configure photo grid.");
+        return;
+    }
+    setup();
+}
+
+void
+GridDialog:: setup()
+{
+    QList<float> unit_factors = UNIT_FACTORS;
+    float unit_factor = unit_factors[unit];
+    gridPaper->paperW = paperW * unit_factor * DPI;
+    gridPaper->paperH = paperH * unit_factor * DPI;
+    gridPaper->W = cellW/2.54 * DPI;
+    gridPaper->H = cellH/2.54 * DPI;
+    gridPaper->DPI = DPI;
+    gridPaper->setupGrid();
+    updateStatus();
 }
 
 void
 GridDialog:: configure()
 {
     GridSetupDialog *dialog = new GridSetupDialog(this);
-    if ( dialog->exec()==QDialog::Accepted ) {
-        gridPaper->paperW = dialog->paperW;
-        gridPaper->paperH = dialog->paperH;
-        gridPaper->rows = dialog->rows;
-        gridPaper->cols = dialog->cols;
-        gridPaper->W = dialog->W;
-        gridPaper->H = dialog->H;
-        gridPaper->DPI = dialog->DPI;
-        gridPaper->setupGrid();
-    }
+    dialog->spinPhotoWidth->setValue(cellW);
+    dialog->spinPhotoHeight->setValue(cellH);
+    dialog->spinPaperWidth->setValue(paperW);
+    dialog->spinPaperHeight->setValue(paperH);
+    dialog->paperSizeUnit->setCurrentIndex(unit);
+    dialog->spinDPI->setValue(DPI);
+    if ( dialog->exec() != QDialog::Accepted )
+        return;
+    cellW = dialog->spinPhotoWidth->value();
+    cellH = dialog->spinPhotoHeight->value();
+    paperW = dialog->spinPaperWidth->value();
+    paperH = dialog->spinPaperHeight->value();
+    unit = dialog->paperSizeUnit->currentIndex();
+    DPI = dialog->spinDPI->value();
+    setup();
+    // save settings
+    QSettings settings(this);
+    settings.setValue("DPI", DPI);
+    settings.setValue("GridCellW", cellW);
+    settings.setValue("GridCellH", cellH);
+    settings.setValue("GridPaperW", paperW);
+    settings.setValue("GridPaperH", paperH);
+    settings.setValue("GridPaperUnit", unit);
 }
 
 void
@@ -68,8 +106,10 @@ GridDialog:: addPhoto(QImage img)
         return;
     Thumbnail *thumbnail = new Thumbnail(img, frame);
     verticalLayout->addWidget(thumbnail);
-    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), gridPaper, SLOT(setPhoto(QImage)));
+    connect(thumbnail, SIGNAL(clicked(Thumbnail*)), gridPaper, SLOT(setPhoto(Thumbnail*)));
     thumbnailGr->append(thumbnail);
+    thumbnailGr->selectThumbnail(thumbnail);
+    gridPaper->photo = img;
 }
 
 void
@@ -81,12 +121,27 @@ GridDialog:: accept()
 }
 
 void
+GridDialog:: updateStatus()
+{
+    QStringList unit_name = UNIT_NAMES;
+    QString msg("Photo : %1x%2 cm,   Paper : %3x%4 %5,   %6 dpi");
+    msg = msg.arg(cellW).arg(cellH).arg(paperW).arg(paperH).arg(unit_name[unit]).arg(DPI);
+    statusbar->setText(msg);
+}
+
+void
 GridDialog:: showHelp()
 {
-    QString helptext = "Click on a image thumbnail to select an image to drop. Then click on the blank boxes to drop the selected photo.\n\n"
-                       "If you want to create grid with more different photos then load photo by clicking Add Photo button.\n\n"
-                       "You can change the photo of a box by selecting another image and clicking over the box.";
-    QMessageBox::about(this, "How to Create Grid", helptext);
+    QString helptext =
+        "To create Photo Grid :\n"
+        "1. Click on a image thumbnail to select an image.\n"
+        "2. Click on each cells to fill them with selected photo. Click and drag to fill "
+            "multiple cells at once.\n"
+        "3. Finally, Click Ok button to get the photo grid.\n\n"
+        "Multiple Photos : You can load multiple photos by clicking Add Photo button or"
+        " drag and drop from file manager.\n\n"
+        "Configure : Click Configure button to change page size or photo size.";
+    QMessageBox::about(this, "Photo Grid for Printing", helptext);
 }
 
 
@@ -100,45 +155,41 @@ Thumbnail:: Thumbnail(QImage img, QWidget *parent) : QLabel(parent)
 void
 Thumbnail:: mousePressEvent(QMouseEvent *)
 {
-    emit clicked(photo);
+    emit clicked(this);
 }
 
+// this should be only called by thumbnail group
 void
 Thumbnail:: select(bool selected)
 {
+    QImage img = photo.scaledToWidth(100);
     if (selected) {
-        QImage img = photo.scaledToWidth(100);
         QPainter painter(&img);
         QPen pen(Qt::blue);
         pen.setWidth(4);
         painter.setPen(pen);
         painter.drawRect(2, 2 , 100-4, img.height()-4);
         painter.end();
-        setPixmap(QPixmap::fromImage(img));
     }
-    else
-        setPixmap(QPixmap::fromImage(photo.scaledToWidth(100)));
+    setPixmap(QPixmap::fromImage(img));
 }
 
 
-ThumbnailGroup:: ThumbnailGroup(QObject *parent) : QObject(parent)
-{
-}
-
+// ThumbnailGroup contains one or more thumbnails, it is used to select a thumbnail
 void
 ThumbnailGroup:: append(Thumbnail *thumbnail)
 {
     thumbnails << thumbnail;
-    QObject::connect(thumbnail, SIGNAL(clicked(QImage)), this, SLOT(selectThumbnail()));
+    connect(thumbnail, SIGNAL(clicked(Thumbnail*)), this, SLOT(selectThumbnail(Thumbnail*)));
 }
 
 void
-ThumbnailGroup:: selectThumbnail()
+ThumbnailGroup:: selectThumbnail(Thumbnail *thumb)
 {
-    for (int i=0;i<thumbnails.count();++i) {
-        thumbnails[i]->select(false);
-    }
-    qobject_cast<Thumbnail*>(sender())->select(true);
+    if (selected_thumb)
+        selected_thumb->select(false);
+    thumb->select(true);
+    selected_thumb = thumb;
 }
 
 // calculates number of rows and cols of items in grid paper
@@ -164,48 +215,124 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
     setMouseTracking(true);
     setAcceptDrops(true);
     add_border = true;
-    QSettings settings(this);
-    DPI = settings.value("DPI", 300).toInt(); // used to calc scale of paper on screen
-    paperW = settings.value("GridPaperW", 1800).toInt();
-    paperH = settings.value("GridPaperH", 1200).toInt();
-    W = settings.value("GridCellW", 354).toInt();
-    H = settings.value("GridCellH", 472).toInt();
-    calcRowsCols(paperW, paperH, W, H, rows, cols);
-    setupGrid();
 }
 
 void
 GridPaper:: setupGrid()
 {
+    calcRowsCols(paperW, paperH, W, H, rows, cols);
     boxes.clear();
     spacingX = (paperW-cols*W)/float(cols+1);
     spacingY = (paperH-rows*H)/float(rows+1);
     // Setup Foreground Grid
     float screenDPI = QApplication::desktop()->logicalDpiX();
     scale = screenDPI/DPI;
-    float w = W*scale;
-    float h = H*scale;
+    int w = W*scale;
+    int h = H*scale;
     float spacing_x = spacingX*scale;
     float spacing_y = spacingY*scale;
     for (int i=0; i<cols*rows; ++i) {
         int row = i/cols;            // Position of the box as row & col
         int col = i%cols;
-        QRect box = QRect(spacing_x+col*(spacing_x+w), spacing_y+row*(spacing_y+h), w-1, h-1);
+        int box_x = spacing_x + col*(spacing_x+w);
+        int box_y = spacing_y + row*(spacing_y+h);
+        QRect box = QRect(box_x, box_y, w, h);
         boxes << box;
     }
-    QPixmap pm = QPixmap(paperW*scale, paperH*scale);
-    pm.fill();
-    QPainter painter(&pm);
+    // create canvas pixmap for displaying on screen
+    canvas_pixmap = QPixmap(paperW*scale, paperH*scale);
+    canvas_pixmap.fill();
+    // draw empty cells
+    painter.begin(&canvas_pixmap);
     foreach (QRect box, boxes)
-        painter.drawRect(box);
+        painter.drawRect(box.x(), box.y(), box.width()-1, box.height()-1);
     painter.end();
-    setPixmap(pm);
+    setPixmap(canvas_pixmap);
+}
+
+
+void
+GridPaper:: toggleBorder(bool enable)
+{
+    add_border = enable;
+    // first fill cells with image, then draw border if reauired. empty cells are untouched
+    painter.begin(&canvas_pixmap);
+    foreach (int index, image_dict.keys()) {
+        QRect box = boxes[index];
+        QImage img = image_dict.value(index).scaled(box.width(), box.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QPoint offset = QPoint(box.width()-img.width(), box.height()-img.height())/2;
+        painter.drawImage(box.topLeft()+offset, img);
+        if (enable)
+            painter.drawRect(box.x()+offset.x(), box.y()+offset.y(), img.width()-1, img.height()-1);
+    }
+    painter.end();
+    setPixmap(canvas_pixmap);
 }
 
 void
-GridPaper:: setPhoto(QImage img)
+GridPaper:: mousePressEvent(QMouseEvent *ev)
 {
-    photo = img;
+    click_pos = ev->pos();
+    mouse_pressed = true;
+}
+
+void
+GridPaper:: mouseMoveEvent(QMouseEvent *ev)
+{
+    if (not mouse_pressed)
+        return;
+    int rect_w = ev->pos().x() - click_pos.x();
+    int rect_h = ev->pos().y() - click_pos.y();
+    if (not (abs(rect_w)>2 and abs(rect_h)>2)) return;
+    QPixmap pm = canvas_pixmap.copy();// copy for temporary drawing
+    painter.begin(&pm);
+    painter.drawRect(click_pos.x(), click_pos.y(), rect_w, rect_h);
+    painter.end();
+    this->setPixmap(pm);
+}
+
+void
+GridPaper:: mouseReleaseEvent(QMouseEvent *ev)
+{
+    int rect_w = ev->pos().x() - click_pos.x() + 1;
+    int rect_h = ev->pos().y() - click_pos.y() + 1;
+    QRect rect(click_pos.x(), click_pos.y(), rect_w, rect_h);
+    // draw images if the rect intersects cells
+    painter.begin(&canvas_pixmap);
+    foreach (QRect box, boxes) {
+        if (not box.intersects(rect))
+            continue;
+        QImage img = photo.scaled(box.width(), box.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        painter.fillRect(box, Qt::white); // erase prev photo if any
+        // put the image at the center of the box
+        QPoint offset = QPoint(box.width()-img.width(), box.height()-img.height())/2;
+        painter.drawImage(box.topLeft()+offset, img);
+        if (add_border)
+            painter.drawRect(box.x()+offset.x(), box.y()+offset.y(), img.width()-1, img.height()-1);
+        image_dict[boxes.indexOf(box)] = photo;
+    }
+    painter.end();
+    this->setPixmap(canvas_pixmap);
+    mouse_pressed = false;
+}
+
+void
+GridPaper:: createFinalGrid()
+{
+    photo_grid = QImage(paperW, paperH, QImage::Format_RGB32);
+    photo_grid.fill(Qt::white);
+    QPainter painter(&photo_grid);
+    foreach (int index, image_dict.keys()) {
+        int row = index/cols;
+        int col = index%cols;
+        QImage img = image_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        int x = spacingX + col*(spacingX+W)  + (W-img.width())/2/*for center align*/;
+        int y = spacingY + row*(spacingY+H)  + (H-img.height())/2;
+        painter.drawImage(x, y, img);
+        if (add_border)
+            painter.drawRect(x, y, img.width()-1, img.height()-1);
+    }
+    painter.end();
 }
 
 void
@@ -236,100 +363,12 @@ GridPaper:: dropEvent(QDropEvent *ev)
 }
 
 void
-GridPaper:: toggleBorder(bool ok)
+GridPaper:: setPhoto(Thumbnail *thumb)
 {
-    add_border = ok;
-    QPixmap grid = *(pixmap());
-    QPainter painter(&grid);
-    foreach (int index, image_dict.keys()) {
-        QPoint topleft = boxes[index].topLeft();
-        QImage img = image_dict.value(index).scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.drawImage(topleft, img);
-        if (ok) painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
-    }
-    painter.end();
-    setPixmap(grid);
+    photo = thumb->photo;
 }
 
-void
-GridPaper:: mouseMoveEvent(QMouseEvent *ev)
-{
-    // Change cursor whenever cursor comes over a box
-    foreach (QRect box, boxes) {
-        if (box.contains(ev->pos())) {
-            setCursor(Qt::PointingHandCursor);
-            return;
-        }
-    }
-    setCursor(Qt::ArrowCursor);
-}
 
-void
-GridPaper:: mousePressEvent(QMouseEvent *ev)
-{
-    foreach (QRect box, boxes) {
-        if (box.contains(ev->pos())) {
-            QPoint topleft = box.topLeft();
-            QImage img = photo.scaled(W*scale, H*scale, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            QPixmap bg = *(pixmap());
-            QPainter painter(&bg);
-            painter.fillRect(topleft.x(), topleft.y(), W*scale, H*scale, Qt::white);
-            painter.drawImage(topleft, img);
-            if (add_border)
-                painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
-            painter.end();
-            setPixmap(bg);
-            image_dict[boxes.indexOf(box)] = photo;
-            break;
-        }
-    }
-}
-
-void
-GridPaper:: createFinalGrid()
-{
-    photo_grid = QImage(paperW, paperH, QImage::Format_RGB32);
-    photo_grid.fill(Qt::white);
-    QPainter painter(&photo_grid);
-    foreach (int index, image_dict.keys()) {
-        int row = index/cols;
-        int col = index%cols;
-        QPoint topleft = QPoint(spacingX+col*(spacingX+W), spacingY+row*(spacingY+H));
-        QImage img = image_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.drawImage(topleft, img);
-        if (add_border)
-            painter.drawRect(topleft.x(), topleft.y(), img.width()-1, img.height()-1);
-    }
-    painter.end();
-}
-
-// GridSetupDialog class functions
-GridSetupDialog:: GridSetupDialog(QWidget *parent) : QDialog(parent)
-{
-    setupUi(this);
-}
-
-void
-GridSetupDialog:: accept()
-{
-    QList<float> units;
-    units << 1 << 1/2.54 << 1/25.4 ;
-    DPI = spinDPI->value();
-    float unit_mult = units[paperSizeUnit->currentIndex()];
-    paperW = spinPaperWidth->value()*unit_mult*DPI;
-    paperH = spinPaperHeight->value()*unit_mult*DPI;
-    W = spinPhotoWidth->value()*DPI/2.54;
-    H = spinPhotoHeight->value()*DPI/2.54;
-    calcRowsCols(paperW, paperH, W, H, rows, cols);
-
-    QSettings settings(this);
-    settings.setValue("DPI", DPI);
-    settings.setValue("GridPaperW", paperW);
-    settings.setValue("GridPaperH", paperH);
-    settings.setValue("GridCellW", W);
-    settings.setValue("GridCellH", H);
-    QDialog::accept();
-}
 
 
 // *************************** ------------- ***************************
@@ -498,6 +537,10 @@ CollagePaper:: addItem(CollageItem *item)
     item->h = round(item->img_h*100/300.0);
     if (item->w > paper.width() or item->h > paper.height())
         fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+    item->x = MIN(item->x, paper.width() -item->w);
+    item->y = MIN(item->y, paper.height()-item->h);
+    if (not collageItems.isEmpty())
+        item->border = collageItems.last()->border;
     collageItems.append(item);
     draw();
     updateStatus();
@@ -573,13 +616,17 @@ CollagePaper:: dropEvent(QDropEvent *ev)
 {
     if ( ev->mimeData()->hasUrls() )
     {
+        QPoint item_pos = ev->pos();
         foreach ( const QUrl & url, ev->mimeData()->urls() )
         {
             QString str = url.toLocalFile();
             if (not str.isEmpty())
             {
                 CollageItem *item = new CollageItem(str);
+                item->x = item_pos.x();
+                item->y = item_pos.y();
                 addItem(item);
+                item_pos += QPoint(2,2);
             }
         }
     }

@@ -6,6 +6,7 @@
 #include "ui_collagesetup_dialog.h"
 #include <QLabel>
 #include <QMouseEvent>
+#include <QPainter>
 
 // Thumbnail class holds a photo
 class Thumbnail : public QLabel
@@ -18,7 +19,7 @@ public:
     // Variables
     QImage photo;
 signals:
-    void clicked(QImage);
+    void clicked(Thumbnail*);
 };
 
 // ThumbnailGroup contains one or more thumbnails, it is used to select a thumbnail
@@ -26,12 +27,13 @@ class ThumbnailGroup : public QObject
 {
     Q_OBJECT
 public:
-    ThumbnailGroup(QObject *parent);
+    ThumbnailGroup(QObject *parent) : QObject(parent) {};
     void append(Thumbnail *thumbnail);
     // Variables
     QList<Thumbnail *> thumbnails;
+    Thumbnail *selected_thumb = 0;
 public slots:
-    void selectThumbnail();
+    void selectThumbnail(Thumbnail *thumbnail);
 };
 
 // The canvas on which collage is created and displayed.
@@ -43,18 +45,25 @@ public:
     void setupGrid();
     void mouseMoveEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
     void dragEnterEvent(QDragEnterEvent *ev);
     void dropEvent(QDropEvent *ev);
     void createFinalGrid();
     // Variables
-    int DPI, paperW, paperH, W, H, cols, rows;
+    bool mouse_pressed = false;
+    QPoint click_pos;
+    int paperW, paperH; // original paper size in pixels
+    int W, H;          // original cell size in pixels
+    int cols, rows, DPI;
     float scale, spacingX, spacingY;
     bool add_border;
+    QPixmap canvas_pixmap; // grid which is displayed on screen
+    QPainter painter;
     QList<QRect> boxes;
     QMap<int, QImage> image_dict;
     QImage photo, photo_grid;
 public slots:
-    void setPhoto(QImage img);
+    void setPhoto(Thumbnail *thumb);
     void toggleBorder(bool ok);
 signals:
     void addPhotoRequested(QImage);
@@ -66,10 +75,15 @@ class GridDialog : public QDialog, public Ui_GridDialog
     Q_OBJECT
 public:
     GridDialog(QImage img, QWidget *parent);
+    void setup();
+    void updateStatus();
     void accept();
     // Variables
     GridPaper *gridPaper;
     ThumbnailGroup *thumbnailGr;
+    float paperW, paperH; // paper size in inch or cm
+    float cellW, cellH; // grid cell size in centimeter
+    int unit, DPI; // unit 0 = inch, 1 = cm
 public slots:
     void configure();
     void addPhoto();
@@ -80,9 +94,7 @@ public slots:
 class GridSetupDialog : public QDialog, public Ui_GridSetupDialog
 {
 public:
-    GridSetupDialog(QWidget *parent);
-    void accept();
-    int W, H, DPI, rows, cols, paperW, paperH;
+    GridSetupDialog(QWidget *parent): QDialog(parent) { setupUi(this); }
 };
 
 
