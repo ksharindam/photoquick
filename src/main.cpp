@@ -676,6 +676,10 @@ void
 Window:: toBlacknWhite()
 {
     int thresh = calcOtsuThresh(data.image);
+    bool ok;
+    thresh = QInputDialog::getInt(this, "Threshold Value", "Enter Threshold Value :",
+                                        thresh/*val*/, 0/*min*/, 255/*max*/, 1/*step*/, &ok);
+    if (not ok) return;
     threshold(data.image, thresh);
     canvas->showScaled();
 }

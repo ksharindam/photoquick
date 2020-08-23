@@ -220,8 +220,9 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 void
 GridPaper:: setupGrid()
 {
-    calcRowsCols(paperW, paperH, W, H, rows, cols);
     boxes.clear();
+    image_dict.clear();
+    calcRowsCols(paperW, paperH, W, H, rows, cols);
     spacingX = (paperW-cols*W)/float(cols+1);
     spacingY = (paperH-rows*H)/float(rows+1);
     // Setup Foreground Grid
