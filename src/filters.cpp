@@ -3,6 +3,7 @@
 #include "common.h"
 #include <cmath>
 
+
 // macros for measuring execution time
 #include <chrono>
 #define TIME_START auto start = std::chrono::steady_clock::now();
@@ -10,17 +11,46 @@
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\
     qDebug() << "Execution Time :" << elapse;
 
-#define PI 3.141592654
+#define PI 3.141593f
+
+//__________________________________________________________________________________________
+
+// ----------- ************* Color Utilities ************ ----------- //
+
+
 
 #define BLEND(top, btm, alpha_top) ((top)*(alpha_top) + (btm)*(1-alpha_top));
-// Byte order is ARGB if big endian else BGRA
-inline bool isBigEndian()
-{
-    int i=1; return ! *((char *)&i);
-}
 
 // clamp an integer in 0-255 range
-#define Clamp(a) ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) )
+inline int Clamp(int a)
+{
+    return ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) );
+}
+
+inline float srgb_to_linear(float value)
+{
+    if (value > 0.04045f)
+        return powf((value + 0.055f) / 1.055f, 2.4f);
+    return value / 12.92f;
+}
+
+inline float linear_to_srgb(float value)
+{
+  if (value > 0.003131f)
+    return 1.055f * powf(value, (1.0f/2.4f)) - 0.055f;
+  return 12.92f * value;
+}
+
+
+#define LUMINANCE_RED    0.2126f
+#define LUMINANCE_GREEN  0.7152f
+#define LUMINANCE_BLUE   0.0722f
+
+float rgb_to_Y(float r, float g, float b)
+{
+    return r * LUMINANCE_RED +  g * LUMINANCE_GREEN +  b * LUMINANCE_BLUE;
+}
+
 
 // Reference : http://www.easyrgb.com/en/math.php
 /* HSV colorspace utilities
@@ -44,9 +74,9 @@ inline QHsv qHsv(int h, int s, int v)
 
 inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
 {
-    float r = qRed(rgb)/255.0;
-    float g = qGreen(rgb)/255.0;
-    float b = qBlue(rgb)/255.0;
+    float r = qRed(rgb)/255.0f;
+    float g = qGreen(rgb)/255.0f;
+    float b = qBlue(rgb)/255.0f;
     float mx = MAX(MAX(r,g),b);
     float mn = MIN(MIN(r,g),b);
     float df = mx - mn;
@@ -67,16 +97,16 @@ inline void rgbToHsv(QRgb rgb, int &h, int &s, int &v)
 #define mod(a,b) ( (a) - ((int)((a)/(b)))*(b) )
 void hsvToRgb(QHsv hsv, int &r, int &g, int &b)
 {
-    float h = qHue(hsv)/60.0;
-    float s = qSat(hsv)/255.0;
-    float v = qVal(hsv)/255.0;
+    float h = qHue(hsv)/60.0f;
+    float s = qSat(hsv)/255.0f;
+    float v = qVal(hsv)/255.0f;
     float k;
     k = mod(5 + h, 6);
-    r = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+    r = roundf(255*(v - v*s * clamp(min(k, 4-k), 0.0f, 1.0f)));
     k = mod(3 + h, 6);
-    g = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+    g = roundf(255*(v - v*s * clamp(min(k, 4-k), 0.0f, 1.0f)));
     k = mod(1 + h, 6);
-    b = roundf(255*(v - v*s*MAX(MIN(MIN(k, 4-k), 1),0)));
+    b = roundf(255*(v - v*s * clamp(min(k, 4-k), 0.0f, 1.0f)));
 }
 
 // convert rgb image to hsv image
@@ -100,60 +130,53 @@ void hsvImg(QImage &img)
 
 // HCL <--> RGB colorspace conversion functions
 // Hue = 0->359, Chroma=0->131, Luminance = 0->100
-// it is same as CIE LCH colorspace, but here components are in reverse order
+// it is same as CIE LCHab colorspace, but here components are in reverse order
 typedef unsigned int QHcl;
 #define qHcl qHsv
 #define qCro qGreen
 #define qLum qBlue
 
 // D65 standard referent
-#define LAB_Xn 0.950470
+#define LAB_Xn 0.950470f
 #define LAB_Yn 1
-#define LAB_Zn 1.088830
+#define LAB_Zn 1.088830f
 
-#define LAB_t0 0.137931034  // 16 / 116
-#define LAB_t1 0.206896552  // 24 / 116
-#define LAB_t2 0.12841855   // 3 * t1 * t1
-#define LAB_t3 0.008856452  // t1^3
-
-float rgb_xyz(float r) { //sRGB to Linear
-    if ((r /= 255) <= 0.04045) { return r / 12.92; }
-    return pow((r + 0.055) / 1.055, 2.4);
-}
+#define LAB_t0 0.137931f  // 16 / 116
+#define LAB_t1 0.206897f  // 24 / 116
+#define LAB_t2 0.128419f   // 3 * t1 * t1
+#define LAB_t3 0.008856f  // t1^3
 
 float xyz_lab(float t)
 {
-    if (t > LAB_t3) { return pow(t, 1.0 / 3); }
+    if (t > LAB_t3)
+        return powf(t, 1.0f / 3);
     return t / LAB_t2 + LAB_t0;
 }
+
+float lab_xyz(float t) {
+    return t > LAB_t1 ? t*t*t : LAB_t2 * (t - LAB_t0);
+};
 
 void rgbToHcl(QRgb rgb, int &h, int &c, int &l)
 {
     float r,g,b, x,y,z,a;
-    r = rgb_xyz(qRed(rgb));
-    g = rgb_xyz(qGreen(rgb));
-    b = rgb_xyz(qBlue(rgb));
+    // srgb to linear rgb float
+    r = srgb_to_linear(qRed(rgb)/255.0f);
+    g = srgb_to_linear(qGreen(rgb)/255.0f);
+    b = srgb_to_linear(qBlue(rgb)/255.0f);
     // convert to xyz colorspace
-    x = xyz_lab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB_Xn);
-    y = xyz_lab((0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB_Yn);
-    z = xyz_lab((0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB_Zn);
+    x = xyz_lab((0.412456f * r + 0.357576f * g + 0.180437f * b) / LAB_Xn);
+    y = xyz_lab((0.212673f * r + 0.715152f * g + 0.072175f * b) / LAB_Yn);
+    z = xyz_lab((0.019334f * r + 0.119192f * g + 0.950304f * b) / LAB_Zn);
     // convert to LAB colorspace
     l = 116 * y - 16;
     l = l < 0 ? 0 : l,
     a = 500 * (x - y);
     b = 200 * (y - z);
     // convert to HCL colorspace
-    c = sqrt(a*a + b*b);
-    h = (int)round(atan2(b, a) * 180/PI + 360) % 360;
+    c = sqrtf(a*a + b*b);
+    h = (int)roundf(atan2f(b, a) * 180/PI + 360) % 360;
 }
-
-float xyz_rgb(float r) { //linear to sRGB
-    return 255 * (r <= 0.00304 ? 12.92 * r : 1.055 * pow(r, 1 / 2.4) - 0.055);
-};
-
-float lab_xyz(float t) {
-    return t > LAB_t1 ? t*t*t : LAB_t2 * (t - LAB_t0);
-};
 
 void hclToRgb(QHcl hcl, int &r, int &g, int &b_)
 {
@@ -163,8 +186,8 @@ void hclToRgb(QHcl hcl, int &r, int &g, int &b_)
     l = qLum(hcl); // L=[0..100]
     // convert lch to LAB colorspace
     h *= PI/180;
-    a = cos(h)*c; // A=[-100..100]
-    b = sin(h)*c; // B=[-100..100]
+    a = cosf(h)*c; // A=[-100..100]
+    b = sinf(h)*c; // B=[-100..100]
     // convert lab to xyz colorspace
     y = (l + 16) / 116;
     x = a==0 ? y : y + a/500;
@@ -173,11 +196,15 @@ void hclToRgb(QHcl hcl, int &r, int &g, int &b_)
     x = LAB_Xn * lab_xyz(x);
     y = LAB_Yn * lab_xyz(y);
     z = LAB_Zn * lab_xyz(z);
-    // convert xyz to rgb
-    r = Clamp((int)xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z));
-    g = Clamp((int)xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z));
-    b_ = Clamp((int)xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z));
+    // convert xyz to srgb
+    r =  Clamp(255.0f * linear_to_srgb( 3.240454f*x - 1.537139f*y - 0.498531f*z));
+    g =  Clamp(255.0f * linear_to_srgb(-0.969266f*x + 1.876011f*y + 0.041556f*z));
+    b_ = Clamp(255.0f * linear_to_srgb( 0.055643f*x - 0.204026f*y + 1.057225f*z));
 }
+
+//______________________________ End of Color Utils ________________________________________
+
+
 
 // Expand each size of Image by certain amount of border
 QImage expandBorder(QImage img, int width)
@@ -248,7 +275,7 @@ void grayScale(QImage &img)
         #pragma omp critical
         { line = ((QRgb*)img.scanLine(y));}
         for (int x=0;x<img.width();x++) {
-            int val = qGray(line[x]);
+            int val = rgb_to_Y(qRed(line[x]), qGreen(line[x]), qBlue(line[x]));
             line[x] = qRgba(val,val,val, qAlpha(line[x]));
         }
     }
@@ -726,7 +753,7 @@ void stretchContrast(QImage &img)
 }
 
 // *********------------ Gamma Correction --------------**************
-#define EncodeGamma(x) (255 * pow((x)/255.0, 1.0/gamma))
+#define EncodeGamma(x) (255 * powf((x)/255.0f, 1.0f/gamma))
 //#define DecodeGamma(x) (255 * pow((x)/255.0f, gamma))
 
 // acceptable values are between 0.1 and 10.0. But in practice values between

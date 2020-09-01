@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "PhotoQuick"
-!define PRODUCT_VERSION "4.3.0"
+!define PRODUCT_VERSION "4.3.5"
 !define PRODUCT_PUBLISHER "Arindamsoft Co."
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\photoquick.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"

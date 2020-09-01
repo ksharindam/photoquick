@@ -10,8 +10,6 @@ This file is a part of photoquick program, which is GPLv3 licensed
 #include <QRect>
 #include <cmath>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
 
 // ******************************************************************* |
 //                         Crop Manager
