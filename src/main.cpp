@@ -64,13 +64,14 @@ Window:: Window()
     decorateBtn->setMenu(decorateMenu);
     // Filters menu
     QMenu *filtersMenu = new QMenu(filtersBtn);
-    filtersMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     QMenu *colorMenu = filtersMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
-        colorMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
         colorMenu->addAction("Color Balance", this, SLOT(grayWorldFilter()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
+    QMenu *thresholdMenu = filtersMenu->addMenu("Threshold");
+        thresholdMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+        thresholdMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
         brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
@@ -121,6 +122,7 @@ Window:: Window()
     menu_dict["Transform"] = transformMenu;
     menu_dict["Tools"] = toolsMenu;
     menu_dict["Filters"] = filtersMenu;
+    menu_dict["Filters/Threshold"] = thresholdMenu;
     menu_dict["Filters/Color"] = colorMenu;
     menu_dict["Filters/Brightness"] = brightnessMenu;
     menu_dict["Filters/Noise Removal"] = noiseMenu;
