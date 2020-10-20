@@ -213,6 +213,8 @@ void convolve1D(QImage &img, float kernel[], int width/*of kernel*/)
 // 1D Gaussian kernel -> g(x)   = 1/{sqrt(2.pi)*sigma} * e^{-(x^2)/(2.sigma^2)}
 // 2D Gaussian kernel -> g(x,y) = 1/(2.pi.sigma^2) * e^{-(x^2 +y^2)/(2.sigma^2)}
 
+#define PI 3.141593f
+
 void gaussianBlur(QImage &img, int radius, float sigma/*standard deviation*/)
 {
     if (sigma==0)  sigma = radius/2.0 ;
@@ -224,7 +226,7 @@ void gaussianBlur(QImage &img, int radius, float sigma/*standard deviation*/)
     {
         int u = i - radius;
         double alpha = exp(-(u*u)/(2.0*sigma*sigma));
-        kernel[i] = alpha/(sqrt(2*M_PI)*sigma);
+        kernel[i] = alpha/(sqrt(2*PI)*sigma);
     }
     convolve1D(img, kernel, kernel_width);
 }

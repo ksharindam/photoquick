@@ -4,7 +4,7 @@ A simple handy image viewer and editor with some useful features (written in qt4
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
 
- * Export to PDF
+ * Export to PDF  
  * Auto Resize to file size  
  * Crop in particular ratio  
  * Rotate, mirror, perspective transform  
@@ -57,6 +57,7 @@ Run command...
 You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/photoquick/releases).  
 
 ### Plugins
+The plugins/ directory contains only sample plugins.  
 **Build (Linux and Windows) :**  
 Open terminal or command line in project root directory.  
 Then run these commands to compile...  
@@ -68,6 +69,9 @@ make -j4
 **Install (Linux) :**  
 `sudo make install`  
 
+Get more plugins from https://github.com/ImageProcessing-ElectronicPublications/photoquick-plugins  
+Also you can create your own plugins and use with it.  
+
 ### Usage
 To run this program...  
 `photoquick`  
@@ -78,4 +82,13 @@ To open image.jpg with it...
 ### Keyboard Shortcuts
 Reload Image : R  
 Delete Image : Delete  
+
+### Supported Image Formats
+All formats supported by Qt are supported in this program.  
+**Read :** JPG, PNG, GIF, SVG, TIFF, ICO, BMP, XPM, XBM, PPM, PBM, PGM  
+**Write :** JPG, PNG, TIFF, ICO, BMP, XPM, XBM, PPM  
+
+JPEG2000 and WebP formats are supported via image format plugins.  
+You can get these here...  
+https://github.com/ksharindam/qt4-imageformat-plugins  
 

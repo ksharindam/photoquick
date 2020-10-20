@@ -38,6 +38,7 @@
 #include <QRegExp>
 #include <QBuffer>
 #include <cmath>
+#include <QImageWriter>
 
 Window:: Window()
 {
@@ -315,10 +316,19 @@ Window:: overwrite()
 void
 Window:: saveAs()
 {
-    QString filefilter = QString("Image files (*.jpg *.png *.jpeg *.ppm *.bmp *.tiff);;"
-                                 "JPEG Image (*.jpg);;PNG Image (*.png);;Tagged Image (*.tiff);;"
-                                 "Portable Pixmap (*.ppm);;X11 Pixmap (*.xpm);;Windows Bitmap (*.bmp)");
-    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", data.filename, filefilter);
+    QStringList formats = {"jpg", "jp2", "png", "webp", "tiff", "ico", "bmp", "ppm"};
+    QStringList names = {"JPEG Image", "JPEG 2000", "PNG Image", "WebP Image",
+                "Tagged Image", "Windows Icon", "Windows Bitmap", "Portable Pixmap"};
+    QStringList supported;
+    for (QByteArray item : QImageWriter::supportedImageFormats())
+        supported << QString(item);
+
+    QString filters("All Files (*)");
+    for (int i=0; i<formats.size(); i++) {
+        if (supported.contains(formats[i]))
+            filters += QString(";;%1 (*.%2)").arg(names[i]).arg(formats[i]);
+    }
+    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", data.filename, filters);
     if (filepath.isEmpty()) return;
     saveImage(filepath);
 }
