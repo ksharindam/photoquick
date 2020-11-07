@@ -71,7 +71,7 @@ Window:: Window()
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
     QMenu *thresholdMenu = filtersMenu->addMenu("Threshold");
-        thresholdMenu->addAction("Threshold", this, SLOT(toBlacknWhite()));
+        thresholdMenu->addAction("Threshold", this, SLOT(applyThreshold()));
         thresholdMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
         brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
@@ -80,6 +80,7 @@ Window:: Window()
     QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
+    filtersMenu->addAction("Lens Distortion", this, SLOT(lensDistort()));
     filtersMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     filtersMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     filtersBtn->setMenu(filtersMenu);
@@ -193,10 +194,10 @@ Window:: loadPlugins()
     for (QString dir : dirs) {
         QDir pluginsDir(dir + "/plugins");
         if (not pluginsDir.exists()) continue;
-        qDebug()<< dir + "/plugins";
+        //qDebug()<< dir + "/plugins";
         for (QString fileName : pluginsDir.entryList(filter, QDir::Files, QDir::Name)) {
             QPluginLoader pluginLoader(pluginsDir.absoluteFilePath(fileName));
-            qDebug() << "Loading :" << fileName;
+            //qDebug() << "Loading :" << fileName;
             QObject *pluginObj = pluginLoader.instance();
             if (not pluginObj) {
                 qDebug()<< fileName << ": create instance failed";
@@ -678,6 +679,17 @@ Window:: iScissor()
 }
 
 void
+Window:: lensDistort()
+{
+    QImage img = canvas->pixmap()->toImage();
+    LensDialog *dlg = new LensDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        lensDistortion(data.image, dlg->main, dlg->edge, dlg->zoom);
+    }
+    canvas->showScaled();
+}
+
+void
 Window:: toGrayScale()
 {
     grayScale(data.image);
@@ -685,7 +697,7 @@ Window:: toGrayScale()
 }
 
 void
-Window:: toBlacknWhite()
+Window:: applyThreshold()
 {
     int thresh = calcOtsuThresh(data.image);
     bool ok;

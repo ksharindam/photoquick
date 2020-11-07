@@ -13,9 +13,6 @@ void threshold(QImage &img, int thresh);
 // Apply adaptive integral threshold using bradley's method
 void adaptiveThreshold(QImage &img);
 
-// Apply Convolution Matrix
-void convolve(QImage &img, float kernel[], int kernel_width);
-
 // Gaussian Blur
 void gaussianBlur(QImage &img, int radius=1, float sigma=0);
 
@@ -27,6 +24,9 @@ void medianFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
 void unsharpMask(QImage &img, float factor=1.0, int thresh=5);
+
+// remove speckle noise using crimmins speckle removal
+void despeckle(QImage &img);
 
 // Sigmoidal Contrast to enhance low light images
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
@@ -46,8 +46,7 @@ void grayWorld(QImage &img);
 // Auto white balance
 void enhanceColor(QImage &img);
 
-// remove speckle noise using crimmins speckle removal
-void despeckle(QImage &img);
-
+// Correct Lens Distortion
+void lensDistortion(QImage &image, float main, float edge, float zoom);
 
 QImage expandBorder(QImage img, int width);

@@ -46,7 +46,7 @@ public slots:
     void iScissor();
     // filters
     void toGrayScale();
-    void toBlacknWhite();
+    void applyThreshold();
     void adaptiveThresh();
     void blur();
     void sharpenImage();
@@ -58,6 +58,7 @@ public slots:
     void whiteBalance();
     void enhanceColors();
     void grayWorldFilter();
+    void lensDistort();
     // file and view options
     void openPrevImage();
     void openNextImage();

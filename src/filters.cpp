@@ -12,14 +12,7 @@
     qDebug() << "Execution Time :" << elapse;
 
 #define PI 3.141593f
-
-//__________________________________________________________________________________________
-
-// ----------- ************* Color Utilities ************ ----------- //
-
-
-
-#define BLEND(top, btm, alpha_top) ((top)*(alpha_top) + (btm)*(1-alpha_top));
+#define SQR(x) ((x)*(x))
 
 // clamp an integer in 0-255 range
 inline int Clamp(int a)
@@ -27,6 +20,15 @@ inline int Clamp(int a)
     return ( (a)&(~0xff) ? (uchar)((~a)>>31) : (a) );
 }
 
+//__________________________________________________________________________________________
+
+// ----------- ************* Color Utilities ************ ----------- //
+
+
+#define BLEND(top, btm, alpha_top) ((top)*(alpha_top) + (btm)*(1-alpha_top));
+
+
+// value range 0-1.0
 inline float srgb_to_linear(float value)
 {
     if (value > 0.04045f)
@@ -776,7 +778,7 @@ void applyGamma(QImage &img, float gamma)
 }
 
 // ************* ------------ Auto White Balance -------------************
-// adopted from a stackoverflow code (white patch algorithm)
+// white balance using White Patch algorithm
 
 void autoWhiteBalance(QImage &img)
 {
@@ -1216,6 +1218,190 @@ void medianFilter(QImage &img, int radius)
     }
 }
 
+/* ***************** -------- Lens Distortion ----------- ************* */
+// used for lens distortion correction in images captured using mobile phone
+
+typedef struct {
+    int width;
+    int height;
+} Size;
+
+typedef struct
+{
+    double centre_x;
+    double centre_y;
+    double mult_sq;
+    double mult_qd;
+    double rescale;
+    double norm;
+} LensValues;
+
+
+static LensValues
+lens_setup_calc (float main, float edge, float zoom, Size img_size)
+{
+    LensValues lens;
+
+    lens.norm     = 4.0 / (SQR (img_size.width) + SQR (img_size.height));
+    lens.centre_x = img_size.width / 2.0;
+    lens.centre_y = img_size.height / 2.0;
+    lens.mult_sq  = main / 200.0;
+    lens.mult_qd  = edge / 200.0;
+    lens.rescale  = pow (2.0, - zoom / 100.0);
+
+    return lens;
+}
+
+// maps a pixel in new image to the src image
+static void
+lens_get_source_coord (float       i,// pos in dest image
+                       float       j,
+                       float      &x,// pos in src image
+                       float      &y,
+                       LensValues &lens)
+{
+    double radius_sq, off_x, off_y, radius_mult;
+
+    off_x = i - lens.centre_x;
+    off_y = j - lens.centre_y;
+
+    radius_sq = SQR (off_x) + SQR (off_y);
+
+    radius_sq *= lens.norm;
+
+    radius_mult = radius_sq * lens.mult_sq + SQR (radius_sq) * lens.mult_qd;
+
+    radius_mult = lens.rescale * (1.0 + radius_mult);
+
+    x = lens.centre_x + radius_mult * off_x;
+    y = lens.centre_y + radius_mult * off_y;
+}
+
+
+/*
+ * Catmull-Rom cubic interpolation
+ *
+ * equally spaced points p0, p1, p2, p3
+ * interpolate u between p1 and p2
+ *
+ * (1 u u^2 u^3) (  0.0  1.0  0.0  0.0 ) (p0)
+ *               ( -0.5  0.0  0.5  0.0 ) (p1)
+ *               (  1.0 -2.5  2.0 -0.5 ) (p2)
+ *               ( -0.5  1.5 -1.5  0.5 ) (p3)
+ */
+// pixel values are in 0-255 range.
+// To use with pixels in 0-1.0 range change only the CLAMP range
+
+static void
+interpolateCubic (float  *src,// 16 pixels array
+                  float  *dst,// one pixel array
+                  float  dx,
+                  float  dy)
+{
+    float um1, u, up1, up2;
+    float vm1, v, vp1, vp2;
+    int   row_stride = 16;
+    float verts[16];
+
+    um1 = ((-0.5 * dx + 1.0) * dx - 0.5) * dx;
+    u = (1.5 * dx - 2.5) * dx * dx + 1.0;
+    up1 = ((-1.5 * dx + 2.0) * dx + 0.5) * dx;
+    up2 = (0.5 * dx - 0.5) * dx * dx;
+
+    vm1 = ((-0.5 * dy + 1.0) * dy - 0.5) * dy;
+    v = (1.5 * dy - 2.5) * dy * dy + 1.0;
+    vp1 = ((-1.5 * dy + 2.0) * dy + 0.5) * dy;
+    vp2 = (0.5 * dy - 0.5) * dy * dy;
+    // interpolate along y-axis
+    for (int c=0; c < 4*4; ++c)
+    {
+        verts[c] = vm1 * src[c]  +  v * src[c + row_stride] +
+            vp1 * src[c + row_stride * 2]  +  vp2 * src[ c  +  row_stride * 3];
+    }
+    // interpolate along x-axis and put the result in dst buffer
+    for (int c=0; c<4; ++c)
+    {
+        float result;
+
+        result = um1 * verts[c]  +  u * verts[c + 4] +
+                up1 * verts[c + 4 * 2]  +  up2 * verts[c + 4 * 3];
+
+        dst[c] = Clamp(result);// 0-255 range
+    }
+}
+
+static void
+lens_distort_pixel(uchar        *src_buf,
+                   uchar        *dst_buf,
+                   Size          img_size,
+                   LensValues   &lens,
+                   int           xx,
+                   int           yy,
+                   uchar        *background)
+{
+    float  sx, sy;
+    float  pixel_buffer [16 * 4];// 16 pixels array used for cubic interpolation
+    int    offset = 0;
+
+    lens_get_source_coord (xx, yy, sx, sy, lens);
+
+    int x_int = floor (sx);
+    int y_int = floor (sy);
+
+    float dx = sx - x_int;
+    float dy = sy - y_int;
+
+    for (int y = y_int-1; y <= y_int+2; y++)
+    {
+        for (int x = x_int-1; x <= x_int+2; x++)
+        {
+            // if outside image, put background color
+            if (x < 0 || x >=  img_size.width ||
+                y < 0 || y >=  img_size.height )
+            {
+                for (int c=0; c<4; c++)
+                    pixel_buffer[offset++] = background[c];
+            }
+            else
+            {
+                int src_off = (img_size.width * y + x) * 4;
+
+                for (int c=0; c<4; c++)
+                    pixel_buffer[offset++] = src_buf[src_off++];
+            }
+        }
+    }
+    float temp[4];
+    interpolateCubic (pixel_buffer, temp, dx, dy);
+
+    offset = (img_size.width * yy + xx) * 4;
+
+    for (int c=0; c<4; c++)
+        dst_buf[offset++] = temp[c];
+}
+
+// default : main=20.0, edge=0, zoom=0
+void lensDistortion (QImage &image, float main, float edge, float zoom)
+{
+    uchar  background[4] = {255, 255, 255, 255};
+
+    Size  img_size = {image.width(), image.height()};
+
+    QImage tmpImg = image.copy();
+    uchar *src_buf = (uchar*) tmpImg.bits();
+
+    uchar *dst_buf = (uchar*) image.bits();
+
+    LensValues lens = lens_setup_calc (main, edge, zoom, img_size);
+
+    #pragma omp parallel for
+    for (int y = 0; y < img_size.height; y++) {
+        for (int x = 0; x < img_size.width; x++)
+        {
+            lens_distort_pixel (src_buf, dst_buf, img_size, lens, x, y, background);
+        }
+    }
+}
 
 
 // ********************* Experimental Features  ********************* //
