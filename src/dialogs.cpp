@@ -175,6 +175,7 @@ LensDialog:: LensDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog
     layout->addWidget(edgeSpin, 1,1,1,1);
     layout->addWidget(zoomSpin, 2,1,1,1);
     layout->addWidget(btnBox, 3,0,1,2);
+
     connect(mainSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
     connect(edgeSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
     connect(zoomSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
@@ -193,5 +194,74 @@ LensDialog:: run()
 
     QImage img = image.copy();
     lensDistortion(img, main, edge, zoom);
+    preview(img);
+}
+
+
+// ----------- Preview Dialog for Threshold Filter --------- //
+
+ThresholdDialog:: ThresholdDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    setWindowTitle("Threshold Value");
+    QLabel *label0 = new QLabel("Enter threshold Value :", this);
+    thresholdSpin = new QSpinBox(this);
+    thresholdSpin->setRange(1, 254);
+    thresholdSpin->setValue( calcOtsuThresh(img) );
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                    QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(label0);
+    layout->addWidget(thresholdSpin);
+    layout->addWidget(btnBox);
+
+    connect(thresholdSpin, SIGNAL(valueChanged(int)), this, SLOT(onValueChange()));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+    onValueChange();
+}
+
+void
+ThresholdDialog:: run()
+{
+    thresh = thresholdSpin->value();
+
+    QImage img = image.copy();
+    threshold(img, thresh);
+    preview(img);
+}
+
+
+// ----------- Preview Dialog for Gamma Correction Filter --------- //
+
+GammaDialog:: GammaDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    setWindowTitle("Apply Gamma");
+    QLabel *label0 = new QLabel("Enter the value of Gamma :", this);
+    gammaSpin = new QDoubleSpinBox(this);
+    gammaSpin->setSingleStep(0.1);
+    gammaSpin->setRange(0.1, 10.0);
+    gammaSpin->setValue( gamma );
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                    QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(label0);
+    layout->addWidget(gammaSpin);
+    layout->addWidget(btnBox);
+
+    connect(gammaSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+    onValueChange();
+}
+
+void
+GammaDialog:: run()
+{
+    gamma = gammaSpin->value();
+
+    QImage img = image.copy();
+    applyGamma(img, gamma);
     preview(img);
 }

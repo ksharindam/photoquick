@@ -76,3 +76,26 @@ public:
     LensDialog(QLabel *parent, QImage img, float scale);
     void run();
 };
+
+
+class ThresholdDialog : public PreviewDialog
+{
+public:
+    int thresh;
+    QSpinBox *thresholdSpin;
+
+    ThresholdDialog(QLabel *parent, QImage img, float scale);
+    void run();
+};
+
+
+class GammaDialog : public PreviewDialog
+{
+public:
+    float gamma = 1.6;
+    QDoubleSpinBox *gammaSpin;
+
+    GammaDialog(QLabel *parent, QImage img, float scale);
+    void run();
+};
+

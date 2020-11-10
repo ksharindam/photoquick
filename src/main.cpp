@@ -285,7 +285,9 @@ Window:: saveImage(QString filename)
         img = canvas->movie()->currentImage();
     if (img.isNull()) return;
     int quality = -1;
-    if (filename.endsWith(".jpg", Qt::CaseInsensitive)) {
+    if (filename.endsWith(".jpg",  Qt::CaseInsensitive) ||
+        filename.endsWith(".jpeg", Qt::CaseInsensitive))
+    {
         if (img.hasAlphaChannel()) { // converts background to white
             img = QImage(img.width(), img.height(), QImage::Format_RGB32);
             img.fill(Qt::white);
@@ -699,12 +701,11 @@ Window:: toGrayScale()
 void
 Window:: applyThreshold()
 {
-    int thresh = calcOtsuThresh(data.image);
-    bool ok;
-    thresh = QInputDialog::getInt(this, "Threshold Value", "Enter Threshold Value :",
-                                        thresh/*val*/, 0/*min*/, 255/*max*/, 1/*step*/, &ok);
-    if (not ok) return;
-    threshold(data.image, thresh);
+    QImage img = canvas->pixmap()->toImage();
+    ThresholdDialog *dlg = new ThresholdDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        threshold(data.image, dlg->thresh);
+    }
     canvas->showScaled();
 }
 
@@ -764,11 +765,11 @@ Window:: enhanceLight()
 void
 Window:: gammaCorrection()
 {
-    bool ok;
-    double gamma = QInputDialog::getDouble(this, "Apply Gamma", "Enter the value of Gamma :",
-                    1.6/*val*/, 0.1/*min*/, 10.0/*max*/, 2/*decimals*/, &ok);
-    if (not ok) return;
-    applyGamma(data.image, gamma);
+    QImage img = canvas->pixmap()->toImage();
+    GammaDialog *dlg = new GammaDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        applyGamma(data.image, dlg->gamma);
+    }
     canvas->showScaled();
 }
 
