@@ -19,4 +19,4 @@ unix {
     target.path = /usr/local/share/photoquick/plugins
 }
 
-CONFIG -= debug_and_release
+CONFIG -= debug_and_release debug

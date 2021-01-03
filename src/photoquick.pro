@@ -6,7 +6,7 @@ QMAKE_CXXFLAGS = -fopenmp -std=c++11
 QMAKE_LFLAGS += -s
 LIBS += -lgomp
 
-CONFIG -= debug_and_release
+CONFIG -= debug_and_release debug
 
 # build dir
 UI_DIR  =     ../build
