@@ -3,6 +3,13 @@
 #include <QSystemTrayIcon>
 #include <QDebug>
 
+#define PROG_NAME       "PhotoQuick"
+#define PROG_VERSION    "4.3.8"
+#define COPYRIGHT_YEAR  "2017-2021"
+#define AUTHOR_NAME     "Arindam Chaudhuri"
+#define AUTHOR_EMAIL    "ksharindam@gmail.com"
+
+
 #define MIN(a,b) ({ __typeof__ (a) _a = (a); \
                     __typeof__ (b) _b = (b); \
                     _a < _b ? _a : _b; })
@@ -47,6 +54,8 @@ int getJpgFileSize(QImage img, int quality=-1);
 
 // get jpeg image orientation from exif
 int getOrientation(FILE *f);
+// read some jpeg exif data as string
+int read_Exif(FILE *f, std::string &exif_str);
 
 class Notifier : public QSystemTrayIcon
 {

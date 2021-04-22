@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2016-2020 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2021 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -89,6 +89,10 @@ Window:: Window()
     toolsMenu->addAction("Background Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     toolsBtn->setMenu(toolsMenu);
+    // More info menu
+    QMenu *infoMenu = new QMenu(infoBtn);
+    infoMenu->addAction("Image Info", this, SLOT(imageInfo()));
+    infoBtn->setMenu(infoMenu);
 
     QAction *delAction = new QAction(this);
     delAction->setShortcut(QString("Delete"));
@@ -123,6 +127,7 @@ Window:: Window()
     menu_dict["File"] = fileMenu;
     menu_dict["Transform"] = transformMenu;
     menu_dict["Tools"] = toolsMenu;
+    menu_dict["Info"] = infoMenu;
     menu_dict["Filters"] = filtersMenu;
     menu_dict["Filters/Threshold"] = thresholdMenu;
     menu_dict["Filters/Color"] = colorMenu;
@@ -130,6 +135,7 @@ Window:: Window()
     menu_dict["Filters/Noise Removal"] = noiseMenu;
 
     loadPlugins();
+    infoMenu->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
 
 void
@@ -541,6 +547,38 @@ void
 Window:: reloadImage()
 {
     openImage(data.filename);
+}
+
+void
+Window:: imageInfo()
+{
+    QString str = QString("Width  : %1\n").arg(data.image.width());
+    str += QString("Height : %1\n").arg(data.image.height());
+    std::string exif_str = str.toStdString();
+
+    FILE *f = fopen(data.filename.toUtf8().data(), "rb");
+    if (f) {
+        if (!read_Exif(f, exif_str))
+            exif_str += "\nNo Exif Data !";
+        fclose(f);
+    }
+    QMessageBox *dlg = new QMessageBox(this);
+    dlg->setWindowTitle("Image Info");
+    dlg->setText(exif_str.c_str());
+    dlg->exec();
+}
+
+void
+Window:: showAbout()
+{
+    QString text =
+        "<h1>%1</h1>"
+        "Version : %2<br>"
+        "Qt Version : %3<br><br>"
+        "A simple, handy and useful image viewer and editor with plugin support<br><br>"
+        "Copyright &copy; %4 %5 &lt;%6&gt;";
+    text = text.arg(PROG_NAME).arg(PROG_VERSION).arg(qVersion()).arg(COPYRIGHT_YEAR).arg(AUTHOR_NAME).arg(AUTHOR_EMAIL);
+    QMessageBox::about(this, "About PhotoQuick", text);
 }
 
 void

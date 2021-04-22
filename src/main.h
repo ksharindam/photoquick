@@ -59,6 +59,9 @@ public slots:
     void enhanceColors();
     void grayWorldFilter();
     void lensDistort();
+    // info menu
+    void imageInfo();
+    void showAbout();
     // file and view options
     void openPrevImage();
     void openNextImage();
