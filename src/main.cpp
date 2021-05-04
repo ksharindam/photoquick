@@ -126,6 +126,7 @@ Window:: Window()
 
     menu_dict["File"] = fileMenu;
     menu_dict["Transform"] = transformMenu;
+    menu_dict["Decorate"] = decorateMenu;
     menu_dict["Tools"] = toolsMenu;
     menu_dict["Info"] = infoMenu;
     menu_dict["Filters"] = filtersMenu;
