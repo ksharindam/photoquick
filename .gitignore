@@ -6,9 +6,9 @@
 
 # Auto-genereated files
 Makefile
-moc_*.cpp
 build/
 
 src/photoquick
 
 TODO
+test-plugin/

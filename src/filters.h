@@ -49,4 +49,7 @@ void enhanceColor(QImage &img);
 // Correct Lens Distortion
 void lensDistortion(QImage &image, float main, float edge, float zoom);
 
+// Vignette filter : darken edges in radial gradient
+void vignette(QImage &img);
+
 QImage expandBorder(QImage img, int width);

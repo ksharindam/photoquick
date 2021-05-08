@@ -83,10 +83,12 @@ Window:: Window()
     filtersMenu->addAction("Lens Distortion", this, SLOT(lensDistort()));
     filtersMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
     filtersMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
+    QMenu *effectsMenu = filtersMenu->addMenu("Effects");
+        effectsMenu->addAction("Vignette", this, SLOT(vignetteFilter()));
     filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
-    toolsMenu->addAction("Background Eraser", this, SLOT(iScissor()));
+    toolsMenu->addAction("Scissor && Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     toolsBtn->setMenu(toolsMenu);
     // More info menu
@@ -134,6 +136,7 @@ Window:: Window()
     menu_dict["Filters/Color"] = colorMenu;
     menu_dict["Filters/Brightness"] = brightnessMenu;
     menu_dict["Filters/Noise Removal"] = noiseMenu;
+    menu_dict["Filters/Effects"] = effectsMenu;
 
     loadPlugins();
     infoMenu->addAction("About PhotoQuick", this, SLOT(showAbout()));
@@ -830,6 +833,13 @@ void
 Window:: enhanceColors()
 {
     enhanceColor(data.image);
+    canvas->showScaled();
+}
+
+void
+Window:: vignetteFilter()
+{
+    vignette(data.image);
     canvas->showScaled();
 }
 

@@ -1,6 +1,7 @@
 // this file is part of photoquick program which is GPLv3 licensed
 #include "filters.h"
 #include "common.h"
+#include <QPainter>
 #include <cmath>
 
 
@@ -668,6 +669,36 @@ void unsharpMask(QImage &img, float factor, int thresh)
         }
     }
 }
+
+
+//************* ------------ Level Image ------------ ****************
+#define ScaleColor(x, mini, maxi) (255.0*((x)-(mini))/((maxi)-(mini)))
+
+// scale the colors range so that black_pt becomes 0 and white_pt becomes 255.
+// black_pt and white_pt must be within 0-1.0 range
+void levelImage(QImage &img, float black_pt, float white_pt)
+{
+    black_pt *= 255;
+    white_pt *= 255;
+
+    int w = img.width();
+    int h = img.height();
+
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*) img.scanLine(y); }
+        for (int x=0; x<w; x++) {
+            int r = ScaleColor(qRed(row[x]), black_pt, white_pt);
+            int g = ScaleColor(qGreen(row[x]), black_pt, white_pt);
+            int b = ScaleColor(qBlue(row[x]), black_pt, white_pt);
+            row[x] = qRgb(Clamp(r), Clamp(g), Clamp(b));
+        }
+    }
+}
+
 
 // *******-------- Sigmoidal Contrast ---------**********
 // Sigmoidal Contrast Image to enhance low contrast image
@@ -1399,6 +1430,49 @@ void lensDistortion (QImage &image, float main, float edge, float zoom)
         for (int x = 0; x < img_size.width; x++)
         {
             lens_distort_pixel (src_buf, dst_buf, img_size, lens, x, y, background);
+        }
+    }
+}
+
+
+// *********** ------------ Vignette Filter -------------************
+// darken the outside of the image in a radial gradient
+
+void vignette (QImage &img)
+{
+    int w = img.width();
+    int h = img.height();
+
+    int grad_w = MIN(w,h);
+    QImage gradImg(grad_w,grad_w, QImage::Format_RGB32);
+    QRadialGradient radialGrad(grad_w/2,  grad_w/2, 0.75*grad_w);
+    radialGrad.setColorAt(0, Qt::white);
+    //radialGrad.setColorAt(0.2, Qt::white);
+    radialGrad.setColorAt(1.0, Qt::black);
+    QBrush brush(radialGrad);
+    QPainter painter(&gradImg);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(brush);
+    painter.drawRect(0,0, img.width()-1, img.height()-1);
+    painter.end();
+    gradImg = gradImg.scaled(w,h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    levelImage(gradImg, 0, 0.6);
+    // use gradient image as alpha channel and
+    // compose the main image against black background
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        QRgb *row, *gradRow;
+        #pragma omp critical
+        { row = (QRgb*) img.scanLine(y);
+          gradRow = (QRgb*) gradImg.constScanLine(y);
+        }
+        for (int x=0; x<w; x++) {
+            float alpha = qRed(gradRow[x])/255.0;
+            int r = alpha*qRed(row[x]);// + (1.0-alpha)*bg_r where bg_r=0
+            int g = alpha*qGreen(row[x]);
+            int b = alpha*qBlue(row[x]);
+            row[x] = qRgb(r,g,b);
         }
     }
 }
