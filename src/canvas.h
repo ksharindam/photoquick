@@ -17,9 +17,13 @@ public:
     Canvas(QScrollArea *scrollArea, ImageData *img_dat);
     void setAnimation(QMovie *anim);
     void setImage(QImage img);
+    void setMask(QImage mask);
+    void clearMask();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
     // Variables
     ImageData *data;
+    QImage mask;// 1 bpp binary mask image of format MonoLSB, 0=unmasked, 1=masked
+    QImage tmp_image;// to restore masked area in data->image after applying filters
     bool animation = false;
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
@@ -34,6 +38,7 @@ private:
     QScrollBar *vScrollbar, *hScrollbar;
 public slots:
     void showScaled();
+    void invertMask();
 signals:
     void mousePressed(QPoint);
     void mouseReleased(QPoint);

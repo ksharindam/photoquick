@@ -59,6 +59,7 @@ IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
     redoBtn->setEnabled(false);
 
     connect(acceptBtn, SIGNAL(clicked()), this, SLOT(confirmAccept()));
+    connect(useAsMaskBtn, SIGNAL(clicked()), this, SLOT(useAsMask()));
     connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
     connect(undoBtn, SIGNAL(clicked()), this, SLOT(undo()));
     connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
@@ -153,6 +154,22 @@ IScissorDialog:: confirmAccept()
         painter.end();
         image = img;
     }
+    QDialog::accept();
+}
+
+void
+IScissorDialog:: useAsMask()
+{
+    int w = image.width();
+    int h = image.height();
+    for (int y=0; y<h; y++) {
+        QRgb *row = (QRgb*)image.scanLine(y);
+        for (int x=0; x<w; x++) {
+            int clr = 255 - qAlpha(row[x]);// use transperant areas as masked area
+            row[x] = qRgb(clr, clr, clr);
+        }
+    }
+    is_mask = true;
     QDialog::accept();
 }
 

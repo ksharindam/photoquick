@@ -41,6 +41,7 @@ class IScissorDialog : public QDialog, public Ui_IScissorDialog
 public:
     QImage image; // original unchanged image
     QImage image_scaled;
+    bool is_mask; // if the image is converted to mask
     float scale;
     QPainter painter;
     PaintCanvas *canvas;
@@ -104,6 +105,7 @@ public slots:
     void onMouseRelease(QPoint);
     void onMouseMove(QPoint);
     void confirmAccept();
+    void useAsMask();
 };
 
 class BgColorDialog : public QDialog

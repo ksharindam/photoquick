@@ -3,6 +3,13 @@
 #include "canvas.h"
 #include <QTimer>
 
+typedef enum
+{
+    FILE_BUTTON,
+    VIEW_BUTTON,
+    EDIT_BUTTON
+} ButtonType;
+
 
 class Window : public QMainWindow, Ui_MainWindow
 {
@@ -22,8 +29,9 @@ private:
     void connectSignals();
     float fitToScreenScale(QImage img);
     float fitToWindowScale(QImage img);
-    void disableButtons(bool disable);
+    void disableButtons(ButtonType type, bool disable);
     void closeEvent(QCloseEvent *ev);
+    void addMaskWidget();
 public slots:
     void openFile();
     void overwrite();
@@ -44,6 +52,7 @@ public slots:
     // tools
     void magicEraser();
     void iScissor();
+    void removeMaskWidget();
     // filters
     void toGrayScale();
     void applyThreshold();

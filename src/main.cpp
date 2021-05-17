@@ -263,7 +263,8 @@ Window:: openImage(QString filepath)
         canvas->scale = fitToScreenScale(img);
         canvas->setImage(img);
         adjustWindowSize();
-        disableButtons(false);
+        disableButtons(VIEW_BUTTON, false);
+        disableButtons(EDIT_BUTTON, false);
         if (!timer->isActive())
             playPauseBtn->setIcon(QIcon(":/images/play.png"));
     }
@@ -274,7 +275,8 @@ Window:: openImage(QString filepath)
           adjustWindowSize(true);
           statusbar->showMessage(QString("Resolution : %1x%2").arg(canvas->width()).arg(canvas->height()));
           playPauseBtn->setIcon(QIcon(":/images/pause.png"));
-          disableButtons(true);
+          disableButtons(VIEW_BUTTON, true);
+          disableButtons(EDIT_BUTTON, true);
         }
     }
     else { // unsupported file
@@ -718,8 +720,42 @@ Window:: iScissor()
     int dialog_h = screen_height - offset_y - offset_x;
     dialog->resize(1020, dialog_h);
     if (dialog->exec()==QDialog::Accepted) {
-        canvas->setImage( dialog->image );
+        if (dialog->is_mask) {
+            addMaskWidget();
+            canvas->setMask( dialog->image );
+        }
+        else
+            canvas->setImage( dialog->image );
     }
+}
+
+void
+Window:: addMaskWidget()
+{
+    QWidget *maskWidget = new QWidget(this);
+    QHBoxLayout *maskLayout = new QHBoxLayout(maskWidget);
+    maskLayout->setContentsMargins(0, 0, 0, 0);
+    maskWidget->setLayout(maskLayout);
+    QPushButton *invertMaskBtn = new QPushButton("Invert Mask", maskWidget);
+    QPushButton *clearMaskBtn = new QPushButton("Clear Mask", maskWidget);
+    maskLayout->addWidget(invertMaskBtn);
+    maskLayout->addWidget(clearMaskBtn);
+    connect(clearMaskBtn, SIGNAL(clicked()), this, SLOT(removeMaskWidget()));
+    connect(clearMaskBtn, SIGNAL(clicked()), maskWidget, SLOT(deleteLater()));
+    connect(invertMaskBtn, SIGNAL(clicked()), canvas, SLOT(invertMask()));
+    statusbar->addPermanentWidget(maskWidget);
+    // allow only filters, and disable all other buttons
+    disableButtons(FILE_BUTTON, true);
+    disableButtons(EDIT_BUTTON, true);
+    filtersBtn->setEnabled(true);
+}
+
+void
+Window:: removeMaskWidget()
+{
+    canvas->clearMask();
+    disableButtons(FILE_BUTTON, false);
+    disableButtons(EDIT_BUTTON, false);
 }
 
 void
@@ -1066,19 +1102,30 @@ Window:: onEditingFinished()
 }
 
 void
-Window:: disableButtons(bool disable)
+Window:: disableButtons(ButtonType type, bool disable)
 {
-    resizeBtn->setDisabled(disable);
-    cropBtn->setDisabled(disable);
-    transformBtn->setDisabled(disable);
-    decorateBtn->setDisabled(disable);
-    toolsBtn->setDisabled(disable);
-    filtersBtn->setDisabled(disable);
-    zoomInBtn->setDisabled(disable);
-    zoomOutBtn->setDisabled(disable);
-    origSizeBtn->setDisabled(disable);
-    rotateLeftBtn->setDisabled(disable);
-    rotateRightBtn->setDisabled(disable);
+    switch (type) {
+    case FILE_BUTTON:
+        fileBtn->setDisabled(disable);
+        prevBtn->setDisabled(disable);
+        nextBtn->setDisabled(disable);
+        playPauseBtn->setDisabled(disable);
+        break;
+    case VIEW_BUTTON:
+        zoomInBtn->setDisabled(disable);
+        zoomOutBtn->setDisabled(disable);
+        origSizeBtn->setDisabled(disable);
+        break;
+    case EDIT_BUTTON:
+        resizeBtn->setDisabled(disable);
+        cropBtn->setDisabled(disable);
+        transformBtn->setDisabled(disable);
+        decorateBtn->setDisabled(disable);
+        toolsBtn->setDisabled(disable);
+        filtersBtn->setDisabled(disable);
+        rotateLeftBtn->setDisabled(disable);
+        rotateRightBtn->setDisabled(disable);
+    }
 }
 
 void

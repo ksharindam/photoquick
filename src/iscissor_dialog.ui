@@ -377,6 +377,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="useAsMaskBtn">
+        <property name="text">
+         <string>Use as Mask</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="cancelBtn">
         <property name="text">
          <string>Cancel</string>
