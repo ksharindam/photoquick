@@ -85,6 +85,7 @@ Window:: Window()
     filtersMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
     QMenu *effectsMenu = filtersMenu->addMenu("Effects");
         effectsMenu->addAction("Vignette", this, SLOT(vignetteFilter()));
+        effectsMenu->addAction("PencilSketch", this, SLOT(pencilSketchFilter()));
     filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
@@ -876,6 +877,13 @@ void
 Window:: vignetteFilter()
 {
     vignette(data.image);
+    canvas->showScaled();
+}
+
+void
+Window:: pencilSketchFilter()
+{
+    pencilSketch(data.image);
     canvas->showScaled();
 }
 

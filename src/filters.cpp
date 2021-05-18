@@ -374,7 +374,7 @@ void threshold(QImage &img, int thresh)
 
 //*********---------- Adaptive Threshold ---------**********//
 // Apply Bradley threshold (to get desired output, tune value of T and s)
-void adaptiveThreshold(QImage &img)
+void adaptiveThreshold(QImage &img, float T, int window_size)
 {
     int w = img.width();
     int h = img.height();
@@ -383,11 +383,11 @@ void adaptiveThreshold(QImage &img)
     unsigned **intImg = (unsigned **)malloc(len);
 
     unsigned *ptr = (unsigned*)(intImg + h);
-    for(int i = 0; i < h; i++)
+    for (int i = 0; i < h; i++)
         intImg[i] = (ptr + w * i);
 
     // Calculate integral image
-    for (int y=0;y<h;++y)
+    for (int y=0; y<h; ++y)
     {
         QRgb *row = (QRgb*)img.constScanLine(y);
         int sum=0;
@@ -401,11 +401,11 @@ void adaptiveThreshold(QImage &img)
         }
     }
     // Apply Bradley threshold
-    float T = 0.15;
-    int s = w/32 > 16? w/32: 16;
-    int s2 = s/2;
+    if (window_size==0)
+        window_size = MAX(16, w/32);
+    int s2 = window_size/2;
     #pragma omp parallel for
-    for (int i=0;i<h;++i)
+    for (int i=0; i<h; ++i)
     {
         int x1,y1,x2,y2, count, sum;
         y1 = ((i - s2)>0) ? (i - s2) : 0;
@@ -413,7 +413,7 @@ void adaptiveThreshold(QImage &img)
         QRgb *row;
         #pragma omp critical
         { row = (QRgb*)img.scanLine(i); }
-        for (int j=0;j<w;++j)
+        for (int j=0; j<w; ++j)
         {
             x1 = ((j - s2)>0) ? (j - s2) : 0;
             x2 = ((j + s2)<w) ? (j + s2) : w-1;
@@ -1473,6 +1473,49 @@ void vignette (QImage &img)
             int g = alpha*qGreen(row[x]);
             int b = alpha*qBlue(row[x]);
             row[x] = qRgb(r,g,b);
+        }
+    }
+}
+
+
+// *********** ------------ Pencil Sketch -------------************
+
+void pencilSketch(QImage &img)
+{
+    QImage threshImg = img.copy();
+    int win_size = MAX(8, img.width()/50);
+    adaptiveThreshold(threshImg, 0.15, win_size);
+
+    grayScale(img);
+    QImage topImg = img.copy();
+    invert(topImg);
+    boxFilter(topImg, img.width()/20);
+
+    #pragma omp parallel for
+    for (int y=0; y<img.height(); y++) {
+        QRgb *line, *top_line, *thresh_line;
+        #pragma omp critical
+        {
+          line = (QRgb*)img.scanLine(y);// grayscale image line
+          top_line = (QRgb*)topImg.scanLine(y);// grayed, inverted and blurred image
+          thresh_line = (QRgb*)threshImg.scanLine(y);
+        }
+        for (int val, x=0; x<img.width(); x++)
+        {
+            if (qRed(thresh_line[x])==0) {// draw strokes
+                val = 100;// pencil strokes are not full dark
+            }
+            else {// draw shades
+                // blend topImg and img using color dodge blend
+                // i.e divide the top layer by inverted bottom layer
+                int back = qRed(line[x]);
+                int top = qRed(top_line[x]);
+
+                if (back==255 || top==0)
+                    continue;
+                val = MIN(255, (255*top)/(255-back));
+            }
+            line[x] = qRgba(val,val,val, qAlpha(line[x]));
         }
     }
 }

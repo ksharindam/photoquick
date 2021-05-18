@@ -11,7 +11,7 @@ int calcOtsuThresh(QImage img);
 void threshold(QImage &img, int thresh);
 
 // Apply adaptive integral threshold using bradley's method
-void adaptiveThreshold(QImage &img);
+void adaptiveThreshold(QImage &img, float T=0.15, int window_size=0);
 
 // Gaussian Blur
 void gaussianBlur(QImage &img, int radius=1, float sigma=0);
@@ -51,5 +51,8 @@ void lensDistortion(QImage &image, float main, float edge, float zoom);
 
 // Vignette filter : darken edges in radial gradient
 void vignette(QImage &img);
+
+// Pencil Sketch effect
+void pencilSketch(QImage &img);
 
 QImage expandBorder(QImage img, int width);

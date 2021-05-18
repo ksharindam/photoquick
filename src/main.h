@@ -67,6 +67,7 @@ public slots:
     void whiteBalance();
     void enhanceColors();
     void vignetteFilter();
+    void pencilSketchFilter();
     void grayWorldFilter();
     void lensDistort();
     // info menu
