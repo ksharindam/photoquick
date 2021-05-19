@@ -138,9 +138,6 @@ Window:: Window()
     menu_dict["Filters/Brightness"] = brightnessMenu;
     menu_dict["Filters/Noise Removal"] = noiseMenu;
     menu_dict["Filters/Effects"] = effectsMenu;
-
-    loadPlugins();
-    infoMenu->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
 
 void
@@ -238,6 +235,7 @@ Window:: loadPlugins()
             }
         }
     }
+    menu_dict["Info"]->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
 
 void
@@ -1207,5 +1205,8 @@ int main(int argc, char *argv[])
         win->canvas->setImage(img);
         win->adjustWindowSize();
     }
+    // plugins will be loaded after first image is shown.
+    // Thus even if it has hundreds plugins, startup will not be slower
+    QTimer::singleShot(30, win, SLOT(loadPlugins()));
     return app.exec();
 }
