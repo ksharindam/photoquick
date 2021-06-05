@@ -3,10 +3,12 @@
 *.o
 *.a
 *.exe
+*.AppImage
 
 # Auto-genereated files
 Makefile
 build/
+AppDir/
 
 src/photoquick
 

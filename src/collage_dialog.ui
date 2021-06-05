@@ -44,8 +44,8 @@
          <string>...</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/settings.png</normaloff>:/images/settings.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/settings.png</normaloff>:/icons/settings.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -77,8 +77,8 @@
          <string>+</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/image-add.png</normaloff>:/images/image-add.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/image-add.png</normaloff>:/icons/image-add.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -97,8 +97,8 @@
          <string>-</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/image-remove.png</normaloff>:/images/image-remove.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/image-remove.png</normaloff>:/icons/image-remove.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -117,8 +117,8 @@
          <string>...</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/image-copy.png</normaloff>:/images/image-copy.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/image-copy.png</normaloff>:/icons/image-copy.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -137,8 +137,8 @@
          <string>...</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/rotateright.png</normaloff>:/images/rotateright.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/rotateright.png</normaloff>:/icons/rotateright.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -157,8 +157,8 @@
          <string>...</string>
         </property>
         <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/images/addborder.png</normaloff>:/images/addborder.png</iconset>
+         <iconset resource="../data/resources.qrc">
+          <normaloff>:/icons/addborder.png</normaloff>:/icons/addborder.png</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -234,7 +234,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../data/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

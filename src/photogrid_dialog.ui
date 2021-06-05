@@ -87,8 +87,8 @@
       <string>Configure</string>
      </property>
      <property name="icon">
-      <iconset resource="resources.qrc">
-       <normaloff>:/images/settings.png</normaloff>:/images/settings.png</iconset>
+      <iconset resource="../data/resources.qrc">
+       <normaloff>:/icons/settings.png</normaloff>:/icons/settings.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -147,7 +147,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../data/resources.qrc"/>
  </resources>
  <connections>
   <connection>

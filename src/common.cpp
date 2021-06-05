@@ -87,7 +87,7 @@ int getJpgFileSize(QImage image, int quality)
 }
 
 
-Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/images/image.png"), parent)
+Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/icons/photoquick.png"), parent)
 {
 }
 

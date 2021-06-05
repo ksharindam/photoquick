@@ -251,7 +251,7 @@ IScissorDialog:: onToolClick(int btn_id)
     tool_type = btn_id;
     if (tool_type==TOOL_ISCISSOR) {
         smoothEdgesBtn->show();
-        canvas->setCursor(QCursor(QPixmap(":/images/cursor-cross.png")));
+        canvas->setCursor(QCursor(QPixmap(":/icons/cursor-cross.png")));
         statusbar->setText("Tip : Click to place seeds around object");
         seed_mode = NO_SEED;
     }

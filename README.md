@@ -97,3 +97,14 @@ JPEG2000 and WebP formats are supported via image format plugins.
 You can get these here...  
 https://github.com/ksharindam/qt4-imageformat-plugins  
 
+### Screenshots
+
+Main Window  
+![Main Window](data/screenshots/Screenshot1.jpg)  
+
+Photo-Grid  
+![Photo Grid](data/screenshots/Screenshot2.jpg)  
+
+Scissor Tool  
+![Scissor Tool](data/screenshots/Screenshot3.jpg)  
+

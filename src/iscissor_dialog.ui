@@ -104,8 +104,8 @@
             <string>Zoom In [+]</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/zoomin.png</normaloff>:/images/zoomin.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/zoomin.png</normaloff>:/icons/zoomin.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -130,8 +130,8 @@
             <string>Zoom Out [-]</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/zoomout.png</normaloff>:/images/zoomout.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/zoomout.png</normaloff>:/icons/zoomout.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -181,8 +181,8 @@
             <string>Undo [Ctrl+Z]</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/undo.png</normaloff>:/images/undo.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/undo.png</normaloff>:/icons/undo.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -207,8 +207,8 @@
             <string>Redo [Ctrl+Y]</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/redo.png</normaloff>:/images/redo.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/redo.png</normaloff>:/icons/redo.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -255,8 +255,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/scissor.png</normaloff>:/images/scissor.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/scissor.png</normaloff>:/icons/scissor.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -281,8 +281,8 @@
             <string>...</string>
            </property>
            <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/images/eraser.png</normaloff>:/images/eraser.png</iconset>
+            <iconset resource="../data/resources.qrc">
+             <normaloff>:/icons/eraser.png</normaloff>:/icons/eraser.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -396,7 +396,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../data/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

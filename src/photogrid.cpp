@@ -488,7 +488,7 @@ CollagePaper:: CollagePaper(QWidget *parent, int w, int h, int pdf_w, int pdf_h,
     setMouseTracking(true);
     setAcceptDrops(true);
     background_filename = "";
-    drag_icon = QPixmap(":/images/drag.png");
+    drag_icon = QPixmap(":/icons/drag.png");
     setup();
 }
 

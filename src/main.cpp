@@ -196,7 +196,7 @@ Window:: loadPlugins()
     QStringList filter = {"*.so"};
     // load system libraries only if the program is installed
     if (app_dir_path.endsWith("/bin"))
-        dirs += {"/usr/share/photoquick", "/usr/local/share/photoquick",
+        dirs += {app_dir_path+"/../share/photoquick",
                 QDir::homePath()+"/.local/share/photoquick"};
 #endif
     for (QString dir : dirs) {
@@ -265,7 +265,7 @@ Window:: openImage(QString filepath)
         disableButtons(VIEW_BUTTON, false);
         disableButtons(EDIT_BUTTON, false);
         if (!timer->isActive())
-            playPauseBtn->setIcon(QIcon(":/images/play.png"));
+            playPauseBtn->setIcon(QIcon(":/icons/play.png"));
     }
     else if (frame_count>1) { // For animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
@@ -273,7 +273,7 @@ Window:: openImage(QString filepath)
           canvas->setAnimation(anim);
           adjustWindowSize(true);
           statusbar->showMessage(QString("Resolution : %1x%2").arg(canvas->width()).arg(canvas->height()));
-          playPauseBtn->setIcon(QIcon(":/images/pause.png"));
+          playPauseBtn->setIcon(QIcon(":/icons/pause.png"));
           disableButtons(VIEW_BUTTON, true);
           disableButtons(EDIT_BUTTON, true);
         }
@@ -958,12 +958,12 @@ Window:: origSizeImage()
     if (canvas->scale == 1.0) {
         canvas->scale = fitToWindowScale(data.image);
         canvas->showScaled();
-        origSizeBtn->setIcon(QIcon(":/images/originalsize.png"));
+        origSizeBtn->setIcon(QIcon(":/icons/originalsize.png"));
         return;
     }
     canvas->scale = 1.0;
     canvas->showScaled();
-    origSizeBtn->setIcon(QIcon(":/images/fit-to-screen.png"));
+    origSizeBtn->setIcon(QIcon(":/icons/fit-to-screen.png"));
     if ((canvas->pixmap()->width()>scrollArea->width() or
             canvas->pixmap()->height()>scrollArea->height()) && not this->isMaximized())
         this->showMaximized();
@@ -1005,22 +1005,22 @@ Window:: playPause()
 {
     if (timer->isActive()) {       // Stop slideshow
         timer->stop();
-        playPauseBtn->setIcon(QIcon(":/images/play.png"));
+        playPauseBtn->setIcon(QIcon(":/icons/play.png"));
         return;
     }
     if (canvas->animation) {
         if (canvas->movie()->state()==QMovie::Running) {
             canvas->movie()->setPaused(true);
-            playPauseBtn->setIcon(QIcon(":/images/play.png"));
+            playPauseBtn->setIcon(QIcon(":/icons/play.png"));
         }
         else {
             canvas->movie()->setPaused(false);
-            playPauseBtn->setIcon(QIcon(":/images/pause.png"));
+            playPauseBtn->setIcon(QIcon(":/icons/pause.png"));
         }
     }
     else {// Start slideshow
         timer->start(3000);
-        playPauseBtn->setIcon(QIcon(":/images/pause.png"));
+        playPauseBtn->setIcon(QIcon(":/icons/pause.png"));
     }
 }
 
@@ -1201,7 +1201,7 @@ int main(int argc, char *argv[])
         win->openImage(path);
     }
     else {
-        QImage img = QImage(":/images/photoquick.jpg");
+        QImage img = QImage(":/photoquick.jpg");
         win->canvas->setImage(img);
         win->adjustWindowSize();
     }

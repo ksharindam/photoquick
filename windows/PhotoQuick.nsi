@@ -23,7 +23,7 @@ SetCompressor lzma
 
 ; MUI Settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "..\src\images\photoquick.ico"
+!define MUI_ICON "..\data\photoquick.ico"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 
 ; MUI pages

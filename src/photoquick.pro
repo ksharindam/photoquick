@@ -22,7 +22,7 @@ SOURCES += $$files(*.cpp)
 
 FORMS += $$files(*.ui)
 
-RESOURCES += resources.qrc
+RESOURCES += ../data/resources.qrc
 
 # install
 unix {

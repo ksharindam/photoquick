@@ -1,0 +1,36 @@
+<RCC>
+  <qresource>
+    <file>photoquick.jpg</file>
+    <file>icons/photoquick.png</file>
+    <file>icons/image-copy.png</file>
+    <file>icons/fit-to-screen.png</file>
+    <file>icons/image-add.png</file>
+    <file>icons/image-remove.png</file>
+    <file>icons/drag.png</file>
+    <file>icons/addborder.png</file>
+    <file>icons/settings.png</file>
+    <file>icons/effects.png</file>
+    <file>icons/tools.png</file>
+    <file>icons/info.png</file>
+    <file>icons/undo.png</file>
+    <file>icons/redo.png</file>
+    <file>icons/prev.png</file>
+    <file>icons/next.png</file>
+    <file>icons/play.png</file>
+    <file>icons/pause.png</file>
+    <file>icons/quit.png</file>
+    <file>icons/crop.png</file>
+    <file>icons/transform.png</file>
+    <file>icons/creategrid.png</file>
+    <file>icons/save.png</file>
+    <file>icons/zoomin.png</file>
+    <file>icons/zoomout.png</file>
+    <file>icons/originalsize.png</file>
+    <file>icons/resize.png</file>
+    <file>icons/rotateleft.png</file>
+    <file>icons/rotateright.png</file>
+    <file>icons/cursor-cross.png</file>
+    <file>icons/eraser.png</file>
+    <file>icons/scissor.png</file>
+  </qresource>
+</RCC>

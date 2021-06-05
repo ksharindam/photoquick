@@ -20,8 +20,8 @@
    <string>PhotoQuick</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources.qrc">
-    <normaloff>:/images/image.png</normaloff>:/images/image.png</iconset>
+   <iconset resource="../data/resources.qrc">
+    <normaloff>:/icons/photoquick.png</normaloff>:/icons/photoquick.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
@@ -55,8 +55,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/save.png</normaloff>:/images/save.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/save.png</normaloff>:/icons/save.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -78,8 +78,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/resize.png</normaloff>:/images/resize.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/resize.png</normaloff>:/icons/resize.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -98,8 +98,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/crop.png</normaloff>:/images/crop.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/crop.png</normaloff>:/icons/crop.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -118,8 +118,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/transform.png</normaloff>:/images/transform.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/transform.png</normaloff>:/icons/transform.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -141,8 +141,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/creategrid.png</normaloff>:/images/creategrid.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/creategrid.png</normaloff>:/icons/creategrid.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -164,8 +164,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/tools.png</normaloff>:/images/tools.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/tools.png</normaloff>:/icons/tools.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -184,8 +184,8 @@
           <string>Filters</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/effects.png</normaloff>:/images/effects.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/effects.png</normaloff>:/icons/effects.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -204,8 +204,8 @@
           <string>Info</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/info.png</normaloff>:/images/info.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/info.png</normaloff>:/icons/info.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -241,8 +241,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/quit.png</normaloff>:/images/quit.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/quit.png</normaloff>:/icons/quit.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -300,8 +300,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/prev.png</normaloff>:/images/prev.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/prev.png</normaloff>:/icons/prev.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -324,8 +324,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/next.png</normaloff>:/images/next.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/next.png</normaloff>:/icons/next.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -348,8 +348,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/zoomin.png</normaloff>:/images/zoomin.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/zoomin.png</normaloff>:/icons/zoomin.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -372,8 +372,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/zoomout.png</normaloff>:/images/zoomout.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/zoomout.png</normaloff>:/icons/zoomout.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -396,8 +396,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/originalsize.png</normaloff>:/images/originalsize.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/originalsize.png</normaloff>:/icons/originalsize.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -419,8 +419,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/rotateleft.png</normaloff>:/images/rotateleft.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/rotateleft.png</normaloff>:/icons/rotateleft.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -439,8 +439,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/rotateright.png</normaloff>:/images/rotateright.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/rotateright.png</normaloff>:/icons/rotateright.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -473,8 +473,8 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
+          <iconset resource="../data/resources.qrc">
+           <normaloff>:/icons/play.png</normaloff>:/icons/play.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -495,7 +495,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../data/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PhotoQuick
+Icon=photoquick
+Exec=photoquick %f
+Categories=Graphics;
+StartupNotify=false
+Terminal=false
