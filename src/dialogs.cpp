@@ -11,9 +11,9 @@
 QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
 {
     setWindowTitle("Set Compression");
-	timer = new QTimer(this);
-	timer->setSingleShot(true);
-	timer->setInterval(800);
+    timer = new QTimer(this);
+    timer->setSingleShot(true);
+    timer->setInterval(800);
     QLabel *qualityLabel = new QLabel("Compression Level :", this);
     qualitySpin = new QSpinBox(this);
     qualitySpin->setAlignment(Qt::AlignHCenter);
@@ -56,9 +56,9 @@ QualityDialog:: toggleCheckSize(bool checked)
 void
 QualityDialog:: checkFileSize()
 {
-	int filesize = getJpgFileSize(image, qualitySpin->value());
-	QString text = "Size : %1 KB";
-	sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
+    int filesize = getJpgFileSize(image, qualitySpin->value());
+    QString text = "Size : %1 KB";
+    sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
 }
 
 
@@ -119,9 +119,9 @@ PreviewDialog:: PreviewDialog(QLabel *canvas, QImage img, float scale) : QDialog
 {
     this->image = img;
     this->scale = scale;
-	timer = new QTimer(this);
-	timer->setSingleShot(true);
-	timer->setInterval(800);
+    timer = new QTimer(this);
+    timer->setSingleShot(true);
+    timer->setInterval(800);
     connect(timer, SIGNAL(timeout()), this, SLOT(run()));
     connect(this, SIGNAL(previewRequested(const QPixmap&)), canvas, SLOT(setPixmap(const QPixmap&)));
 }

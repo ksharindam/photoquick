@@ -7,8 +7,8 @@
 class MaskedImage
 {
 public:
-	uchar **mask;
-	QImage image;
+    uchar **mask;
+    QImage image;
     int width, height;
     // member functions
     MaskedImage(QImage image);
@@ -33,13 +33,13 @@ int distanceMaskedImage(MaskedImage *source,int xs,int ys, MaskedImage *target,i
 class NNF
 {
 public:
-	// image
-	MaskedImage *input, *output;
-	//  patch radius
-	int S;
-	// Nearest-Neighbor Field 1 pixel = { target_x, target_y, distance_scaled }
-	int ***field;
-	int fieldW, fieldH;
+    // image
+    MaskedImage *input, *output;
+    //  patch radius
+    int S;
+    // Nearest-Neighbor Field 1 pixel = { target_x, target_y, distance_scaled }
+    int ***field;
+    int fieldW, fieldH;
     // functions
     NNF(MaskedImage *input, MaskedImage *output, int patchsize);
     ~NNF();
@@ -56,12 +56,12 @@ class Inpaint
 {
 public:
     // patch radius
-	int radius;
-	// Nearest-Neighbor Fields
-	NNF *nnf_TargetToSource;
-	NNF *nnf_SourceToTarget;
-	// Pyramid of downsampled initial images
-	QList<MaskedImage*> pyramid;
+    int radius;
+    // Nearest-Neighbor Fields
+    NNF *nnf_TargetToSource;
+    NNF *nnf_SourceToTarget;
+    // Pyramid of downsampled initial images
+    QList<MaskedImage*> pyramid;
 
     // functions
     Inpaint();

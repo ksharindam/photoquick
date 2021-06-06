@@ -20,18 +20,18 @@ static int initSim = 0;
 
 /*void initSimilarity()
 {
-	int i, length;
-	double t_halfmax=0.04, t, coef;
-	length = (DSCALE+1);
-	if (!initSim){
-		similarity = (double *) calloc(length, sizeof(double));
-		coef = -log(0.5)/pow(t_halfmax,2);
+    int i, length;
+    double t_halfmax=0.04, t, coef;
+    length = (DSCALE+1);
+    if (!initSim){
+        similarity = (double *) calloc(length, sizeof(double));
+        coef = -log(0.5)/pow(t_halfmax,2);
         for (i=0;i<length;i++) {
-			t = (double)i/length;
-			similarity[i] = exp(-(t*t)*coef);
-		}
-	}
-	initSim = 1;
+            t = (double)i/length;
+            similarity[i] = exp(-(t*t)*coef);
+        }
+    }
+    initSim = 1;
 }*/
 Inpaint:: Inpaint()
 {
@@ -40,16 +40,16 @@ Inpaint:: Inpaint()
         double base[11] = {1.0, 0.99, 0.96, 0.83, 0.38, 0.11, 0.02, 0.005, 0.0006, 0.0001, 0};
         int length = (DSCALE+1);
         for (int i=0 ; i<length ; ++i) {
-			double t = (double)i/length;
-			int j = (int)(100*t);
-			int k = j+1;
-			double vj = (j<11)?base[j]:0;
-			double vk = (k<11)?base[k]:0;
-			similarity[i] = vj + (100*t-j)*(vk-vj);
-		}
+            double t = (double)i/length;
+            int j = (int)(100*t);
+            int k = j+1;
+            double vj = (j<11)?base[j]:0;
+            double vk = (k<11)?base[k]:0;
+            similarity[i] = vj + (100*t-j)*(vk-vj);
+        }
         initSim = 1;
         srand((unsigned)time(0));
-	}
+    }
 }
 
 
@@ -256,7 +256,7 @@ Inpaint:: ExpectationStep(NNF* nnf, int sourceToTarget, double** vote, MaskedIma
 
                     // get corresponding pixel in output patch
                     if (sourceToTarget)
-                    { xs=x+dx; ys=y+dy;	xt=xp+dx; yt=yp+dy;}
+                    { xs=x+dx; ys=y+dy; xt=xp+dx; yt=yp+dy;}
                     else
                     { xs=xp+dx; ys=yp+dy; xt=x+dx; yt=y+dy; }
 
@@ -321,13 +321,13 @@ void MaximizationStep(MaskedImage* target, double** vote)
 */
 NNF:: NNF(MaskedImage* input, MaskedImage* output, int patchsize)
 {
-	this->input = input;
-	this->output= output;
-	this->S = patchsize;
+    this->input = input;
+    this->output= output;
+    this->S = patchsize;
     fieldW = input->width;
     fieldH = input->height;
     // allocate field
-	field = (int***) malloc(fieldH * sizeof(int**));
+    field = (int***) malloc(fieldH * sizeof(int**));
 
     for (int i=0 ; i < fieldH ; i++ ) {
         field[i] = (int**) malloc(fieldW * sizeof(int*));
@@ -343,146 +343,146 @@ NNF:: randomize()
 {
     for (int i=0; i<input->height; ++i){
         for (int j=0; j<input->width; ++j){
-			field[i][j][0] = rand() % output->width +1;
-			field[i][j][1] = rand() % output->height +1;
-			field[i][j][2] = DSCALE;
-		}
-	}
-	initializeNNF();
+            field[i][j][0] = rand() % output->width +1;
+            field[i][j][1] = rand() % output->height +1;
+            field[i][j][2] = DSCALE;
+        }
+    }
+    initializeNNF();
 }
 
 // initialize field from an existing (possibily smaller) NNF
 void
 NNF:: initializeNNF(NNF* otherNnf)
 {
-	int fx, fy, x, y, xlow, ylow;
-	// field
-	fx = fieldW/otherNnf->fieldW;
-	fy = fieldH/otherNnf->fieldH;
+    int fx, fy, x, y, xlow, ylow;
+    // field
+    fx = fieldW/otherNnf->fieldW;
+    fy = fieldH/otherNnf->fieldH;
     for (y=0; y<fieldH; ++y) {
         for (x=0; x<fieldW; ++x) {
-			xlow = MIN(x/fx, otherNnf->input->width-1);
-			ylow = MIN(y/fy, otherNnf->input->height-1);
-			field[y][x][0] = otherNnf->field[ylow][xlow][0]*fx;
-			field[y][x][1] = otherNnf->field[ylow][xlow][1]*fy;
-			field[y][x][2] = DSCALE;
-		}
-	}
-	initializeNNF();
+            xlow = MIN(x/fx, otherNnf->input->width-1);
+            ylow = MIN(y/fy, otherNnf->input->height-1);
+            field[y][x][0] = otherNnf->field[ylow][xlow][0]*fx;
+            field[y][x][1] = otherNnf->field[ylow][xlow][1]*fy;
+            field[y][x][2] = DSCALE;
+        }
+    }
+    initializeNNF();
 }
 
 // compute initial value of the distance term
 void
 NNF:: initializeNNF()
 {
-	int iter=0, maxretry=20;
+    int iter=0, maxretry=20;
     for (int y=0;y<this->fieldH;++y) {
         for (int x=0;x<this->fieldW;++x) {
 
-			this->field[y][x][2] = this->distance(x,y,  this->field[y][x][0],this->field[y][x][1]);
-			// if the distance is INFINITY (all pixels masked ?), try to find a better link
-			iter=0;
+            this->field[y][x][2] = this->distance(x,y,  this->field[y][x][0],this->field[y][x][1]);
+            // if the distance is INFINITY (all pixels masked ?), try to find a better link
+            iter=0;
             while ( this->field[y][x][2] == DSCALE && iter<maxretry) {
-				this->field[y][x][0] = rand() % this->output->width +1;
-				this->field[y][x][1] = rand() % this->output->height +1;
-				this->field[y][x][2] = this->distance(x,y,  this->field[y][x][0],this->field[y][x][1]);
-				iter++;
-			}
-		}
-	}
+                this->field[y][x][0] = rand() % this->output->width +1;
+                this->field[y][x][1] = rand() % this->output->height +1;
+                this->field[y][x][2] = this->distance(x,y,  this->field[y][x][0],this->field[y][x][1]);
+                iter++;
+            }
+        }
+    }
 }
 
 // multi-pass NN-field minimization (see "PatchMatch" - page 4)
 void
 NNF:: minimizeNNF(int pass)
 {
-	int min_x=0, min_y=0;
+    int min_x=0, min_y=0;
     int max_x=this->input->width-1;
     int max_y=this->input->height-1;
-	// multi-pass minimization
+    // multi-pass minimization
     for (int i=0;i<pass;i++) {
-		// scanline order
+        // scanline order
         for (int y=min_y;y<=max_y;++y)
             for (int x=min_x;x<max_x;++x)
                 if (this->field[y][x][2]>0)
                     minimizeLinkNNF(x,y,+1);
 
-		// reverse scanline order
+        // reverse scanline order
         for (int y=max_y;y>=min_y;y--)
             for (int x=max_x;x>=min_x;x--)
                 if (this->field[y][x][2]>0)
                     minimizeLinkNNF(x,y,-1);
-	}
+    }
 }
 
 // minimize a single link (see "PatchMatch" - page 4)
 void
 NNF:: minimizeLinkNNF(int x, int y, int dir)
 {
-	int xp,yp,dp,wi, xpi, ypi;
-	//Propagation Up/Down
-	if (y-dir>0 && y-dir<this->input->height) {
-		xp = this->field[y-dir][x][0];
-		yp = this->field[y-dir][x][1]+dir;
-		dp = distance(x,y, xp,yp);
-		if (dp<this->field[y][x][2]) {
-			this->field[y][x][0] = xp;
-			this->field[y][x][1] = yp;
-			this->field[y][x][2] = dp;
-		}
-	}
-	//Propagation Left/Right
-	if (x-dir>0 && x-dir<this->input->width) {
-		xp = this->field[y][x-dir][0]+dir;
-		yp = this->field[y][x-dir][1];
-		dp = distance(x,y, xp,yp);
-		if (dp<this->field[y][x][2]) {
-			this->field[y][x][0] = xp;
-			this->field[y][x][1] = yp;
-			this->field[y][x][2] = dp;
-		}
-	}
-	//Random search
-	wi=this->output->width;
-	xpi=this->field[y][x][0];
-	ypi=this->field[y][x][1];
-	int r=0;
+    int xp,yp,dp,wi, xpi, ypi;
+    //Propagation Up/Down
+    if (y-dir>0 && y-dir<this->input->height) {
+        xp = this->field[y-dir][x][0];
+        yp = this->field[y-dir][x][1]+dir;
+        dp = distance(x,y, xp,yp);
+        if (dp<this->field[y][x][2]) {
+            this->field[y][x][0] = xp;
+            this->field[y][x][1] = yp;
+            this->field[y][x][2] = dp;
+        }
+    }
+    //Propagation Left/Right
+    if (x-dir>0 && x-dir<this->input->width) {
+        xp = this->field[y][x-dir][0]+dir;
+        yp = this->field[y][x-dir][1];
+        dp = distance(x,y, xp,yp);
+        if (dp<this->field[y][x][2]) {
+            this->field[y][x][0] = xp;
+            this->field[y][x][1] = yp;
+            this->field[y][x][2] = dp;
+        }
+    }
+    //Random search
+    wi=this->output->width;
+    xpi=this->field[y][x][0];
+    ypi=this->field[y][x][1];
+    int r=0;
     while (wi>0) {
-		r=(rand() % (2*wi)) -wi;
-		xp = xpi + r;
-		r=(rand() % (2*wi)) -wi;
-		yp = ypi + r;
-		yp = MAX(0, MIN(this->output->height-1, yp ));
-		xp = MAX(0, MIN(this->output->width-1, xp ));
+        r=(rand() % (2*wi)) -wi;
+        xp = xpi + r;
+        r=(rand() % (2*wi)) -wi;
+        yp = ypi + r;
+        yp = MAX(0, MIN(this->output->height-1, yp ));
+        xp = MAX(0, MIN(this->output->width-1, xp ));
 
-		dp = distance(x,y, xp,yp);
-		if (dp<this->field[y][x][2]) {
-			this->field[y][x][0] = xp;
-			this->field[y][x][1] = yp;
-			this->field[y][x][2] = dp;
-		}
-		wi/=2;
-	}
+        dp = distance(x,y, xp,yp);
+        if (dp<this->field[y][x][2]) {
+            this->field[y][x][0] = xp;
+            this->field[y][x][1] = yp;
+            this->field[y][x][2] = dp;
+        }
+        wi/=2;
+    }
 }
 
 // compute distance between two patch
 int
 NNF:: distance(int x,int y, int xp,int yp)
 {
-	return distanceMaskedImage(this->input,x,y, this->output,xp,yp, this->S);
+    return distanceMaskedImage(this->input,x,y, this->output,xp,yp, this->S);
 }
 
 NNF:: ~NNF()
 {
-	if (field != NULL ){
-		for (int i=0 ; i < fieldH ; ++i ){
-			for (int j=0 ; j < fieldW ; ++j ){
-				free(field[i][j] );
-			}
-			free(field[i]);
-		}
-		free(field);
-	}
+    if (field != NULL ){
+        for (int i=0 ; i < fieldH ; ++i ){
+            for (int j=0 ; j < fieldW ; ++j ){
+                free(field[i][j] );
+            }
+            free(field[i]);
+        }
+        free(field);
+    }
 }
 
 
@@ -507,7 +507,7 @@ MaskedImage:: MaskedImage(int width, int height)
 {
     this->width = width;
     this->height = height;
-	this->image = QImage(width, height, QImage::Format_RGB888);
+    this->image = QImage(width, height, QImage::Format_RGB888);
     this->mask = allocMask(width, height);
 }
 
@@ -517,7 +517,7 @@ MaskedImage:: MaskedImage(QImage image)
     if (image.format() != QImage::Format_RGB888) {
         image = image.convertToFormat(QImage::Format_RGB888);
     }
-	this->image = image;
+    this->image = image;
     this->width = image.width();
     this->height = image.height();
     this->mask = allocMask(width, height);
@@ -556,7 +556,7 @@ MaskedImage:: ~MaskedImage()
 int
 MaskedImage:: getSample(int x, int y, int band)
 {
-	return ((uchar*)image.constScanLine(y))[x*3+band];
+    return ((uchar*)image.constScanLine(y))[x*3+band];
 }
 
 void
@@ -568,32 +568,32 @@ MaskedImage:: setSample(int x, int y, int band, int value)
 int
 MaskedImage:: isMasked(int x, int y)
 {
-	return this->mask[y][x];
+    return this->mask[y][x];
 }
 
 void
 MaskedImage:: setMask(int x, int y, int value) {
-	this->mask[y][x] = 0<value;
+    this->mask[y][x] = 0<value;
 }
 
 // return true if the patch contains one (or more) masked pixel
 int
 MaskedImage:: containsMasked(int x, int y, int S)
 {
-	int xs, ys;
+    int xs, ys;
     for (int dy=-S;dy<=S;dy++) {
         ys=y+dy;
         if (ys<0 || ys>=this->height)
             continue;
         for (int dx=-S;dx<=S;dx++) {
-			xs=x+dx;
+            xs=x+dx;
             if (xs<0 || xs>=this->width)
                 continue;
             if (this->mask[ys][xs])
                 return 1;
-		}
-	}
-	return 0;
+        }
+    }
+    return 0;
 }
 
 
@@ -611,146 +611,146 @@ MaskedImage:: copy()
 MaskedImage*
 MaskedImage:: downsample()
 {
-	int kernel[6] = {1,5,10,10,5,1};
-	int xk, yk, ky, k;
-	int r=0,g=0,b=0,m=0,ksum=0;
-	int H = height;
-	int W = width;
-	int newW=W/2, newH=H/2;
+    int kernel[6] = {1,5,10,10,5,1};
+    int xk, yk, ky, k;
+    int r=0,g=0,b=0,m=0,ksum=0;
+    int H = height;
+    int W = width;
+    int newW=W/2, newH=H/2;
 
-	MaskedImage* newimage = new MaskedImage(newW, newH);
+    MaskedImage* newimage = new MaskedImage(newW, newH);
     for (int y=0;y<H-1;y+=2) {
         for (int x=0;x<W-1;x+=2) {
-			r=0; g=0; b=0; m=0; ksum=0;
+            r=0; g=0; b=0; m=0; ksum=0;
 
             for (int dy=-2;dy<=3;++dy) {
-				yk=y+dy;
+                yk=y+dy;
                 if (yk<0 || yk>=H)
                     continue;
-				ky = kernel[2+dy];
+                ky = kernel[2+dy];
                 for (int dx=-2;dx<=3;++dx) {
-					xk = x+dx;
+                    xk = x+dx;
                     if (xk<0 || xk>=W)
                         continue;
 
                     if (this->mask[yk][xk])
                         continue;
 
-					k = kernel[2+dx]*ky;
-					r+= k*this->getSample(xk, yk, 0);
-					g+= k*this->getSample(xk, yk, 1);
-					b+= k*this->getSample(xk, yk, 2);
-					ksum+=k;
-					m++;
-				}
-			}
+                    k = kernel[2+dx]*ky;
+                    r+= k*this->getSample(xk, yk, 0);
+                    g+= k*this->getSample(xk, yk, 1);
+                    b+= k*this->getSample(xk, yk, 2);
+                    ksum+=k;
+                    m++;
+                }
+            }
             if (ksum>0) {
                 r/=ksum;
                 g/=ksum;
                 b/=ksum;
             }
 
-			if (m!=0) {
-				newimage->setSample(x/2, y/2, 0, r);
-				newimage->setSample(x/2, y/2, 1, g);
-				newimage->setSample(x/2, y/2, 2, b);
-				newimage->setMask(x/2, y/2, 0);
-			} else {
-				newimage->setMask(x/2, y/2, 1);
-			}
-		}
-	}
+            if (m!=0) {
+                newimage->setSample(x/2, y/2, 0, r);
+                newimage->setSample(x/2, y/2, 1, g);
+                newimage->setSample(x/2, y/2, 2, b);
+                newimage->setMask(x/2, y/2, 0);
+            } else {
+                newimage->setMask(x/2, y/2, 1);
+            }
+        }
+    }
 
-	return newimage;
+    return newimage;
 }
 
 // return an upscaled image
 MaskedImage*
 MaskedImage:: upscale(int newW,int newH)
 {
-	MaskedImage* newimage = new MaskedImage(newW, newH);
+    MaskedImage* newimage = new MaskedImage(newW, newH);
 
     for (int y=0;y<newH;y++) {
         int ys = (y*height)/newH;
         for (int x=0;x<newW;x++) {
-			// original pixel
-			int xs = (x*width)/newW;
+            // original pixel
+            int xs = (x*width)/newW;
 
-			// copy to new image
-			if (!this->mask[ys][xs]) {
-				newimage->setSample(x, y, 0, this->getSample(xs, ys, 0));
-				newimage->setSample(x, y, 1, this->getSample(xs, ys, 1));
-				newimage->setSample(x, y, 2, this->getSample(xs, ys, 2));
-				newimage->setMask(x, y, 0);
-			} else {
-				newimage->setMask(x, y, 1);
-			}
-		}
-	}
-	return newimage;
+            // copy to new image
+            if (!this->mask[ys][xs]) {
+                newimage->setSample(x, y, 0, this->getSample(xs, ys, 0));
+                newimage->setSample(x, y, 1, this->getSample(xs, ys, 1));
+                newimage->setSample(x, y, 2, this->getSample(xs, ys, 2));
+                newimage->setMask(x, y, 0);
+            } else {
+                newimage->setMask(x, y, 1);
+            }
+        }
+    }
+    return newimage;
 }
 
 // distance between two patches in two images
 int distanceMaskedImage(MaskedImage *source,int xs,int ys, MaskedImage *target,int xt,int yt, int S)
 {
-	long double distance=0;
-	long double wsum=0, ssdmax = 9*255*255;
-	int xks, yks;
-	int xkt, ykt;
-	long double ssd;
-	long res;
-	int s_value, t_value, s_gx, t_gx, s_gy, t_gy;
+    long double distance=0;
+    long double wsum=0, ssdmax = 9*255*255;
+    int xks, yks;
+    int xkt, ykt;
+    long double ssd;
+    long res;
+    int s_value, t_value, s_gx, t_gx, s_gy, t_gy;
 
-	// for each pixel in the source patch
+    // for each pixel in the source patch
     for (int dy=-S ; dy<=S ; ++dy ) {
         for (int dx=-S ; dx<=S ; ++dx ) {
 
-			xks = xs+dx;
-			yks = ys+dy;
-			xkt=xt+dx;
-			ykt=yt+dy;
-			wsum++;
+            xks = xs+dx;
+            yks = ys+dy;
+            xkt=xt+dx;
+            ykt=yt+dy;
+            wsum++;
 
-			if ( xks<1 || xks>=source->width-1 ) {distance++; continue;}
-			if ( yks<1 || yks>=source->height-1 ) {distance++; continue;}
+            if ( xks<1 || xks>=source->width-1 ) {distance++; continue;}
+            if ( yks<1 || yks>=source->height-1 ) {distance++; continue;}
 
-			// cannot use masked pixels as a valid source of information
-			if (source->isMasked(xks, yks)) {distance++; continue;}
+            // cannot use masked pixels as a valid source of information
+            if (source->isMasked(xks, yks)) {distance++; continue;}
 
-			// corresponding pixel in the target patch
-			if (xkt<1 || xkt>=target->width-1) {distance++; continue;}
-			if (ykt<1 || ykt>=target->height-1) {distance++; continue;}
+            // corresponding pixel in the target patch
+            if (xkt<1 || xkt>=target->width-1) {distance++; continue;}
+            if (ykt<1 || ykt>=target->height-1) {distance++; continue;}
 
-			// cannot use masked pixels as a valid source of information
-			if (target->isMasked(xkt, ykt)) {distance++; continue;}
+            // cannot use masked pixels as a valid source of information
+            if (target->isMasked(xkt, ykt)) {distance++; continue;}
 
-			ssd=0;
+            ssd=0;
             for (int band=0; band<3; ++band) {
-				// pixel values
-				s_value = source->getSample(xks, yks, band);
-				t_value = source->getSample(xkt, ykt, band);
+                // pixel values
+                s_value = source->getSample(xks, yks, band);
+                t_value = source->getSample(xkt, ykt, band);
 
-				// pixel horizontal gradients (Gx)
-				s_gx = 128+(source->getSample(xks+1, yks, band) - source->getSample(xks-1, yks, band))/2;
-				t_gx = 128+(target->getSample(xkt+1, ykt, band) - target->getSample(xkt-1, ykt, band))/2;
+                // pixel horizontal gradients (Gx)
+                s_gx = 128+(source->getSample(xks+1, yks, band) - source->getSample(xks-1, yks, band))/2;
+                t_gx = 128+(target->getSample(xkt+1, ykt, band) - target->getSample(xkt-1, ykt, band))/2;
 
-				// pixel vertical gradients (Gy)
-				s_gy = 128+(source->getSample(xks, yks+1, band) - source->getSample(xks, yks-1, band))/2;
-				t_gy = 128+(target->getSample(xkt, ykt+1, band) - target->getSample(xkt, ykt-1, band))/2;
+                // pixel vertical gradients (Gy)
+                s_gy = 128+(source->getSample(xks, yks+1, band) - source->getSample(xks, yks-1, band))/2;
+                t_gy = 128+(target->getSample(xkt, ykt+1, band) - target->getSample(xkt, ykt-1, band))/2;
 
-				ssd += pow((long double)s_value-t_value , 2); // distance between values in [0,255^2]
-				ssd += pow((long double)s_gx-t_gx , 2); // distance between Gx in [0,255^2]
-				ssd += pow((long double)s_gy-t_gy , 2); // distance between Gy in [0,255^2]
-			}
+                ssd += pow((long double)s_value-t_value , 2); // distance between values in [0,255^2]
+                ssd += pow((long double)s_gx-t_gx , 2); // distance between Gx in [0,255^2]
+                ssd += pow((long double)s_gy-t_gy , 2); // distance between Gy in [0,255^2]
+            }
 
-			// add pixel distance to global patch distance
-			distance += ssd/ssdmax;
-		}
-	}
+            // add pixel distance to global patch distance
+            distance += ssd/ssdmax;
+        }
+    }
 
-	res = (int)(DSCALE*distance/wsum);
-	if (res < 0 || res > DSCALE) return DSCALE;
-	return res;
+    res = (int)(DSCALE*distance/wsum);
+    if (res < 0 || res > DSCALE) return DSCALE;
+    return res;
 }
 
 
@@ -1056,8 +1056,8 @@ InpaintDialog:: inpaint()
     //input_img.save("input.png");
     //mask_img.save("mask.png");
     // apply inpaint function
-	Inpaint inp;
-	QImage output = inp.inpaint(input_img, mask_img, 2);
+    Inpaint inp;
+    QImage output = inp.inpaint(input_img, mask_img, 2);
     // add to undo stack
     redoStack.clear();
     redoBtn->setEnabled(false);

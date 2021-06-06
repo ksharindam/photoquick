@@ -1192,7 +1192,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("photoquick");
 #ifdef _WIN32
     // this is needed to load imageformat plugins
-	app.addLibraryPath(app.applicationDirPath());
+    app.addLibraryPath(app.applicationDirPath());
 #endif
     Window *win = new Window();
     win->show();
