@@ -9,6 +9,7 @@
 #include <QDesktopWidget>
 #include <QSettings>
 #include <QBuffer>
+#include <QMimeData>
 #include <QUrl>
 #include <cmath>
 

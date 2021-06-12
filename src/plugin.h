@@ -65,5 +65,6 @@ signals:
     virtual void sendNotification(QString title, QString message) = 0;
 };
 
+#define Plugin_iid "photoquick.Plugin/1.0"
 
-Q_DECLARE_INTERFACE(Plugin, "photoquick.Plugin");
+Q_DECLARE_INTERFACE(Plugin, Plugin_iid);

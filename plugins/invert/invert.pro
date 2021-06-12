@@ -11,6 +11,8 @@ QMAKE_CXXFLAGS  = -std=c++11
 QMAKE_LFLAGS   += -s
 LIBS           +=
 
+QT += widgets
+
 MOC_DIR =     ../../build
 OBJECTS_DIR = ../../build
 

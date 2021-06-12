@@ -189,7 +189,7 @@ Window:: loadPlugins()
     QString app_dir_path = qApp->applicationDirPath();
     QStringList dirs = { app_dir_path };
     if (app_dir_path.endsWith("/src"))
-        dirs = { app_dir_path, app_dir_path+"/.." };
+        dirs << app_dir_path+"/..";
 #ifdef _WIN32
     QStringList filter = {"*.dll"};
 #else

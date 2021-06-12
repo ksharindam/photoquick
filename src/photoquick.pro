@@ -6,6 +6,7 @@ QMAKE_CXXFLAGS = -fopenmp -std=c++11
 QMAKE_LFLAGS += -s
 LIBS += -lgomp
 
+QT += widgets
 CONFIG -= debug_and_release debug
 
 # build dir
