@@ -25,6 +25,15 @@ void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h)
     }
 }
 
+float fitToSizeScale(float w, float h, float max_w, float max_h)
+{
+    if (max_w/max_h > w/h) {//e.g- when max -18:9, img- 16:9 fit top
+        return max_h/h;
+    }
+    else
+        return max_w/w;
+}
+
 // round off a float upto given decimal point
 float roundOff(float num, int dec)
 {

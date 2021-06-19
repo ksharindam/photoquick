@@ -7,20 +7,32 @@
 # Second is, theme is dirty in some systems. Because Trolltech.conf contains
 # theme settings and Qt searches Trolltech.conf in /etc/xdg and ~/.config
 
+check_dep()
+{
+  DEP=$1
+  if [ -z $(which $DEP) ] ; then
+    echo "Error : $DEP command not found"
+    exit 0
+  fi
+}
+
+check_dep appimagetool
+check_dep linuxdeploy
+check_dep gcc
 
 MULTIARCH=`gcc -dumpmachine`
 LIBDIR=lib/${MULTIARCH}
 
 mkdir -p AppDir/usr/bin
 mkdir -p AppDir/usr/share/applications
-mkdir -p AppDir/usr/share/icons
+mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
 mkdir -p AppDir/usr/share/metainfo
 
 cd AppDir
 
 # copy executable, icon and desktop file
 cp ../../src/photoquick usr/bin
-cp ../../data/photoquick.png usr/share/icons
+cp ../../data/photoquick.png usr/share/icons/hicolor/scalable/apps
 cp ../../data/photoquick.desktop usr/share/applications/com.ksharindam.photoquick.desktop
 cp ../com.ksharindam.photoquick.appdata.xml usr/share/metainfo
 

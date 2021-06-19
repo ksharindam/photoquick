@@ -23,8 +23,10 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
  * White Balance  
  * Reduce Noise  
 
-
-This image viewer is tested on Raspberry Pi (Raspbian).  
+### Download
+Download the precompiled packages from [releases page](https://github.com/ksharindam/photoquick/releases).  
+For Windows download .exe package and install it.  
+For Linux download .AppImage package, mark it executable, and double click to run.  
 
 ### Build (Linux)
 Install dependencies...  
@@ -58,8 +60,6 @@ In src directory open Command Line.
 Run command...  
 `qmake`  
 `make -j4`  
-
-You can download the precompiled windows exe package in the [release page](https://github.com/ksharindam/photoquick/releases).  
 
 ### Plugins
 The plugins/ directory contains only sample plugins.  

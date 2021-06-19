@@ -97,6 +97,10 @@ Window:: Window()
     infoMenu->addAction("Image Info", this, SLOT(imageInfo()));
     infoBtn->setMenu(infoMenu);
 
+    QAction *escapeAction = new QAction(this);
+    escapeAction->setShortcut(QString("Esc"));
+    connect(escapeAction, SIGNAL(triggered()), this, SLOT(onEscPress()));
+    this->addAction(escapeAction);
     QAction *delAction = new QAction(this);
     delAction->setShortcut(QString("Delete"));
     connect(delAction, SIGNAL(triggered()), this, SLOT(deleteFile()));
@@ -120,11 +124,12 @@ Window:: Window()
     screen_width = desktop->availableGeometry().width();
     screen_height = desktop->availableGeometry().height();
     QSettings settings;
-    offset_x = settings.value("OffsetX", 4).toInt();
-    offset_y = settings.value("OffsetY", 26).toInt();
-    btnboxwidth = settings.value("BtnBoxWidth", 60).toInt();
-    data.max_window_w = screen_width - 2*offset_x;
-    data.max_window_h = screen_height - offset_y - offset_x;
+    btnboxes_w = settings.value("BtnBoxesWidth", 100).toInt();
+    statusbar_h = settings.value("StatusBarHeight", 28).toInt();
+    windowdecor_w = settings.value("WindowDecorWidth", 12).toInt();
+    windowdecor_h = settings.value("WindowDecorHeight", 36).toInt();
+    data.max_window_w = screen_width - windowdecor_w;
+    data.max_window_h = screen_height - windowdecor_h;
 
 
     menu_dict["File"] = fileMenu;
@@ -330,9 +335,9 @@ Window:: overwrite()
 void
 Window:: saveAs()
 {
-    QStringList formats = {"jpg", "jp2", "png", "webp", "tiff", "ico", "bmp", "ppm"};
+    QStringList formats = {"jpg", "jp2", "png", "webp", "tiff", "bmp", "ico", "xpm"};
     QStringList names = {"JPEG Image", "JPEG 2000", "PNG Image", "WebP Image",
-                "Tagged Image", "Windows Icon", "Windows Bitmap", "Portable Pixmap"};
+                "Tagged Image", "Windows Bitmap", "Windows Icon", "X Pixmap"};
     QStringList supported;
     for (QByteArray item : QImageWriter::supportedImageFormats())
         supported << QString(item);
@@ -677,8 +682,7 @@ void
 Window:: createPhotoGrid()
 {
     GridDialog *dialog = new GridDialog(data.image, this);
-    int dialog_h = screen_height - offset_y - offset_x;
-    dialog->resize(1020, dialog_h);
+    dialog->resize(1020, data.max_window_h);
     if (dialog->exec() == 1) {
         canvas->scale = fitToScreenScale(dialog->gridPaper->photo_grid);
         canvas->setImage(dialog->gridPaper->photo_grid);
@@ -690,8 +694,7 @@ void
 Window:: createPhotoCollage()
 {
     CollageDialog *dialog = new CollageDialog(this);
-    int dialog_h = screen_height - offset_y - offset_x;
-    dialog->resize(1050, dialog_h);
+    dialog->resize(1050, data.max_window_h);
     CollageItem *item = new CollageItem(data.image);
     dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {
@@ -705,8 +708,7 @@ void
 Window:: magicEraser()
 {
     InpaintDialog *dialog = new InpaintDialog(data.image, this);
-    int dialog_h = screen_height - offset_y - offset_x;
-    dialog->resize(1020, dialog_h);
+    dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
         canvas->setImage(dialog->image);
     }
@@ -716,8 +718,7 @@ void
 Window:: iScissor()
 {
     IScissorDialog *dialog = new IScissorDialog(data.image, this);
-    int dialog_h = screen_height - offset_y - offset_x;
-    dialog->resize(1020, dialog_h);
+    dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
         if (dialog->is_mask) {
             addMaskWidget();
@@ -1005,7 +1006,11 @@ Window:: playPause()
 {
     if (timer->isActive()) {       // Stop slideshow
         timer->stop();
-        playPauseBtn->setIcon(QIcon(":/icons/play.png"));
+        scrollAreaWidgetContents->setStyleSheet("background-color: rgb(234, 234, 234);");
+        showNormal();
+        frame->show();
+        frame_2->show();
+        statusbar->show();
         return;
     }
     if (canvas->animation) {
@@ -1020,39 +1025,56 @@ Window:: playPause()
     }
     else {// Start slideshow
         timer->start(3000);
-        playPauseBtn->setIcon(QIcon(":/icons/pause.png"));
+        scrollAreaWidgetContents->setStyleSheet("background-color: black;");
+        frame->hide();
+        frame_2->hide();
+        statusbar->hide();
+        showFullScreen();
+    }
+}
+
+
+void
+Window:: onEscPress()
+{
+    if (timer->isActive()){
+        playPause();
+    }
+    else {
+        close();
     }
 }
 
 float
 Window:: fitToWindowScale(QImage img)
 {
-    int img_w = img.width();
-    int img_h =  img.height();
-    int max_w = scrollArea->width();
-    int max_h = scrollArea->height()-15;    // 15 is to compensate increased statusbar
-    int out_w, out_h;
-    fitToSize(img_w, img_h, max_w, max_h, out_w, out_h);
-    float scale = img_w>img_h ? out_w/(float)img_w : out_h/(float)img_h;
+    int max_w = scrollArea->width() - 4;
+    int max_h = scrollArea->height() -4-11;// 11 is to compensate for statusbar with buttons
+    float scale = fitToSizeScale(img.width(), img.height(), max_w, max_h);
+    if (scale > 1.0)
+        scale = 1.0;
     return scale;
 }
 
+/* This is the most annoying part. We can not decide buttonbox size,
+ statusbar size etc before window is shown (i.e when program is launched).
+ So, we have to save those sizes when window is closed, and use prev saved value.
+ Image size must be 4px less than scollArea size.
+*/
 float
 Window:: fitToScreenScale(QImage img)
 {
-    float scale;
-    int img_width = img.width();
-    int img_height = img.height();
-    int max_width = screen_width - (2*btnboxwidth + 2*offset_x);
-    int max_height = screen_height - (offset_y + offset_x + 4+33); // 33 for statusbar with buttons
-    if ((img_width > max_width) || (img_height > max_height)) {
-        if (float(max_width)/max_height > float(img_width)/img_height) {
-            scale = float(max_height)/img_height;
-        }
-        else
-            scale = float(max_width)/img_width;
+    int max_w, max_h;
+    if (isFullScreen()) {
+        max_w = QApplication::desktop()->screenGeometry().width() - 4;
+        max_h = QApplication::desktop()->screenGeometry().height() - 4;
     }
-    else
+    else {
+        max_w = screen_width - (windowdecor_w + btnboxes_w) - 4;
+        max_h = screen_height - (windowdecor_h + statusbar_h+11) - 4;
+    }
+    float scale = fitToSizeScale(img.width(), img.height(), max_w, max_h);
+    if (scale > 1.0)
         scale = 1.0;
     return scale;
 }
@@ -1060,18 +1082,19 @@ Window:: fitToScreenScale(QImage img)
 void
 Window:: adjustWindowSize(bool animation)
 {
-    if (isMaximized()) return;
+    if (isMaximized() or isFullScreen()) return;// trying to resize window causes canvas flickering
+
     if (animation) {
-        waitFor(30);        // Wait little to let Label resize and get correct width height
-        resize(canvas->width() + 2*btnboxwidth + 4,
-               canvas->height() + 4+32);
+        waitFor(30);// Wait little to let Label resize and get correct width height
+        resize(canvas->width() + btnboxes_w + 4,
+               canvas->height() + statusbar_h + 4);
     }
     else {
-        resize(canvas->pixmap()->width() + 2*btnboxwidth + 4,
-               canvas->pixmap()->height() + 4+33);
+        resize(canvas->pixmap()->width() + btnboxes_w + 4,
+               canvas->pixmap()->height() + statusbar_h + 15);
     }
-    move((screen_width - (width() + 2*offset_x) )/2,
-              (screen_height - (height() + offset_x + offset_y))/2 );
+    move((screen_width - (width() + windowdecor_w) )/2,
+        (screen_height - (height() + windowdecor_h))/2 );
 }
 
 void
@@ -1138,9 +1161,10 @@ void
 Window:: closeEvent(QCloseEvent *ev)
 {
     QSettings settings;
-    settings.setValue("OffsetX", geometry().x()-x());
-    settings.setValue("OffsetY", geometry().y()-y());
-    settings.setValue("BtnBoxWidth", frame->width());
+    settings.setValue("BtnBoxesWidth", width() - scrollArea->width());
+    settings.setValue("StatusBarHeight", height() - scrollArea->height());
+    settings.setValue("WindowDecorWidth", frameGeometry().width() - width());
+    settings.setValue("WindowDecorHeight", frameGeometry().height() - height());
     QMainWindow::closeEvent(ev);
 }
 

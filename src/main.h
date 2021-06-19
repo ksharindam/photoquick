@@ -22,7 +22,8 @@ public:
     //Variables declaration
     Canvas *canvas;
     ImageData data;
-    int screen_width, screen_height, offset_x, offset_y, btnboxwidth;
+    int screen_width, screen_height;
+    int btnboxes_w, statusbar_h, windowdecor_w, windowdecor_h;
     QTimer *timer;      // Slideshow timer
     QMap<QString, QMenu*> menu_dict;
 private:
@@ -88,6 +89,7 @@ public slots:
     void showNotification(QString title, QString message);
     void onEditingFinished();
     void updateStatus();
+    void onEscPress();
 };
 
 QString getNextFileName(QString current);

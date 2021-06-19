@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.4.2"
+#define PROG_VERSION    "4.5.1"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -38,6 +38,9 @@ inline const T& clamp( const T& v, const T& lo, const T& hi )
 
 // fit inside the max size if larger than the size
 void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h);
+
+// returns the scale of obj when fit inside max_w and max_h
+float fitToSizeScale(float w, float h, float max_w, float max_h);
 
 // round off a float upto given decimal point
 float roundOff(float num, int dec);
