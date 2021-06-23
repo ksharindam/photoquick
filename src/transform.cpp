@@ -3,6 +3,7 @@ This file is a part of photoquick program, which is GPLv3 licensed
 */
 #include "transform.h"
 #include "common.h"
+#include "filters.h"
 #include <QSettings>
 #include <QPainter>
 #include <QPushButton>
@@ -331,14 +332,20 @@ PerspectiveTransform(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
     p3 = btmleft = QPoint(0, pixmap.height()-1);
     p4 = btmright = QPoint(pixmap.width()-1, pixmap.height()-1);
     // add buttons
-    QPushButton *cropnowBtn = new QPushButton("Crop Now", statusbar);
-    statusbar->addPermanentWidget(cropnowBtn);
-    QPushButton *cropcancelBtn = new QPushButton("Cancel", statusbar);
-    statusbar->addPermanentWidget(cropcancelBtn);
-    connect(cropnowBtn, SIGNAL(clicked()), this, SLOT(transform()));
-    connect(cropcancelBtn, SIGNAL(clicked()), this, SLOT(finish()));
-    crop_widgets << cropnowBtn << cropcancelBtn;
-    statusbar->showMessage("Drag corners to fit edges around tilted image/document");
+    cropCheckBox = new QCheckBox("Crop", statusbar);
+    statusbar->addPermanentWidget(cropCheckBox);
+    QPushButton *untiltBtn = new QPushButton("Untilt", statusbar);
+    statusbar->addPermanentWidget(untiltBtn);
+    QPushButton *cancelBtn = new QPushButton("Cancel", statusbar);
+    statusbar->addPermanentWidget(cancelBtn);
+    connect(untiltBtn, SIGNAL(clicked()), this, SLOT(transform()));
+    connect(cancelBtn, SIGNAL(clicked()), this, SLOT(finish()));
+    crop_widgets << cropCheckBox << untiltBtn << cancelBtn;
+    QSettings settings;
+    bool crop_on_untilt = settings.value("UntiltCrop", true).toBool();
+    cropCheckBox->setChecked(crop_on_untilt);
+
+    statusbar->showMessage("Drag corners to fit edges around tilted image");
     drawCropBox();
 }
 
@@ -436,8 +443,12 @@ PerspectiveTransform:: transform()
     p2 = QPoint(p2.x()/scaleX, p2.y()/scaleY);
     p3 = QPoint(p3.x()/scaleX, p3.y()/scaleY);
     p4 = QPoint(p4.x()/scaleX, p4.y()/scaleY);
-    int max_w = MAX(p2.x()-p1.x(), p4.x()-p3.x());
-    int max_h = MAX(p3.y()-p1.y(), p4.y()-p2.y());
+    int w1 = sqrt(SQR(p2.x()-p1.x()) + SQR(p2.y()-p1.y()));
+    int w2 = sqrt(SQR(p4.x()-p3.x()) + SQR(p4.y()-p3.y()));
+    int h1 = sqrt(SQR(p3.x()-p1.x()) + SQR(p3.y()-p1.y()));
+    int h2 = sqrt(SQR(p4.x()-p2.x()) + SQR(p4.y()-p2.y()));
+    int max_w = MAX(w1, w2);
+    int max_h = MAX(h1, h2);
     QPolygonF mapFrom;
     mapFrom << p1<< p2<< p3<< p4;
     QPolygonF mapTo;
@@ -445,10 +456,22 @@ PerspectiveTransform:: transform()
     QTransform tfm;
     QTransform::quadToQuad(mapFrom, mapTo, tfm);
     QImage img = canvas->data->image.transformed(tfm, Qt::SmoothTransformation);
-    QTransform trueMtx = QImage::trueMatrix(tfm,canvas->data->image.width(),canvas->data->image.height());
-    topleft = trueMtx.map(p1);
-    btmright = trueMtx.map(p4);
-    canvas->data->image = img.copy(QRect(topleft, btmright));
+
+    if (cropCheckBox->isChecked()) {
+        QTransform trueMtx = QImage::trueMatrix(tfm,canvas->data->image.width(),canvas->data->image.height());
+        topleft = trueMtx.map(p1);
+        btmright = trueMtx.map(p4);
+        canvas->data->image = img.copy(QRect(topleft, btmright));
+    }
+    else {
+        QImage new_img(img.width(), img.height(), QImage::Format_RGB32);
+        new_img.fill(borderAverageForTransperant(img));
+        QPainter painter(&new_img);
+        painter.drawImage(0,0, img);
+        painter.end();
+        canvas->data->image = new_img;
+    }
+
     finish();
 }
 
@@ -457,6 +480,8 @@ PerspectiveTransform:: finish()
 {
     canvas->showScaled();
     canvas->drag_to_scroll = true;
+    QSettings settings;
+    settings.setValue("UntiltCrop", cropCheckBox->isChecked());
     // remove buttons
     while (not crop_widgets.isEmpty()) {
         QWidget *widget = crop_widgets.takeLast();

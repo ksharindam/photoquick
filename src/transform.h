@@ -73,6 +73,7 @@ private:
     QPoint topleft, topright, btmleft, btmright, clk_pos, p1,p2,p3,p4;
     int clk_area;
     float scaleX, scaleY;
+    QCheckBox *cropCheckBox;
     QList<QWidget *> crop_widgets;
     void drawCropBox();
 private slots:

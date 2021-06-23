@@ -56,3 +56,5 @@ void vignette(QImage &img);
 void pencilSketch(QImage &img);
 
 QImage expandBorder(QImage img, int width);
+
+QRgb borderAverageForTransperant(QImage &img);

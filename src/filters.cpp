@@ -13,7 +13,6 @@
     qDebug() << "Execution Time :" << elapse;
 
 #define PI 3.141593f
-#define SQR(x) ((x)*(x))
 
 // clamp an integer in 0-255 range
 inline int Clamp(int a)
@@ -268,6 +267,41 @@ QImage expandBorder(QImage img, int width)
     return dst;
 }
 
+// For images with transperant and opeque part, it calculates
+// border average of non transperant parts
+QRgb borderAverageForTransperant(QImage &img)
+{
+    QImage tmp = expandBorder(img, 1);
+    int w = img.width();
+    int h = img.height();
+
+    int sum_r=0, sum_g=0, sum_b=0, count=0;
+
+    for (int y=1; y<=h; y++)
+    {
+        QRgb *row = (QRgb*) tmp.constScanLine(y);
+        for (int x=1; x<=w; x++)
+        {
+            if (qAlpha(row[x])==255) {// pixel should be non transperant but has transperant neighbour
+                int sum_alpha = 0;
+                for (int i=-1; i<=1; i++) {
+                    for (int j=-1; j<=1; j++) {
+                        sum_alpha += qAlpha(((QRgb*)tmp.constScanLine(y+i))[x+j]);
+                    }
+                }
+                if (sum_alpha < 2295/* 255x9 */){// has transperant neighbour
+                    sum_r += qRed(row[x]);
+                    sum_g += qGreen(row[x]);
+                    sum_b += qBlue(row[x]);
+                    count++;
+                }
+            }
+        }
+    }
+    if (count==0)
+        return qRgb(255, 255, 255);
+    return qRgb(sum_r/count, sum_g/count, sum_b/count);
+}
 
 //********** --------- Gray Scale Image --------- ********** //
 void grayScale(QImage &img)
