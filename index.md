@@ -1,37 +1,97 @@
-## Welcome to GitHub Pages
+# PhotoQuick
+A simple handy image viewer and editor with some useful features (for Linux and Windows).  
 
-You can use the [editor on GitHub](https://github.com/ksharindam/photoquick/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+### Description
+This program is aimed at ease of use, quick opening, and doing most necessary features.  
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+ * Export to PDF  
+ * Auto Resize to file size  
+ * Crop in particular ratio  
+ * Rotate, mirror, perspective transform  
+ * Add Border  
+ * Create photo grid for printing  
+ * Magic Eraser (inpainting)  
+ * Intelligent Scissor  
+ * Filters  
+ * Scan Page  
+ * Auto Contrast  
+ * White Balance  
+ * Reduce Noise  
 
-### Markdown
+### Download
+Download the precompiled packages from [releases page](https://github.com/ksharindam/photoquick/releases).  
+For Windows download .exe package and install it.  
+For Linux download .AppImage package, mark it executable, and double click to run.  
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### Build (Linux)
+Install dependencies...  
+**Build dependencies ...**  
+ * libqt4-dev  
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+To build this program, extract the source code zip.  
+Open terminal and change directory to src/  
+Then run these commands to compile...  
+```
+qmake  
+make -j4  
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+To install run ...  
+`sudo make install`  
 
-### Jekyll Themes
+To uninstall, run ...  
+`sudo make uninstall`  
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ksharindam/photoquick/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+**Runtime Dependencies**  
+* libqtcore4  
+* libqtgui4  
+* libqt4-svg  (optional for svg support)  
+* libgomp1
 
-### Support or Contact
+### Build (Windows)
+Download Qt 4.8.7 and minGW32  
+Add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
+In src directory open Command Line.  
+Run command...  
+`qmake`  
+`make -j4`  
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+### Plugins
+The plugins/ directory contains only sample plugins.  
+**Build (Linux and Windows) :**  
+Open terminal or command line in project root directory.  
+Then run these commands to compile...  
+```
+cd plugins  
+qmake  
+make -j4  
+```  
+**Install (Linux) :**  
+`sudo make install`  
+
+Get more plugins from https://github.com/ImageProcessing-ElectronicPublications/photoquick-plugins  
+Also you can create your own plugins and use with it.  
+
+### Usage
+To run this program...  
+`photoquick`  
+
+To open image.jpg with it...  
+`photoquick image.jpg`  
+
+### Keyboard Shortcuts
+Reload Image : R  
+Delete Image : Delete  
+
+### Supported Image Formats
+All formats supported by Qt are supported in this program.  
+**Read :** JPG, PNG, GIF, SVG, TIFF, ICO, BMP, XPM, XBM, PPM, PBM, PGM  
+**Write :** JPG, PNG, TIFF, ICO, BMP, XPM, XBM, PPM  
+
+JPEG2000 and WebP formats are supported via image format plugins.  
+You can get these here...  
+https://github.com/ksharindam/qt4-imageformat-plugins  
+
+
+
+[edit page](https://github.com/ksharindam/photoquick/edit/gh-pages/index.md)  
