@@ -51,6 +51,7 @@ public slots:
     void createPhotoGrid();
     void createPhotoCollage();
     // tools
+    void maskTool();
     void magicEraser();
     void iScissor();
     void removeMaskWidget();

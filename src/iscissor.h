@@ -6,6 +6,29 @@
 #include <QPainter>
 #include <QTimer>
 #include <vector>
+/*
+How drawing works in Scissor :
+ first it scales image to create image_scaled,
+ when placing seeds, draws seed to seed permanent path on image_scaled and
+ when showing temporary seed to cursor path, it copies image_scaled and draws over it
+ finally it creates a temporary mask, floodfill it and make unmasked areas
+ in image transperant
+
+Mask mode :
+ when mouse is clicked inside loop, mask is generated, and image_scaled is
+ updated and shown to canvas.
+
+How drawing works in Eraser :
+ First brush is created, and that is scaled to make brush_scaled.
+ Image is scaled to make image_scaled (ARGB_Premultiplied).
+ When mouse is dragged, brush is drawn on image, and brush_scaled is drawn on image_scaled.
+ On mouse release, image_scaled is regenerated, and shown on canvas.
+
+Mask mode :
+ The brush is solid white brush which is drawn on mask.
+ Brush_scaled is a semi-transperant green brush, drawn on image_scaled
+ On mouse release image_scaled is generated from mask and image.
+*/
 
 class GradMap
 {
@@ -21,7 +44,7 @@ public:
 typedef enum {
     TOOL_ISCISSOR=1,
     TOOL_ERASER=2
-} ToolType;
+} ToolType;// matches the button id
 
 typedef enum {
     NO_SEED,
@@ -35,13 +58,23 @@ typedef enum {
     COLOR_OTHER
 } BgColorType;
 
+// IScissor dialog mode
+enum {
+    ERASER_MODE,
+    MASK_MODE
+};
+
 class IScissorDialog : public QDialog, public Ui_IScissorDialog
 {
     Q_OBJECT
 public:
+    IScissorDialog(QImage &img, int mode, QWidget *parent);
+
+    int mode;
+
     QImage image; // original unchanged image
+    QImage mask;
     QImage image_scaled;
-    bool is_mask; // if the image is converted to mask
     float scale;
     QPainter painter;
     PaintCanvas *canvas;
@@ -54,8 +87,8 @@ public:
     void scaleImage();
     void redraw();
 
-    // eraser related functions
-    QImage image_tmp;
+    // eraser related variables and functions
+    QImage backup_img;// a region of this is pushed to undoStack
     bool mouse_pressed = false;
     QPoint mouse_pos;
     int min_x, min_y, max_x, max_y;
@@ -69,6 +102,7 @@ public:
     void redo_Eraser();
     QList<HistoryItem> undoStack_Eraser; // maximum 10 steps undo
     QList<HistoryItem> redoStack_Eraser;
+
     // Scissor related variables and functions
     GradMap *grad_map = 0;
 
@@ -89,8 +123,8 @@ public:
     void checkPathClosed();
     void getMaskedImage(QPoint click_pos);
 
-    IScissorDialog(QImage &img, QWidget *parent);
     void keyPressEvent(QKeyEvent *ev);
+    void accept();
     void done(int);
 public slots:
     void undo();
@@ -104,8 +138,6 @@ public slots:
     void onMousePress(QPoint);
     void onMouseRelease(QPoint);
     void onMouseMove(QPoint);
-    void confirmAccept();
-    void useAsMask();
 };
 
 class BgColorDialog : public QDialog

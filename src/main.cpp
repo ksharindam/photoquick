@@ -89,6 +89,7 @@ Window:: Window()
     filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
+    toolsMenu->addAction("Mask Tool", this, SLOT(maskTool()));
     toolsMenu->addAction("Scissor && Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
     toolsBtn->setMenu(toolsMenu);
@@ -715,17 +716,23 @@ Window:: magicEraser()
 }
 
 void
-Window:: iScissor()
+Window:: maskTool()
 {
-    IScissorDialog *dialog = new IScissorDialog(data.image, this);
+    IScissorDialog *dialog = new IScissorDialog(data.image, MASK_MODE, this);
     dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
-        if (dialog->is_mask) {
-            addMaskWidget();
-            canvas->setMask( dialog->image );
-        }
-        else
-            canvas->setImage( dialog->image );
+        addMaskWidget();
+        canvas->setMask( dialog->mask );
+    }
+}
+
+void
+Window:: iScissor()
+{
+    IScissorDialog *dialog = new IScissorDialog(data.image, ERASER_MODE, this);
+    dialog->resize(1020, data.max_window_h);
+    if (dialog->exec()==QDialog::Accepted) {
+        canvas->setImage( dialog->image );
     }
 }
 

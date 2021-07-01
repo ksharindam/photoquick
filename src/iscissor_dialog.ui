@@ -314,7 +314,7 @@
          <item>
           <widget class="QLabel" name="eraserSizeLabel">
            <property name="text">
-            <string>Eraser Size : 48</string>
+            <string>Size : 48</string>
            </property>
           </widget>
          </item>
@@ -373,13 +373,6 @@
        <widget class="QPushButton" name="acceptBtn">
         <property name="text">
          <string>Accept</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="useAsMaskBtn">
-        <property name="text">
-         <string>Use as Mask</string>
         </property>
        </widget>
       </item>

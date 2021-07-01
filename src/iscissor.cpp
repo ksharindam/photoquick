@@ -30,7 +30,7 @@ void findOptimalPath(GradMap *grad_map, IntBuffer &dp_buff,
 std::vector<QPoint> plotShortPath(IntBuffer *dp_buff, int x1, int y1,
                     int target_x, int target_y);
 
-void floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor);
+void floodfill(QImage &img, QPoint pos, QRgb newColor);
 
 
 void updateImageArea(QImage &dst, QImage &src, int pos_x, int pos_y);
@@ -38,9 +38,11 @@ void updateImageArea(QImage &dst, QImage &src, int pos_x, int pos_y);
 
 // *********************** IScissor Dialog ************************
 
-IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
+IScissorDialog:: IScissorDialog(QImage &img, int mode, QWidget *parent) : QDialog(parent)
 {
     this->image = img;
+    this->mode = mode;
+
     timer = new QTimer(this);
     timer->setSingleShot(true);
     setupUi(this);
@@ -48,6 +50,7 @@ IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
     btnGrp->addButton(iScissorBtn, 1);
     btnGrp->addButton(eraserBtn, 2);
 
+    smoothEdgesBtn->setHidden(true);
     eraserSettingsWidget->setHidden(true);
 
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
@@ -58,8 +61,7 @@ IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
     undoBtn->setEnabled(false);
     redoBtn->setEnabled(false);
 
-    connect(acceptBtn, SIGNAL(clicked()), this, SLOT(confirmAccept()));
-    connect(useAsMaskBtn, SIGNAL(clicked()), this, SLOT(useAsMask()));
+    connect(acceptBtn, SIGNAL(clicked()), this, SLOT(accept()));
     connect(cancelBtn, SIGNAL(clicked()), this, SLOT(reject()));
     connect(undoBtn, SIGNAL(clicked()), this, SLOT(undo()));
     connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
@@ -81,6 +83,13 @@ IScissorDialog:: IScissorDialog(QImage &img, QWidget *parent) : QDialog(parent)
         img_w = roundf(scale*img.width());
     }
     zoomLabel->setText(QString("Zoom : %1x").arg(scale));
+
+    if (mode==MASK_MODE) {
+        setWindowTitle("Mask Tool");
+        eraserBtn->setToolTip("Brush");
+        mask = QImage(img.width(), img.height(), QImage::Format_RGB32);
+        mask.fill(Qt::black);
+    }
     onToolClick(1);//redraw
 }
 
@@ -135,8 +144,10 @@ IScissorDialog:: keyPressEvent(QKeyEvent *ev)
 }
 
 void
-IScissorDialog:: confirmAccept()
+IScissorDialog:: accept()
 {
+    if (mode!=ERASER_MODE)
+        return QDialog::accept();
     // set Background color
     BgColorDialog *dlg = new BgColorDialog(this);
     connect(dlg, SIGNAL(bgColorSelected(int,QRgb)), this, SLOT(setBgColor(int,QRgb)));
@@ -158,23 +169,7 @@ IScissorDialog:: confirmAccept()
 }
 
 void
-IScissorDialog:: useAsMask()
-{
-    int w = image.width();
-    int h = image.height();
-    for (int y=0; y<h; y++) {
-        QRgb *row = (QRgb*)image.scanLine(y);
-        for (int x=0; x<w; x++) {
-            int clr = 255 - qAlpha(row[x]);// use transperant areas as masked area
-            row[x] = qRgb(clr, clr, clr);
-        }
-    }
-    is_mask = true;
-    QDialog::accept();
-}
-
-void
-IScissorDialog:: done(int val)
+IScissorDialog:: done(int val)// gets called after accept() or reject()
 {
     if (grad_map)
         delete grad_map;
@@ -206,11 +201,32 @@ IScissorDialog:: scaleImage()
     if (scale == 1.0)
         image_scaled = image;
     else {
-        Qt::TransformationMode mode = scale<1.0? Qt::SmoothTransformation: Qt::FastTransformation;
+        Qt::TransformationMode tfm_mode = scale<1.0? Qt::SmoothTransformation: Qt::FastTransformation;
         image_scaled = image.scaled(scale*image.width(), scale*image.height(),
-                        Qt::IgnoreAspectRatio, mode);
+                        Qt::IgnoreAspectRatio, tfm_mode);
     }
-    // make it conversion to QPixmap and drawing faster
+    if (mode==MASK_MODE) {
+        // draw green mask over image_scaled
+        QImage mask_scaled = mask;
+        if (scale != 1.0)
+            mask_scaled = mask.scaled(image_scaled.width(), image_scaled.height());
+
+        #pragma omp parallel for
+        for (int y=0; y<image_scaled.height(); y++){
+            QRgb *row, *mask_row;
+            #pragma omp critical
+            { row = (QRgb*) image_scaled.scanLine(y);
+              mask_row = (QRgb*) mask_scaled.constScanLine(y); }
+            for (int x=0; x<image_scaled.width(); x++){
+                if (qRed(mask_row[x])>127){
+                    QRgb clr = row[x];
+                    int g = 127+0.5*qGreen(clr);
+                    row[x] = qRgba(0.5*qRed(clr), g, 0.5*qBlue(clr), qAlpha(clr));
+                }
+            }
+        }
+    }
+    // it makes drawing and conversion to QPixmap faster
     if (image.format()==QImage::Format_ARGB32)
         image_scaled = image_scaled.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 }
@@ -250,12 +266,17 @@ IScissorDialog:: onToolClick(int btn_id)
     // init currently selected button
     tool_type = btn_id;
     if (tool_type==TOOL_ISCISSOR) {
-        smoothEdgesBtn->show();
+        if (mode==ERASER_MODE)
+            smoothEdgesBtn->show();
         canvas->setCursor(QCursor(QPixmap(":/icons/cursor-cross.png")));
         statusbar->setText("Tip : Click to place seeds around object");
         seed_mode = NO_SEED;
     }
     else if (tool_type==TOOL_ERASER) {
+        if (mode==MASK_MODE)
+            statusbar->setText("Tip : Draw mask using this brush");
+        else
+            statusbar->setText("Tip : click and drag on image to erase");
         eraserSettingsWidget->show();
         eraserSizeSlider->setMaximum((image.width()/850+1)*100);
         eraserSizeSlider->setValue((image.width()/850+1)*48);
@@ -271,7 +292,7 @@ IScissorDialog:: onToolClick(int btn_id)
 void
 IScissorDialog:: setEraserSize(int val)
 {
-    eraserSizeLabel->setText(QString("Eraser Size : %1").arg(val));
+    eraserSizeLabel->setText(QString("Size : %1").arg(val));
     timer->start(400); // calls updateEraserSize
 }
 
@@ -279,7 +300,12 @@ void
 IScissorDialog:: updateEraserSize()
 {
     int w = eraserSizeSlider->value();
-    // create brush mask
+    // in mask mode we are simply using solid QPen, so QImage brush not needed
+    if (mode==MASK_MODE) {
+        canvas->setCursor(roundCursor(w*scale));
+        return;
+    }
+    // create brush mask (ERASER_MODE)
     brush = QImage(w, w, QImage::Format_RGB32);
     brush.fill(Qt::black);
     painter.begin(&brush);
@@ -327,28 +353,32 @@ IScissorDialog:: onMousePress_Eraser(QPoint pos)
 {
     min_x = max_x = pos.x();
     min_y = max_y = pos.y();
-    image_tmp = image.copy();
+    // should use 1bpp mask in mask_mode to reduce memory usage
+    backup_img = mode==MASK_MODE ? mask.copy() : image.copy();
 }
 
 void
 IScissorDialog:: onMouseRelease_Eraser(QPoint)
 {
     redraw();
-    min_x = MAX(min_x - brush.width()/2, 0);
-    min_y = MAX(min_y - brush.width()/2, 0);
-    max_x = MIN(max_x + brush.width()/2, image.width()-1);
-    max_y = MIN(max_y + brush.width()/2, image.height()-1);
+    int brush_w = eraserSizeSlider->value();// == brush.width() and mask pen width
+
+    min_x = MAX(min_x - brush_w/2, 0);
+    min_y = MAX(min_y - brush_w/2, 0);
+    max_x = MIN(max_x + brush_w/2, image.width()-1);// mask width and image width are same
+    max_y = MIN(max_y + brush_w/2, image.height()-1);
     int w = max_x - min_x + 1;
     int h = max_y - min_y + 1;
 
     redoStack_Eraser.clear();
     redoBtn->setEnabled(false);
-    HistoryItem undoItem = { min_x, min_y, image_tmp.copy(min_x, min_y, w, h) };
+    HistoryItem undoItem = { min_x, min_y, backup_img.copy(min_x, min_y, w, h) };
     undoStack_Eraser.append(undoItem);
+    backup_img = QImage();
+
     undoBtn->setEnabled(true);
     if (undoStack_Eraser.size()>10)
         undoStack_Eraser.removeFirst();
-    image_tmp = QImage();
 }
 
 void
@@ -356,8 +386,6 @@ IScissorDialog:: onMouseMove_Eraser(QPoint pos)
 {
     if (not mouse_pressed)
         return;
-    int x0 = mouse_pos.x();
-    int y0 = mouse_pos.y();
     int x = pos.x();
     int y = pos.y();
 
@@ -365,6 +393,26 @@ IScissorDialog:: onMouseMove_Eraser(QPoint pos)
     min_y = MIN(y, min_y);
     max_x = MAX(x, max_x);
     max_y = MAX(y, max_y);
+
+    if (mode==MASK_MODE) {
+        int w = eraserSizeSlider->value();
+        QPen pen(Qt::white, w, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        painter.begin(&mask);
+        painter.setPen(pen);
+        painter.drawLine(mouse_pos, pos);
+        painter.end();
+        pen.setColor(QColor(0,255,0, 127));
+        pen.setWidth(w*scale);
+        painter.begin(&image_scaled);
+        painter.setPen(pen);
+        painter.drawLine(mouse_pos*scale, pos*scale);
+        painter.end();
+        canvas->setImage(image_scaled);
+        return;
+    }
+    // ERASER_MODE
+    int x0 = mouse_pos.x();
+    int y0 = mouse_pos.y();
 
     float d = sqrtf((x-x0)*(x-x0) + (y-y0)*(y-y0));
 
@@ -445,11 +493,16 @@ IScissorDialog:: undo_Eraser()
 {
     if (undoStack_Eraser.isEmpty()) return;
     HistoryItem item = undoStack_Eraser.takeLast();
-    HistoryItem redoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    QImage redo_image = mode==MASK_MODE ? mask.copy(item.x,item.y,item.image.width(),item.image.height()) :
+            image.copy(item.x,item.y,item.image.width(),item.image.height());
+    HistoryItem redoItem = {item.x, item.y, redo_image};
     redoStack_Eraser.append(redoItem);
     redoBtn->setEnabled(true);
     undoBtn->setEnabled(not undoStack_Eraser.isEmpty());
-    updateImageArea(image, item.image, item.x, item.y);
+    if (mode==MASK_MODE)
+        updateImageArea(mask, item.image, item.x, item.y);
+    else
+        updateImageArea(image, item.image, item.x, item.y);
     redraw();
 }
 
@@ -458,11 +511,16 @@ IScissorDialog:: redo_Eraser()
 {
     if (redoStack_Eraser.isEmpty()) return;
     HistoryItem item = redoStack_Eraser.takeLast();
-    HistoryItem undoItem = {item.x, item.y, image.copy(item.x,item.y,item.image.width(),item.image.height())};
+    QImage undo_image = mode==MASK_MODE ? mask.copy(item.x,item.y,item.image.width(),item.image.height()) :
+            image.copy(item.x,item.y,item.image.width(),item.image.height());
+    HistoryItem undoItem = {item.x, item.y, undo_image};
     undoStack_Eraser.append(undoItem);
     undoBtn->setEnabled(true);
     redoBtn->setEnabled(not redoStack_Eraser.isEmpty());
-    updateImageArea(image, item.image, item.x, item.y);
+    if (mode==MASK_MODE)
+        updateImageArea(mask, item.image, item.x, item.y);
+    else
+        updateImageArea(image, item.image, item.x, item.y);
     redraw();
 }
 
@@ -502,7 +560,7 @@ IScissorDialog:: onMousePress_iScissor(QPoint pos)
         fullPath.clear();
         redraw();
         undoBtn->setEnabled(false);
-        statusbar->setText("Tip : Click accept or place more seeds and cut again");
+        statusbar->setText("Tip : click Accept or place more seeds and do again");
         seed_mode = NO_SEED;
     }
 }
@@ -684,34 +742,43 @@ IScissorDialog:: getMaskedImage(QPoint clicked)
 {
     QRgb white = qRgb(255,255,255);
     QRgb black = qRgb(0,0,0);
-    QImage mask(image.width(), image.height(), QImage::Format_ARGB32);
-    mask.fill(white);
-    for (auto points : fullPath) {
-        for (QPoint pt : points) {
-            mask.setPixel(pt, black);
-        }
+
+    if (mode==ERASER_MODE) {
+        mask = QImage(image.width(), image.height(), QImage::Format_ARGB32);
+        mask.fill(black);
     }
-    //mask.save("mask.png");
-    floodfill(mask, clicked, white, black);
     for (auto points : fullPath) {
         for (QPoint pt : points) {
             mask.setPixel(pt, white);
         }
     }
+    //mask.save("mask.png");
+    floodfill(mask, clicked, white);
+    for (auto points : fullPath) {
+        for (QPoint pt : points) {
+            mask.setPixel(pt, black);
+        }
+    }
+    if (mode != ERASER_MODE)
+        return;
     if (smoothEdgesBtn->isChecked())
         gaussianBlur(mask, 3);
+
     if (image.format() != QImage::Format_ARGB32)
         image = image.convertToFormat(QImage::Format_ARGB32);
+
     for (int y=0; y<image.height(); y++){
         QRgb *row = (QRgb*)image.scanLine(y);
         QRgb *mask_row = (QRgb*)mask.constScanLine(y);
         for (int x=0; x<image.width(); x++){
             int clr = row[x];
-            int alpha = qAlpha(clr) - qRed(mask_row[x]);
+            // black regions of mask are made transperant in image
+            int alpha = qAlpha(clr) - (255-qRed(mask_row[x]));
             if (alpha<0) alpha = 0;
             row[x] = qRgba(qRed(clr), qGreen(clr), qBlue(clr), alpha);
         }
     }
+    mask = QImage();// clear memory in eraser mode
 }
 
 
@@ -987,9 +1054,12 @@ IntBuffer:: ~IntBuffer()
 /* Stack Based Scanline Floodfill
    Source : http://lodev.org/cgtutor/floodfill.html#Scanline_Floodfill_Algorithm_With_Stack
 */
-void
-floodfill(QImage &img, QPoint pos, QRgb oldColor, QRgb newColor)
+void floodfill(QImage &img, QPoint pos, QRgb newColor)
 {
+    QRgb oldColor = img.pixel(pos);
+    if (oldColor==newColor)
+        return;
+
     int x = pos.x();
     int y = pos.y();
     int w = img.width();
