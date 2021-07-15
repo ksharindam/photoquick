@@ -1,13 +1,13 @@
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "PhotoQuick"
-!define PRODUCT_VERSION "4.4.2"
+!define PRODUCT_VERSION "4.5.4"
 !define PRODUCT_PUBLISHER "Arindamsoft Co."
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\photoquick.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "${PRODUCT_NAME} ${PRODUCT_VERSION}.exe"
+OutFile "${PRODUCT_NAME}-${PRODUCT_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -65,7 +65,7 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\photoquick.exe"
   ; Install icon and shortcut
-  File "..\src\images\photoquick.ico"
+  File "..\data\photoquick.ico"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}.lnk" "$INSTDIR\photoquick.exe" "" "$INSTDIR\photoquick.ico"
   CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\photoquick.exe" "" "$INSTDIR\photoquick.ico"
   ; Update environment variable

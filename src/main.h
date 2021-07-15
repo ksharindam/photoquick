@@ -74,6 +74,7 @@ public slots:
     void lensDistort();
     // info menu
     void imageInfo();
+    void checkForUpdate();
     void showAbout();
     // file and view options
     void openPrevImage();

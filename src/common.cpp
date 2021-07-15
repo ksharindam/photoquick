@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <cmath>
 
+
 // resize to fit if W and H is larger than max_w and max_h keeping aspect ratio
 void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h)
 {
@@ -96,8 +97,9 @@ int getJpgFileSize(QImage image, int quality)
 }
 
 
-Notifier:: Notifier(QObject *parent): QSystemTrayIcon(QIcon(":/icons/photoquick.png"), parent)
+Notifier:: Notifier(QObject *parent)
 {
+    QSystemTrayIcon(QIcon(":/icons/photoquick.png"), parent);
 }
 
 void

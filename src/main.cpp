@@ -39,6 +39,9 @@
 #include <QBuffer>
 #include <cmath>
 #include <QImageWriter>
+#include <QDesktopServices>
+#include <QUrl>
+
 
 Window:: Window()
 {
@@ -241,6 +244,7 @@ Window:: loadPlugins()
             }
         }
     }
+    menu_dict["Info"]->addAction("Check for Update", this, SLOT(checkForUpdate()));
     menu_dict["Info"]->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
 
@@ -1165,6 +1169,12 @@ Window:: disableButtons(ButtonType type, bool disable)
 }
 
 void
+Window:: checkForUpdate()
+{
+    QDesktopServices::openUrl(QUrl(PROJ_RELEASE));
+}
+
+void
 Window:: closeEvent(QCloseEvent *ev)
 {
     QSettings settings;
@@ -1174,6 +1184,8 @@ Window:: closeEvent(QCloseEvent *ev)
     settings.setValue("WindowDecorHeight", frameGeometry().height() - height());
     QMainWindow::closeEvent(ev);
 }
+
+
 
 // other functions
 QString getNextFileName(QString current)

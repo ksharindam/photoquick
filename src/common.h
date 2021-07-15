@@ -4,10 +4,11 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.5.3"
+#define PROG_VERSION    "4.5.4"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
+#define PROJ_RELEASE    "https://github.com/ksharindam/photoquick/releases"
 
 
 #define MIN(a,b) ({ __typeof__ (a) _a = (a); \
