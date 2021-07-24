@@ -4,6 +4,7 @@
 *.a
 *.exe
 *.AppImage
+*.zsync
 
 # Auto-genereated files
 Makefile

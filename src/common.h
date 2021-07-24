@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.5.4"
+#define PROG_VERSION    "4.5.5"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -62,6 +62,9 @@ int getJpgFileSize(QImage img, int quality=-1);
 int getOrientation(FILE *f);
 // read some jpeg exif data as string
 int read_Exif(FILE *f, std::string &exif_str);
+
+// creates a FILE* from QString filename
+FILE* qfopen(QString filename, const char *mode);
 
 class Notifier : public QSystemTrayIcon
 {

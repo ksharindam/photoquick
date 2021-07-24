@@ -20,6 +20,7 @@ check_dep appimagetool
 check_dep linuxdeploy
 check_dep gcc
 
+ARCH=`dpkg --print-architecture`
 MULTIARCH=`gcc -dumpmachine`
 LIBDIR=lib/${MULTIARCH}
 
@@ -61,4 +62,4 @@ style=Cleanlooks
 EOF
 
 cd ..
-appimagetool AppDir
+appimagetool -u "zsync|https://github.com/ksharindam/photoquick/releases/latest/download/PhotoQuick-${ARCH}.AppImage.zsync" AppDir

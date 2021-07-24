@@ -8,6 +8,7 @@
 #include <QTransform>
 #include <QIcon>
 #include <cmath>
+#include <unistd.h> // dup()
 
 
 // resize to fit if W and H is larger than max_w and max_h keeping aspect ratio
@@ -64,8 +65,7 @@ QImage loadImage(QString fileName)
     else if (!img.hasAlphaChannel() and img.format()!=QImage::Format_RGB32)
         img = img.convertToFormat(QImage::Format_RGB32);
     // Get jpg orientation
-    char *filename = fileName.toUtf8().data();
-    FILE *f = fopen(filename, "rb");
+    FILE *f = qfopen(fileName, "rb");
     int orientation = getOrientation(f);
     fclose(f);
     // rotate if required
@@ -94,6 +94,24 @@ int getJpgFileSize(QImage image, int quality)
     bArray.clear();
     buffer.close();
     return filesize;
+}
+
+/* On linux we can simply do,
+    char *filename = fileName.toUtf8().data();
+    FILE *f = fopen(filename, "rb");
+   But on Windows, this fails to open unicode filenames.
+   The function below solves this issue.
+*/
+// Creates a FILE* from QString filename
+FILE* qfopen(QString filename, const char *mode)
+{
+    QFile qf(filename);
+    if (!qf.open(QIODevice::ReadOnly))
+        return NULL;
+    int fd = dup(qf.handle());
+    qf.close();
+    FILE *f = fdopen(fd, mode);
+    return f;
 }
 
 

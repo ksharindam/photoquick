@@ -571,7 +571,7 @@ Window:: imageInfo()
     str += QString("Height : %1\n").arg(data.image.height());
     std::string exif_str = str.toStdString();
 
-    FILE *f = fopen(data.filename.toUtf8().data(), "rb");
+    FILE *f = qfopen(data.filename, "rb");
     if (f) {
         if (!read_Exif(f, exif_str))
             exif_str += "\nNo Exif Data !";
@@ -1240,8 +1240,7 @@ int main(int argc, char *argv[])
     Window *win = new Window();
     win->show();
     if (argc > 1) {
-        QString path = QString::fromUtf8(argv[1]);
-        win->openImage(path);
+        win->openImage(app.arguments().at(1));
     }
     else {
         QImage img = QImage(":/photoquick.jpg");
