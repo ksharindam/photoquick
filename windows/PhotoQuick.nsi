@@ -1,17 +1,18 @@
 ; HM NIS Edit Wizard helper defines
-!define PRODUCT_NAME "PhotoQuick"
-!define PRODUCT_VERSION "4.5.4"
-!define PRODUCT_PUBLISHER "Arindamsoft Co."
-!define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\photoquick.exe"
-!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
-!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define PROG_NAME "PhotoQuick"
+!define PROG_VERSION "4.5.6"
+!define PROG_PUBLISHER "Arindamsoft"
+!define PROG_ICON "photoquick.ico"
+!define PROG_EXEC "photoquick.exe"
 
-Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "${PRODUCT_NAME}-${PRODUCT_VERSION}.exe"
-InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
+!define PRODUCT_DIR_REGKEY "Software\${PROG_NAME}"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROG_NAME}"
+
+Name "${PROG_NAME}"
+OutFile "${PROG_NAME}-${PROG_VERSION}.exe"
+InstallDir "$PROGRAMFILES\${PROG_NAME}"
+; Get previous install directory if already installed
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
-ShowInstDetails show
-ShowUnInstDetails show
 SetCompressor lzma
 
 ; Required Plugins
@@ -23,7 +24,7 @@ SetCompressor lzma
 
 ; MUI Settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "..\data\photoquick.ico"
+!define MUI_ICON "..\data\${PROG_ICON}"
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 
 ; MUI pages
@@ -31,7 +32,7 @@ SetCompressor lzma
 !insertmacro MUI_PAGE_LICENSE "..\LICENSE.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_RUN "$INSTDIR\photoquick.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${PROG_EXEC}"
 !insertmacro MUI_PAGE_FINISH
 
 ; Uninstaller pages
@@ -65,43 +66,39 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\photoquick.exe"
   ; Install icon and shortcut
-  File "..\data\photoquick.ico"
-  CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}.lnk" "$INSTDIR\photoquick.exe" "" "$INSTDIR\photoquick.ico"
-  CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\photoquick.exe" "" "$INSTDIR\photoquick.ico"
+  File "${MUI_ICON}"
+  CreateShortCut "$SMPROGRAMS\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
+  CreateShortCut "$DESKTOP\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
   ; Update environment variable
   ;${EnvVarUpdate} $0 "QT_PLUGIN_PATH" "A" "HKLM" "$INSTDIR"
   ; Associate File Types
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".jpg" "JPEG Image"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".jpeg" "JPEG Image"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".png" "PNG Image"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".gif" "GIF Image"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".svg" "SVG Image"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".ico" "Windows Icon"
-  ${registerExtension} "$INSTDIR\photoquick.exe" ".tiff" "TIFF Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpg" "JPEG Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpeg" "JPEG Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".png" "PNG Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".gif" "GIF Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".svg" "SVG Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".ico" "Windows Icon"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".tiff" "TIFF Image"
 SectionEnd
 
 Section -Post
   WriteUninstaller "$INSTDIR\uninst.exe"
-  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\photoquick.exe"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\photoquick.ico"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
-  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\${PROG_EXEC}"
+  WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayName" "$(^Name)"
+  WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\${PROG_ICON}"
+  WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PROG_VERSION}"
+  WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "Publisher" "${PROG_PUBLISHER}"
+  WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "UninstallString" "$INSTDIR\uninst.exe"
 SectionEnd
 
 
-Function un.onUninstSuccess
-  HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) was successfully removed from your computer."
-FunctionEnd
-
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Are you sure you want to completely remove $(^Name)?" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Do you really want to completely remove $(^Name)?" IDYES +2
   Abort
 FunctionEnd
 
 Section Uninstall
+  ; Must remove uninstaller first
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\photoquick.exe"
   Delete "$INSTDIR\imageformats\qjpeg4.dll"
@@ -116,9 +113,9 @@ Section Uninstall
   Delete "$INSTDIR\libgomp-1.dll"
   Delete "$INSTDIR\libgcc_s_dw2-1.dll"
 
-  Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
-  Delete "$SMPROGRAMS\${PRODUCT_NAME}.lnk"
-  Delete "$INSTDIR\photoquick.ico"
+  Delete "$DESKTOP\${PROG_NAME}.lnk"
+  Delete "$SMPROGRAMS\${PROG_NAME}.lnk"
+  Delete "$INSTDIR\${PROG_ICON}"
 
   RMDir "$INSTDIR\imageformats"
   RMDir "$INSTDIR"
@@ -131,8 +128,13 @@ Section Uninstall
   ${unregisterExtension} ".svg" "SVG Image"
   ${unregisterExtension} ".ico" "Windows Icon"
   ${unregisterExtension} ".tiff" "TIFF Image"
-  
-  DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
+
+  DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
   SetAutoClose true
 SectionEnd
+
+Function un.onUninstSuccess
+  HideWindow
+  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) was successfully removed from your computer."
+FunctionEnd

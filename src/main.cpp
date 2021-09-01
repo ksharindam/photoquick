@@ -809,8 +809,9 @@ void
 Window:: blur()
 {
     bool ok;
-    int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
-                                        1/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
+    int radius = max(max(data.image.width(), data.image.height())/160, 3);
+    radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
+                                        radius/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
     gaussianBlur(data.image, radius);
     //boxFilter(data.image, radius);
