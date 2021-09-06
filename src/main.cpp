@@ -589,10 +589,12 @@ Window:: showAbout()
     QString text =
         "<h1>%1</h1>"
         "Version : %2<br>"
-        "Qt Version : %3<br><br>"
+        "Qt : %3<br>"
+        "Plugin API : %4<br><br>"
         "A simple, handy and useful image viewer and editor with plugin support<br><br>"
-        "Copyright &copy; %4 %5 &lt;%6&gt;";
-    text = text.arg(PROG_NAME).arg(PROG_VERSION).arg(qVersion()).arg(COPYRIGHT_YEAR).arg(AUTHOR_NAME).arg(AUTHOR_EMAIL);
+        "Copyright &copy; %5 %6 &lt;%7&gt;";
+    text = text.arg(PROG_NAME).arg(PROG_VERSION).arg(qVersion()).arg(PLUGIN_API_VERSION).arg(
+                    COPYRIGHT_YEAR).arg(AUTHOR_NAME).arg(AUTHOR_EMAIL);
     QMessageBox::about(this, "About PhotoQuick", text);
 }
 
@@ -810,7 +812,7 @@ Window:: blur()
 {
     bool ok;
     int radius = max(max(data.image.width(), data.image.height())/160, 3);
-    radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
+    radius = QInputDialog::getInt(this, "Gaussian Blur", "Enter Blur Radius :",
                                         radius/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
     if (not ok) return;
     gaussianBlur(data.image, radius);
