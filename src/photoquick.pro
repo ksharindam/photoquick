@@ -25,6 +25,10 @@ FORMS += $$files(*.ui)
 
 RESOURCES += ../data/resources.qrc
 
+win32 {
+    RC_FILE += version_info.rc
+}
+
 # install
 unix {
     INSTALLS += target

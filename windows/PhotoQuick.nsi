@@ -8,6 +8,7 @@
 !define PRODUCT_DIR_REGKEY "Software\${PROG_NAME}"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROG_NAME}"
 
+
 Name "${PROG_NAME}"
 OutFile "${PROG_NAME}-${PROG_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${PROG_NAME}"
@@ -41,6 +42,14 @@ SetCompressor lzma
 !insertmacro MUI_LANGUAGE "English"
 ; MUI end ------
 
+; This shows version info in installer, VIFileVersion and VIProductVersion must be in x.x.x.x format
+VIProductVersion "${PROG_VERSION}.0"
+VIFileVersion "${PROG_VERSION}.0"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "PhotoQuick"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "PhotoQuick Image Viewer"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Arindamsoft Co."
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PROG_VERSION}.0"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <ksharindam@gmail.com>"
 
 
 !define BUILDDIR      "..\src"

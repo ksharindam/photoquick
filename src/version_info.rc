@@ -1,0 +1,32 @@
+#include <winver.h>
+
+#define PROG_VERSION "4.5.6"
+#define FILE_VERSION 4,5,6,0
+
+IDI_ICON1 ICON "../data/photoquick.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION FILE_VERSION
+PRODUCTVERSION FILE_VERSION
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE "CompanyName", "Arindamsoft Co."
+			VALUE "FileDescription", "PhotoQuick Image Viewer"
+			VALUE "FileVersion", PROG_VERSION
+			VALUE "LegalCopyright", "Arindam Chaudhuri <ksharindam@gmail.com>"
+			VALUE "OriginalFilename", "photoquick"
+			VALUE "ProductName", "PhotoQuick"
+			VALUE "ProductVersion", PROG_VERSION
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		/* 0X0409 = English US, 1200 = Unicode, (040904b0)*/
+		VALUE "Translation", 0x0409, 1200
+	END
+END
+/* End of Version info */
+
