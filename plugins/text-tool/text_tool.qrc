@@ -1,0 +1,5 @@
+<RCC>
+  <qresource>
+    <file alias="drag.png">../../data/icons/drag.png</file>
+  </qresource>
+</RCC>

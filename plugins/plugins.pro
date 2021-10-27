@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = invert
+SUBDIRS = invert text-tool
