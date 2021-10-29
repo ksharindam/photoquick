@@ -548,7 +548,10 @@ IScissorDialog:: onMousePress_iScissor(QPoint pos)
         checkPathClosed();
         if (seed_mode == PATH_CLOSED) {
             calcShortPath(seeds[seeds.size()-2], seeds.back());
-            statusbar->setText("Tip : Click inside loop to erase outside of loop");
+            if (mode==MASK_MODE)
+                statusbar->setText("Tip : Click inside loop to mask inside");
+            else
+                statusbar->setText("Tip : Click inside loop to erase outside of loop");
         }
         fullPath.push_back(shortPath);
         drawSeedToSeedPath();
