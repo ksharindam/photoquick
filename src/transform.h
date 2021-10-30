@@ -30,6 +30,7 @@ private:
     int fixed_width, fixed_height; // in FIXED_RESOLUTION mode
     float ratio_w, ratio_h;        // in FIXED_RATIO mode
     QList<QWidget *> crop_widgets;
+    int drag_box_w;
     void drawCropBox();
 private slots:
     void onMousePress(QPoint pos);

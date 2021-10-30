@@ -15,6 +15,13 @@ This file is a part of photoquick program, which is GPLv3 licensed
 // ******************************************************************* |
 //                         Crop Manager
 // ------------------------------------------------------------------- |
+
+// calculate adaptive corner_drag_box size
+int dragBoxWidth(QPoint p1, QPoint p2) {
+    int drag_box_w = MAX(p2.x()-p1.x(), p2.y()-p1.y())/5;
+    return MIN(50, MAX(16, drag_box_w) );
+}
+
 Crop:: Crop(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
                                 canvas(canvas), statusbar(statusbar)
 {
@@ -30,6 +37,7 @@ Crop:: Crop(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
     ratio_w = 3.5;
     ratio_h = 4.5;
     crop_mode = NO_RATIO;
+    drag_box_w = dragBoxWidth(p1, p2);
     // add buttons
     QPushButton *setRatioBtn = new QPushButton("Set Ratio", statusbar);
     statusbar->addPermanentWidget(setRatioBtn);
@@ -78,9 +86,9 @@ Crop:: onMousePress(QPoint pos)
     clk_pos = pos;
     mouse_pressed = true;
     // Determine which position is clicked
-    if (QRect(topleft, QSize(60, 60)).contains(clk_pos))
+    if (QRect(topleft, QSize(drag_box_w, drag_box_w)).contains(clk_pos))
         clk_area = 1;   // Topleft is clicked
-    else if (QRect(btmright, QSize(-60, -60)).contains(clk_pos))
+    else if (QRect(btmright, QSize(-drag_box_w, -drag_box_w)).contains(clk_pos))
         clk_area = 2;   // bottom right corner clicked
     else if (QRect(topleft, btmright).contains(clk_pos)) // clicked inside cropbox
         clk_area = 3;   // inside cropbox
@@ -94,6 +102,8 @@ Crop:: onMouseRelease(QPoint /*pos*/)
     mouse_pressed = false;
     topleft = p1;
     btmright = p2;
+    drag_box_w = dragBoxWidth(p1, p2);
+    drawCropBox();
 }
 
 void
@@ -152,11 +162,12 @@ Crop:: drawCropBox()
     painter.fillRect(0,0, pm.width(), pm.height(), QColor(127,127,127,127));
     painter.drawPixmap(p1.x(), p1.y(), pm_box);
     painter.drawRect(p1.x(), p1.y(), p2.x()-p1.x(), p2.y()-p1.y());
-    painter.drawRect(p1.x(), p1.y(), 59, 59);
-    painter.drawRect(p2.x(), p2.y(), -59, -59);
+    // draw corner drag box
+    painter.drawRect(p1.x(), p1.y(), drag_box_w-1, drag_box_w-1);
+    painter.drawRect(p2.x(), p2.y(), -drag_box_w+1, -drag_box_w+1);
     painter.setPen(Qt::white);
-    painter.drawRect(p1.x()+1, p1.y()+1, 57, 57);
-    painter.drawRect(p2.x()-1, p2.y()-1, -57, -57);
+    painter.drawRect(p1.x()+1, p1.y()+1, drag_box_w-3, drag_box_w-3);
+    painter.drawRect(p2.x()-1, p2.y()-1, -drag_box_w+3, -drag_box_w+3);
     painter.end();
     canvas->setPixmap(pm);
     QString text = "Resolution : %1x%2";
