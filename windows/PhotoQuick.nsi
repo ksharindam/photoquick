@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.5.6"
+!define PROG_VERSION "4.6.2"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
@@ -53,6 +53,7 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <kshar
 
 
 !define BUILDDIR      "..\src"
+!define PLUGINS_DIR   "..\plugins"
 !define QTLIB_DIR     "C:\Qt\4.8.7\bin"
 !define QTPLUGINS_DIR "C:\Qt\4.8.7\plugins"
 !define DEPS_DIR      "C:\mingw32\bin"
@@ -74,6 +75,10 @@ Section "MainSection" SEC01
   File "${QTPLUGINS_DIR}\imageformats\qtiff4.dll"
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\photoquick.exe"
+  ; Install plugins
+  SetOutPath "$INSTDIR\plugins"
+  File "${PLUGINS_DIR}\invert.dll"
+  File "${PLUGINS_DIR}\text-tool.dll"
   ; Install icon and shortcut
   File "${MUI_ICON}"
   CreateShortCut "$SMPROGRAMS\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
@@ -110,6 +115,8 @@ Section Uninstall
   ; Must remove uninstaller first
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\photoquick.exe"
+  Delete "$INSTDIR\plugins\invert.dll"
+  Delete "$INSTDIR\plugins\text-tool.dll"
   Delete "$INSTDIR\imageformats\qjpeg4.dll"
   Delete "$INSTDIR\imageformats\qsvg4.dll"
   Delete "$INSTDIR\imageformats\qico4.dll"
@@ -127,6 +134,7 @@ Section Uninstall
   Delete "$INSTDIR\${PROG_ICON}"
 
   RMDir "$INSTDIR\imageformats"
+  RMDir "$INSTDIR\plugins"
   RMDir "$INSTDIR"
   ; Remove environment variable
   ;${un.EnvVarUpdate} $0 "QT_PLUGIN_PATH" "R" "HKLM" "$INSTDIR"

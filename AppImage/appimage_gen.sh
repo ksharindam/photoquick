@@ -24,7 +24,7 @@ ARCH=`dpkg --print-architecture`
 MULTIARCH=`gcc -dumpmachine`
 LIBDIR=lib/${MULTIARCH}
 
-mkdir -p AppDir/usr/bin
+mkdir -p AppDir/usr/bin/plugins
 mkdir -p AppDir/usr/share/applications
 mkdir -p AppDir/usr/share/icons/hicolor/scalable/apps
 mkdir -p AppDir/usr/share/metainfo
@@ -33,6 +33,7 @@ cd AppDir
 
 # copy executable, icon and desktop file
 cp ../../src/photoquick usr/bin
+cp ../../plugins/*.so usr/bin/plugins
 cp ../../data/photoquick.png usr/share/icons/hicolor/scalable/apps
 cp ../../data/photoquick.desktop usr/share/applications/com.ksharindam.photoquick.desktop
 cp ../com.ksharindam.photoquick.appdata.xml usr/share/metainfo
