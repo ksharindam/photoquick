@@ -113,7 +113,7 @@ bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exi
         thumb_buff.open(QIODevice::WriteOnly);
         // recommended thumbnail resolution is 160x120
         QImage thumb = img.width()>img.height() ? img.scaledToWidth(160) : img.scaledToHeight(160);
-        thumb.save(&thumb_buff, "JPEG", -1);
+        thumb.save(&thumb_buff, "JPEG");
         ok = write_jpeg_with_exif(buff.buffer().data(), buff.size(),
                                 thumb_buff.buffer().data(), thumb_buff.size(), exif, out);
         thumb_buff.buffer().clear();
@@ -135,9 +135,14 @@ int getJpgFileSize(QImage image, int quality)
     QBuffer buffer;
     buffer.open(QIODevice::WriteOnly);
     image.save(&buffer, "JPG", quality);
-    buffer.close();
+    if (image.width()*image.height() >= 1000000) {
+        QImage thumbnail = image.width()>image.height() ?
+                            image.scaledToWidth(160) : image.scaledToHeight(160);
+        thumbnail.save(&buffer, "JPG");
+    }
     int filesize = buffer.size();
     buffer.buffer().clear();
+    buffer.close();
     return filesize;
 }
 
