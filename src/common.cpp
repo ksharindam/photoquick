@@ -1,6 +1,7 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "common.h"
+#include "exif.h"
 #include <QTimer>
 #include <QEventLoop>
 #include <QFile>
@@ -82,19 +83,64 @@ QImage loadImage(QString fileName)
 }
 
 
+bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exif_filename)
+{
+    // image too small, do not add thumbnail
+    if (img.width()*img.height()<300000)
+        return img.save(out_filename, "JPEG", quality);
+
+    FILE *infile = qfopen(exif_filename, "r");
+    if (!infile)
+        return img.save(out_filename, "JPEG", quality);
+    ExifInfo exif;
+    exif_read(exif, infile);
+    fclose(infile);
+    // if image is >1M, even if exif empty, we add exif to add thumbnail
+    if (exif.empty() && (img.width()*img.height()<1000000))
+        return img.save(out_filename, "JPEG", quality);
+
+    FILE *out = qfopen(out_filename, "w");
+    if (!out) {
+        exif_free(exif);
+        return false;
+    }
+    QBuffer buff;
+    buff.open(QIODevice::WriteOnly);
+    img.save(&buff, "JPEG", quality);
+    bool ok;
+    if (img.width()*img.height()>=1000000){// add a thumbnail
+        QBuffer thumb_buff;
+        thumb_buff.open(QIODevice::WriteOnly);
+        // recommended thumbnail resolution is 160x120
+        QImage thumb = img.width()>img.height() ? img.scaledToWidth(160) : img.scaledToHeight(160);
+        thumb.save(&thumb_buff, "JPEG", -1);
+        ok = write_jpeg_with_exif(buff.buffer().data(), buff.size(),
+                                thumb_buff.buffer().data(), thumb_buff.size(), exif, out);
+        thumb_buff.buffer().clear();
+    }
+    else {
+        ok = write_jpeg_with_exif(buff.buffer().data(), buff.size(), NULL, 0, exif, out);
+    }
+    fclose(out);
+    buff.buffer().clear();
+    exif_free(exif);
+    return ok;
+}
+
+
 int getJpgFileSize(QImage image, int quality)
 {
     if (image.isNull()) return 0;
 
-    QByteArray bArray;
-    QBuffer buffer(&bArray);
+    QBuffer buffer;
     buffer.open(QIODevice::WriteOnly);
     image.save(&buffer, "JPG", quality);
-    int filesize = bArray.size();
-    bArray.clear();
     buffer.close();
+    int filesize = buffer.size();
+    buffer.buffer().clear();
     return filesize;
 }
+
 
 /* On linux we can simply do,
     char *filename = fileName.toUtf8().data();
@@ -105,8 +151,18 @@ int getJpgFileSize(QImage image, int quality)
 // Creates a FILE* from QString filename
 FILE* qfopen(QString filename, const char *mode)
 {
+    QIODevice::OpenMode io_mode = QIODevice::NotOpen;
+    if (QString(mode).contains("r"))
+        io_mode |= QIODevice::ReadOnly;
+    if (QString(mode).contains("w"))
+        io_mode |= QIODevice::WriteOnly;
+    if (QString(mode).contains("a"))
+        io_mode |= QIODevice::Append;
+    if (QString(mode).contains("r+") or QString(mode).contains("w+"))
+        io_mode |= QIODevice::ReadWrite;
+
     QFile qf(filename);
-    if (!qf.open(QIODevice::ReadOnly))
+    if (!qf.open(io_mode))
         return NULL;
     int fd = dup(qf.handle());
     qf.close();

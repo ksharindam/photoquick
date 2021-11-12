@@ -1,16 +1,21 @@
 // Based on the specification given in
 // https://www.media.mit.edu/pia/Research/deepview/exif.html
+#include "exif.h"
 #include <stdio.h>
-#include <map>
 #include <list>
 #include <sstream>
 #include <cmath>
+#include <string.h>// memcpy
 
 // pos at TIFF header starts
 static int tiff_offset = 12;
 // byte order : intel = little-endian, motorola = big-endian
 static int intelBA = 0;
 
+bool isBigEndian()
+{
+    int i=1; return ! *((char *)&i);
+}
 // read 2 bytes
 #define read16(a,b) \
 do {\
@@ -101,28 +106,34 @@ int getOrientation(FILE *f)
 //------------************ Image Exif Reader ************--------------
 
 enum {
-    Tag_Make              = 0x010f,
-    Tag_Model             = 0x0110,
-    Tag_Orientation       = 0x0112,
-    Tag_DateTime          = 0x0132,
-    Tag_ExposureTime      = 0x829a,
-    Tag_FNumber           = 0x829d,
-    Tag_ExifOffset        = 0x8769,
-    Tag_ISOSpeedRatings   = 0x8827,
-    Tag_DateTimeOriginal  = 0x9003,
-    Tag_BrightnessValue   = 0x9203,
-    Tag_MeteringMode      = 0x9207,
-    Tag_LightSource       = 0x9208,
-    Tag_Flash             = 0x9209,
-    Tag_FocalLength       = 0x920a,
+    Tag_Compression       = 0x0103,// U_SHORT
+    Tag_Make              = 0x010f,// STRING
+    Tag_Model             = 0x0110,// STRING
+    Tag_Orientation       = 0x0112,// U_SHORT
+    Tag_Software          = 0x0131,// STRING
+    Tag_DateTime          = 0x0132,// STRING * 20
+    Tag_JpegIFOffset      = 0x0201,// U_LONG
+    Tag_JpegIFByteCount   = 0x0202,// U_LONG
+    Tag_ExposureTime      = 0x829a,// U_RATIONAL
+    Tag_FNumber           = 0x829d,// U_RATIONAL
+    Tag_ExifOffset        = 0x8769,// U_LONG
+    Tag_ISOSpeedRatings   = 0x8827,// U_SHORT * 2
+    Tag_ExifVersion       = 0x9000,// UNDEFINED * 4
+    Tag_DateTimeOriginal  = 0x9003,// STRING * 20
+    Tag_BrightnessValue   = 0x9203,// RATIONAL
+    Tag_MeteringMode      = 0x9207,// U_SHORT
+    Tag_LightSource       = 0x9208,// U_SHORT
+    Tag_Flash             = 0x9209,// U_SHORT
+    Tag_FocalLength       = 0x920a,// U_RATIONAL
 };
 
-// printable tag types
+// known tags that will be read
 static std::map<int, std::string> tag_names =
 {
     {Tag_Make,              "Make"},
     {Tag_Model,             "Model"},
     {Tag_Orientation,       "Orientation"},
+    {Tag_Software,          "Software"},
     {Tag_DateTime,          "DateTime"},
     {Tag_ExposureTime,      "Exposure Time"},
     {Tag_FNumber,           "Aperture"},
@@ -136,9 +147,19 @@ static std::map<int, std::string> tag_names =
     {Tag_FocalLength,       "Focal Length"}
 };
 
+// IFD0 and SubIFD tags that will be saved
+static std::list<int> ifd0_entries = {
+    Tag_Make, Tag_Model, Tag_Orientation, Tag_Software, Tag_DateTime/*, Tag_ExifOffset*/
+};
+
+static std::list<int> subifd_entries = {
+    Tag_ExifVersion, Tag_ExposureTime, Tag_FNumber, Tag_ISOSpeedRatings, Tag_DateTimeOriginal,
+    Tag_BrightnessValue, Tag_MeteringMode, Tag_LightSource, Tag_Flash, Tag_FocalLength
+};
+
 // tag names will be printed in this order
-static std::list<int> ordered_tags = {
-    Tag_Orientation, Tag_Make, Tag_Model, Tag_DateTime, Tag_DateTimeOriginal,
+static std::list<int> tags_to_display = {
+    Tag_Orientation, Tag_Make, Tag_Model, Tag_Software, Tag_DateTime, Tag_DateTimeOriginal,
     Tag_FNumber, Tag_FocalLength,
     Tag_ExposureTime, Tag_ISOSpeedRatings, Tag_BrightnessValue,
     Tag_Flash, Tag_LightSource, Tag_MeteringMode
@@ -178,150 +199,66 @@ static int get_component_size(int data_format)
         case RATIONAL:
         case U_RATIONAL:
             return 8;
-        default:    // BYTE, U_BYTE, STRING, UNDEFINED = 1
+        default:    // BYTE, U_BYTE, STRING, UNDEFINED
             return 1;
     }
 }
 
 
 
-enum {
-    VAL_UNKNOWN,
-    VAL_STRING,
-    VAL_INTEGER,
-    VAL_REAL,
-    VAL_FRACTION,
-};
-
-typedef struct {
-    int numer;
-    int denom;
-} Fraction;
-
-typedef struct {
-    int type;
-    int integer;
-    double real;
-    Fraction fraction;
-    char *str;
-} TagValue;
-
-static std::map<int, TagValue> tag_vals;
-
-// tag_no must be in tag_names dict
-static void stream_add_tag_info (std::ostringstream &stream, int tag_no, TagValue tag_val)
-{
-    stream << tag_names[tag_no] << " : ";
-    double val;
-    switch (tag_no) {
-        case Tag_ExposureTime:
-            if (tag_val.type==VAL_FRACTION && tag_val.fraction.numer!=0) {
-                val = (double)tag_val.fraction.denom / tag_val.fraction.numer;
-                stream << "1/" << round(val) << " sec\n";
-                return;
-            }
-            break;
-        case Tag_FNumber:
-            if (tag_val.type==VAL_FRACTION && tag_val.fraction.denom!=0) {
-                val = (double)tag_val.fraction.numer / tag_val.fraction.denom;
-                stream << "f/" << val << "\n";
-                return;
-            }
-            break;
-        case Tag_BrightnessValue:
-            if (tag_val.type==VAL_FRACTION && tag_val.fraction.denom!=0) {
-                val = (double)tag_val.fraction.numer / tag_val.fraction.denom;
-                stream << (val>0 ? "+" : "") << val << " EV\n";
-                return;
-            }
-            break;
-        case Tag_MeteringMode:
-            if (tag_val.type==VAL_INTEGER && tag_val.integer>0 && tag_val.integer<6) {
-                stream << metering_modes[tag_val.integer-1] << "\n";
-                return;
-            }
-            break;
-        case Tag_FocalLength:
-            if (tag_val.type==VAL_FRACTION && tag_val.fraction.denom!=0) {
-                val = (double)tag_val.fraction.numer / tag_val.fraction.denom;
-                stream << val << " cm\n";
-                return;
-            }
-            break;
-        default:
-            break;
-    }
-    switch (tag_val.type) {
-        case VAL_STRING:
-            stream << tag_val.str;
-            break;
-        case VAL_INTEGER:
-            stream << tag_val.integer;
-            break;
-        case VAL_REAL:
-            stream << tag_val.real;
-            break;
-        case VAL_FRACTION:
-            stream << tag_val.fraction.numer << "/" << tag_val.fraction.denom;
-    }
-    stream << "\n";
-}
-
-static int read_tag_val(FILE *f, TagValue *tag_val, int data_type, int comp_size, int comp_count)
+static int read_tag_val(ExifTag *tag, FILE *f)
 {
     int int_num;
     long long long_num;
+    float *float_val;
+    double *double_val;
 
-    if (comp_size==1) {
-        tag_val->str = (char*) malloc(comp_count );
-        for (int i=0; i<comp_count && (int_num=getc(f))!=EOF; i++) {
-            tag_val->str[i] = int_num;
-        }
-        tag_val->type = VAL_STRING;
-    }
-    else if (comp_size==2) {
-        read16(tag_val->integer, f);
-        tag_val->type = VAL_INTEGER;
-    }
-    else if (comp_size==4) {
-        read32(int_num, f);
-        switch (data_type) {
-            case LONG:
-            case U_LONG:
-                tag_val->type = VAL_INTEGER;
-                tag_val->integer = int_num;
-                break;
-            case FLOAT:
-                tag_val->type = VAL_REAL;
-                float *float_val = (float*)&int_num;
-                tag_val->real = *float_val ;
-        }
-    }
-    else if (comp_size==8) {
-        switch (data_type) {
-            case RATIONAL:
-            case U_RATIONAL:
-                tag_val->type = VAL_FRACTION;
-                read32(tag_val->fraction.numer, f);
-                read32(tag_val->fraction.denom, f);
-                break;
-            case DOUBLE:
-                read64(long_num, f);
-                tag_val->type = VAL_REAL;
-                double *double_val = (double*)&long_num;
-                tag_val->real = *double_val;
-        }
+    switch (tag->data_format) {
+        case BYTE:
+        case U_BYTE:
+        case STRING:
+        case UNDEFINED:
+            tag->str = (char*) malloc(tag->comp_count);
+            for (int i=0; i<tag->comp_count && (int_num=getc(f))!=EOF; i++) {
+                tag->str[i] = int_num;
+            }
+            break;
+        case SHORT:
+        case U_SHORT:
+            read16(tag->integer, f);
+            break;
+        case LONG:
+        case U_LONG:
+            read32(tag->integer, f);
+            break;
+        case FLOAT:
+            read32(int_num, f);
+            float_val = (float*)&int_num;
+            tag->real = *float_val;
+            break;
+        case DOUBLE:
+            read64(long_num, f);
+            double_val = (double*)&long_num;
+            tag->real = *double_val;
+            break;
+        case RATIONAL:
+        case U_RATIONAL:
+            read32(tag->fraction[0], f);
+            read32(tag->fraction[1], f);
+            break;
+        default:
+            return 0;
     }
     return 1;
 }
 
 // read image file directory
-static int read_IFD(FILE *f)
+static int read_IFD(ExifInfo &exif, FILE *f)
 {
-    int comp_size, data_size;
+    int data_size;
     unsigned int word, tags_count, tag_no, data_format, components_count;
     read16(tags_count, f); // no. of entries in IFD
-    //printf("\nCount : %d\n", tags_count);
+    //printf("\nTags Count : %d\n", tags_count);
     for (int i=0; i<(int)tags_count; ++i)
     {
         read16(tag_no, f);
@@ -333,24 +270,28 @@ static int read_IFD(FILE *f)
         if (tag_names.count(tag_no) < 1)
             goto seek_next;
         // calculate data size
-        comp_size = get_component_size(data_format);
-        data_size = comp_size * components_count;
+        data_size = components_count * get_component_size(data_format);
         // if data size > 4 , get data offset and go to that pos
         if (data_size > 4) {
             read32(word, f);
             fseek(f, tiff_offset+word, SEEK_SET);
         }
         // data value
-        //printf("0x%x,  %d,  %d,  %d\n", tag_no, data_format, comp_size, components_count);
-        TagValue tag_val;
-        if (!read_tag_val(f, &tag_val, data_format, comp_size, components_count))
+        //printf("Tag 0x%x : Data format - %d, Comp Count - %d\n", tag_no, data_format, components_count);
+        ExifTag tag;
+        tag.tag_no = tag_no;
+        tag.data_format = data_format;
+        tag.comp_count = components_count;
+        if (!read_tag_val(&tag, f))
             return 0;
-        tag_vals[tag_no] = tag_val;
+        exif[tag_no] = tag;
 
         if (tag_no==Tag_ExifOffset){
-            fseek(f, tiff_offset+tag_val.integer, SEEK_SET);
-            if (!read_IFD(f))
+            fseek(f, tiff_offset+tag.integer, SEEK_SET);
+            if (!read_IFD(exif, f)) {
+                printf("Exif : failed to read SubIFD\n");
                 return 0;
+            }
         }
 seek_next:
         fseek(f, pos+4, SEEK_SET);
@@ -358,7 +299,7 @@ seek_next:
     return 1;
 }
 
-int read_Exif(FILE *f, std::string &exif_str)
+int exif_read(ExifInfo &exif, FILE *f)
 {
     if (!f)
         return 0;
@@ -397,20 +338,376 @@ int read_Exif(FILE *f, std::string &exif_str)
     read32(word, f); // first IFD offset from tiff header
     // go to first IFD
     fseek(f, tiff_offset+word, SEEK_SET);
-    if (!read_IFD(f))
+    if (!read_IFD(exif, f)) {
+        printf("Exif : failed to read IFDs\n");
         return 0;
-    // create tag string
-    std::ostringstream stream;
-    for (auto tag_no : ordered_tags) {
-        if (tag_vals.count(tag_no)>0)
-            stream_add_tag_info(stream, tag_no, tag_vals[tag_no]);
     }
-    exif_str += stream.str();
-    // free data
-    for (auto it : tag_vals) {
-        if (it.second.type==VAL_STRING)
-            free(it.second.str);
-    }
-    tag_vals.clear();
     return 1;
+}
+
+// tag_no must be in tag_names dict
+static void stream_add_tag_info (std::ostringstream &stream, ExifTag tag)
+{
+    stream << tag_names[tag.tag_no] << " : ";
+
+    switch (tag.data_format) {
+        case BYTE:
+        case U_BYTE:
+        case STRING:
+        case UNDEFINED:
+            stream << tag.str;
+            break;
+        case SHORT:
+        case U_SHORT:
+        case LONG:
+        case U_LONG:
+            if (tag.tag_no==Tag_MeteringMode && tag.integer>0 && tag.integer<6) {
+                stream << metering_modes[tag.integer-1];
+            }
+            else
+                stream << tag.integer;
+            break;
+        case FLOAT:
+        case DOUBLE:
+            stream << tag.real;
+            break;
+        case RATIONAL:
+        case U_RATIONAL:
+        {
+            double val;
+            switch (tag.tag_no) {
+            case Tag_ExposureTime:
+                if (tag.fraction[0]!=0) {
+                    val = (double)tag.fraction[1] / tag.fraction[0];
+                    stream << "1/" << round(val) << " sec";
+                }
+                break;
+            case Tag_FNumber:
+                if (tag.fraction[1]!=0) {
+                    val = (double)tag.fraction[0] / tag.fraction[1];
+                    stream << "f/" << val;
+                }
+                break;
+            case Tag_BrightnessValue:
+                if (tag.fraction[1]!=0) {
+                    val = (double)tag.fraction[0] / tag.fraction[1];
+                    stream << (val>0 ? "+" : "") << val << " EV";
+                }
+                break;
+            case Tag_FocalLength:
+                if (tag.fraction[1]!=0) {
+                    val = (double)tag.fraction[0] / tag.fraction[1];
+                    stream << val << " cm";
+                }
+                break;
+            default:
+                stream << tag.fraction[0] << "/" << tag.fraction[1];
+                break;
+            }// end switch tag_no
+            break;
+        }
+        default:
+            break;
+    }
+    stream << "\n";
+}
+
+// creates a printable exif info string
+std::string exif_to_string(ExifInfo &exif)
+{
+    std::ostringstream stream;
+    for (auto tag_no : tags_to_display) {
+        if (exif.count(tag_no)>0)
+            stream_add_tag_info(stream, exif[tag_no]);
+    }
+    return stream.str();
+}
+
+// free data
+void exif_free(ExifInfo &exif)
+{
+    for (auto it : exif) {
+        switch (it.second.data_format) {
+            case BYTE:
+            case U_BYTE:
+            case STRING:
+            case UNDEFINED:
+                if (it.second.comp_count!=0)
+                    free(it.second.str);
+                break;
+            default:
+                break;
+        }
+    }
+    exif.clear();
+}
+
+static bool same_byte_order = false;
+
+static void convert_byte_order(char *src, char *dst, int size)
+{
+    if (same_byte_order) {
+        memcpy(dst, src, size);
+        return;
+    }
+    for (int i=0; i<size; i++) {
+        dst[i] = src[size-1-i];
+    }
+}
+
+short align_short(short num)
+{
+    short val;
+    convert_byte_order((char*)&num, (char*)&val, 2);
+    return val;
+}
+
+int align_int(int num)
+{
+    int val;
+    convert_byte_order((char*)&num, (char*)&val, 4);
+    return val;
+}
+
+float align_float(float num)
+{
+    float val;
+    convert_byte_order((char*)&num, (char*)&val, 4);
+    return val;
+}
+
+double align_double(double num)
+{
+    double val;
+    convert_byte_order((char*)&num, (char*)&val, 8);
+    return val;
+}
+
+short read_short(const char *ptr, int &pos)
+{
+    const char *buf = ptr+pos;
+    short val = *((short*)buf);
+    pos += 2;
+    return align_short(val);
+}
+
+static void IFD_add_entry(std::string &ifd, std::string &data, int &data_offset, ExifTag tag)
+{
+    short tag_no = align_short(tag.tag_no);
+    short data_format = align_short(tag.data_format);
+    int count = align_int(tag.comp_count);
+    int data_size = tag.comp_count * get_component_size(tag.data_format);
+    int al_offset = align_int(data_offset);
+    // [Tag Number] [Data format] [component count] [Data]
+    // [2 bytes]    [2 bytes]     [4 bytes]         [4 bytes]
+    std::string ent;
+    ent.append((char*)&tag_no, 2);
+    ent.append((char*)&data_format, 2);
+    ent.append((char*)&count, 4);
+
+    short short_val;
+    int int_val, numer, denom;
+    float float_val;
+    double real_val;
+    switch (tag.data_format) {
+        case BYTE:
+        case U_BYTE:
+        case STRING:
+        case UNDEFINED:
+            if (data_size>4) {
+                ent.append((char*)&al_offset, 4);
+                data.append(tag.str, tag.comp_count);
+                data_offset += data_size;
+            }
+            else {
+                ent.append(tag.str, tag.comp_count);
+                ent.append(4-data_size, '\0');
+            }
+            break;
+        case SHORT:
+        case U_SHORT:
+            short_val = align_short((short) tag.integer);
+            ent.append((char*)&short_val, 2);
+            ent.append(2, '\0');// append two null bytes to make total 4 bytes
+            break;
+        case LONG:
+        case U_LONG:
+            int_val = align_int(tag.integer);
+            ent.append((char*)&int_val, 4);
+            break;
+        case FLOAT:
+            float_val = (float)align_float(tag.real);
+            ent.append((char*)&float_val, 4);
+            break;
+        case DOUBLE:
+            ent.append((char*)&al_offset, 4);
+            real_val = align_double(tag.real);
+            data.append((char*)&real_val, 8);
+            data_offset += 8;
+            break;
+        case RATIONAL:
+        case U_RATIONAL:
+            ent.append((char*)&al_offset, 4);
+            numer = align_int(tag.fraction[0]);
+            denom = align_int(tag.fraction[1]);
+            data.append((char*)&numer, 4);
+            data.append((char*)&denom, 4);
+            data_offset += 8;
+            break;
+        default:// should not happen
+            ent.append(4, '\0');
+            break;
+    }
+    ifd.append(ent);
+}
+
+
+// create data for exif segment (App1)
+std::string create_exif_data(ExifInfo exif, const char *thumbnail, int thumb_size)
+{
+    same_byte_order = isBigEndian();
+    // Check if we have known tags
+    short ifd0_tags_count=1/*that 1 is ExifOffset*/, subifd_tags_count=0;
+
+    for (int tag_no : ifd0_entries) {
+        if (exif.count(tag_no)>0)
+            ifd0_tags_count++;
+    }
+    for (int tag_no : subifd_entries) {
+        if (exif.count(tag_no)>0)
+            subifd_tags_count++;
+    }
+    // Fix some tag values
+    if (exif.count(Tag_Orientation)>0) {
+        exif[Tag_Orientation].integer = 1;
+    }
+    if (exif.count(Tag_Software)==0) {
+        ExifTag software = {Tag_Software, STRING, 11, NULL, 0, 0.0, {0,1}};
+        software.str = (char*) malloc(11);
+        memcpy(software.str, "PhotoQuick", 11);
+        exif[Tag_Software] = software;
+        ifd0_tags_count++;
+    }
+    if (exif.count(Tag_ExifOffset)==0) {
+        ExifTag exif_offset = {Tag_ExifOffset, U_LONG, 1, NULL, 0, 0.0, {0,1}};
+        exif[Tag_ExifOffset] = exif_offset;
+    }
+    ExifTag exif_version = {Tag_ExifVersion, UNDEFINED, 4, NULL, 0, 0.0, {0,1}};
+    exif_version.str = (char*) malloc(4);
+    memcpy(exif_version.str, "0220", 4);
+    exif[Tag_ExifVersion] = exif_version;
+    subifd_tags_count++;
+
+    // Exif Header
+    std::string exif_data = "Exif";
+    exif_data.append(2, '\0');
+    // Tiff Header
+    exif_data.append("MM");//motorola byte order
+    short tag_mark = align_short((short)0x002A);
+    exif_data.append((char*)&tag_mark, 2);
+
+    int ifd0_offset = align_int(8);
+    exif_data.append((char*)&ifd0_offset, 4);
+    int data_offset = 8;
+
+    // add IFD0
+
+    std::string ifd0;
+    std::string ifd0_data;
+    data_offset += 2 /*entry count*/ + ifd0_tags_count*12 /*entries*/ + 4/*ifd1 offset*/;
+
+    short al_tags_count = align_short(ifd0_tags_count);
+    ifd0.append((char*)&al_tags_count, 2);
+
+    for (int tag_no : ifd0_entries) {
+        if (exif.count(tag_no)>0) {
+            IFD_add_entry(ifd0, ifd0_data, data_offset, exif[tag_no]);
+        }
+    }
+    exif[Tag_ExifOffset].integer = data_offset;// SubIFD offset
+    IFD_add_entry(ifd0, ifd0_data, data_offset, exif[Tag_ExifOffset]);
+
+    // add SubIFD
+
+    std::string ifd;
+    std::string ifd_data;
+    data_offset += 2 /*entry count*/ + subifd_tags_count*12 /*entries*/ + 4/*next ifd offset*/;
+
+    al_tags_count = align_short(subifd_tags_count);
+    ifd.append((char*)&al_tags_count, 2);
+
+    for (int tag_no : subifd_entries) {
+        if (exif.count(tag_no)>0)
+            IFD_add_entry(ifd, ifd_data, data_offset, exif[tag_no]);
+    }
+    ifd.append(4, '\0'); // 0 means no next ifd
+
+    if (thumbnail) {
+        int al_ifd1_offset = align_int(data_offset);
+        ifd0.append((char*)&al_ifd1_offset ,4);// link to next ifd (ifd1)
+    }
+    else {
+        ifd0.append(4, '\0'); // no linked ifd
+    }
+    exif_data.append(ifd0);
+    exif_data.append(ifd0_data);
+    exif_data.append(ifd);
+    exif_data.append(ifd_data);
+    ifd.clear();
+    ifd_data.clear();
+
+    // add thumbnail
+    if (thumbnail) {
+        int ifd1_tags_count = 3;
+        data_offset += 2 /*entry count*/ + ifd1_tags_count*12 /*entries*/ + 4/*next ifd offset*/;
+        ExifTag compression =     { Tag_Compression, U_SHORT, 1, NULL, 6, 0.0, {0,1}};
+        ExifTag jpegIFOffset =    { Tag_JpegIFOffset, U_LONG, 1, NULL, data_offset, 0.0, {0,1}};
+        ExifTag jpegIFByteCount = {Tag_JpegIFByteCount, U_LONG, 1, NULL, thumb_size, 0.0, {0,1}};
+
+        ifd_data.append(thumbnail, thumb_size);
+        data_offset += thumb_size;
+
+        al_tags_count = align_short(ifd1_tags_count);
+        ifd.append((char*)&al_tags_count, 2);
+        IFD_add_entry(ifd, ifd_data, data_offset, compression);
+        IFD_add_entry(ifd, ifd_data, data_offset, jpegIFOffset);
+        IFD_add_entry(ifd, ifd_data, data_offset, jpegIFByteCount);
+        ifd.append(4, '\0');
+        exif_data.append(ifd);
+        exif_data.append(ifd_data);
+    }
+    return exif_data;
+}
+
+
+bool write_jpeg_with_exif(const char *jpg, int jpg_size,
+                        const char *thumbnail, int thumb_size, ExifInfo exif, FILE *out)
+{
+    std::string exif_data = create_exif_data(exif, thumbnail, thumb_size);
+
+    same_byte_order = isBigEndian();
+
+    const char *ptr = jpg;
+    int pos = 2;
+    unsigned short size, marker;
+    marker = read_short(ptr, pos);
+
+    while (marker == 0xFFE0 || marker == 0xFFE1) {
+        size = read_short(ptr, pos);// segment size
+        pos += size-2;// skip data area
+        marker = read_short(ptr, pos);// next segment header
+    }
+    pos -= 2;
+
+    short soi = align_short(0xFFD8);
+    short app1 = align_short(0xFFE1);
+    short app1_size = align_short(2 + exif_data.size());
+
+    if (fwrite((char*)&soi, 2, 1, out) &&
+        fwrite((char*)&app1, 2, 1, out) &&
+        fwrite((char*)&app1_size, 2, 1, out) &&
+        fwrite(exif_data.data(), exif_data.size(), 1, out) &&
+        fwrite(ptr+pos, jpg_size-pos, 1, out) )
+        return true;
+    return false;
 }

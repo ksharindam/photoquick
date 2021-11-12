@@ -1,7 +1,7 @@
 #include <winver.h>
 
-#define PROG_VERSION "4.6.2"
-#define FILE_VERSION 4,6,2,0
+#define PROG_VERSION "4.7.0"
+#define FILE_VERSION 4,7,0,0
 
 IDI_ICON1 ICON "../data/photoquick.ico"
 

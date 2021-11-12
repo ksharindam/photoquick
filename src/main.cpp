@@ -18,6 +18,7 @@
 */
 #include "main.h"
 #include "common.h"
+#include "exif.h"
 #include "plugin.h"
 #include "dialogs.h"
 #include "transform.h"
@@ -304,8 +305,8 @@ Window:: saveImage(QString filename)
     QImage img = data.image;
     if (canvas->animation)
         img = canvas->movie()->currentImage();
-    if (img.isNull()) return;
-    int quality = -1;
+    if (img.isNull())
+        return;
     if (filename.endsWith(".jpg",  Qt::CaseInsensitive) ||
         filename.endsWith(".jpeg", Qt::CaseInsensitive))
     {
@@ -317,18 +318,24 @@ Window:: saveImage(QString filename)
             painter.end();
         }
         QualityDialog *dlg = new QualityDialog(this, img);
-        if (dlg->exec()==QDialog::Accepted){
-            quality = dlg->qualitySpin->value();
+        if (dlg->exec()!=QDialog::Accepted){
+            return;
         }
-        else return;
+        int quality = dlg->qualitySpin->value();
+        // save with exif
+        if (not saveJpegWithExif(img, quality, filename, data.filename)) {
+            goto fail;
+        }
     }
-    if (not img.save(filename, NULL, quality)) {
-        showNotification("Failed !", "Could not save the image");
-        return;
+    else if (not img.save(filename, NULL, -1)) {
+        goto fail;
     }
     setWindowTitle(QFileInfo(filename).fileName());
     data.filename = filename;
     showNotification("Image Saved !", QFileInfo(filename).fileName());
+    return;
+fail:
+    showNotification("Failed !", "Could not save the image");
 }
 
 void
@@ -393,8 +400,11 @@ Window:: autoResizeAndSave()
     QString path = dir + "/" + basename + ".jpg";
     path = getNewFileName(path);
 
-    scaled.save(path);
-    showNotification("Image Saved !", QFileInfo(path).fileName());
+    if (scaled.save(path))
+        showNotification("Image Saved !", QFileInfo(path).fileName());
+    else {
+        showNotification("Failed to Save !", QFileInfo(path).fileName());
+    }
 }
 
 bool isMonochrome(QImage img)
@@ -571,10 +581,15 @@ Window:: imageInfo()
     str += QString("Height : %1\n").arg(data.image.height());
     std::string exif_str = str.toStdString();
 
-    FILE *f = qfopen(data.filename, "rb");
+    FILE *f = qfopen(data.filename, "r");
     if (f) {
-        if (!read_Exif(f, exif_str))
+        ExifInfo exif;
+        if (!exif_read(exif, f))
             exif_str += "\nNo Exif Data !";
+        else {
+            exif_str.append(exif_to_string(exif));
+        }
+        exif_free(exif);
         fclose(f);
     }
     QMessageBox *dlg = new QMessageBox(this);

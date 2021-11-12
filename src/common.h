@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.6.2"
+#define PROG_VERSION    "4.7.0"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -55,13 +55,12 @@ void waitFor(int millisec);
 // Returns an autorotated image according to exif data
 QImage loadImage(QString filename);
 
+// Reads exif data from exif_filename and saves img as jpeg with that exif
+bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exif_filename);
+
 // get filesize in bytes when a QImage is saved as jpeg
 int getJpgFileSize(QImage img, int quality=-1);
 
-// get jpeg image orientation from exif
-int getOrientation(FILE *f);
-// read some jpeg exif data as string
-int read_Exif(FILE *f, std::string &exif_str);
 
 // creates a FILE* from QString filename
 FILE* qfopen(QString filename, const char *mode);
