@@ -171,16 +171,16 @@ FILE* qfopen(QString filename, const char *mode)
 }
 
 
-Notifier:: Notifier(QObject *parent)
+Notifier:: Notifier(QObject *parent) : QSystemTrayIcon(parent)
 {
-    QSystemTrayIcon(QIcon(":/icons/photoquick.png"), parent);
+    setIcon(QIcon(":/icons/photoquick.png"));
 }
 
 void
 Notifier:: notify(QString title, QString message)
 {
     show();
-    waitFor(200);
+    waitFor(200);// otherwise notification popups in wrong position
     showMessage(title, message);
     QTimer::singleShot(3000, this, SLOT(deleteLater()));
 }
