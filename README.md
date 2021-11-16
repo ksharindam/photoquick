@@ -17,11 +17,9 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
  * Create photo grid for printing  
  * Magic Eraser (inpainting)  
  * Intelligent Scissor  
- * Filters  
- * Scan Page  
- * Auto Contrast  
- * White Balance  
- * Reduce Noise  
+ * Filters  (Scan Page, Reduce Noise, Auto Contrast, White Balance )  
+ * Photo Optimizer & Batch Resize  
+
 
 ### Download
 Download the precompiled packages from [releases page](https://github.com/ksharindam/photoquick/releases).  

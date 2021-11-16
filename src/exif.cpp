@@ -8,9 +8,9 @@
 #include <string.h>// memcpy
 
 // pos at TIFF header starts
-static int tiff_offset = 12;
+thread_local int tiff_offset = 12;
 // byte order : intel = little-endian, motorola = big-endian
-static int intelBA = 0;
+thread_local int intelBA = 0;
 
 bool isBigEndian()
 {

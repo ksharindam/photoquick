@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = invert text-tool
+SUBDIRS = invert text-tool photo-optimizer

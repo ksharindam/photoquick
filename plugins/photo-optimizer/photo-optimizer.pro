@@ -1,20 +1,18 @@
 HEADERS = $$files(*.h)
-SOURCES = $$files(*.cpp)
-FORMS += $$files(*.ui)
-RESOURCES += $$files(*.qrc)
+SOURCES = $$files(*.cpp) ../../src/exif.cpp
 
-TARGET  = $$qtLibraryTarget(text-tool)
+TARGET  = $$qtLibraryTarget(photo-optimizer)
 DESTDIR = ..
 INCLUDEPATH += ../../src
 
 TEMPLATE        = lib
 CONFIG         += plugin
-QMAKE_CXXFLAGS  = -std=c++11 -fopenmp
+QMAKE_CXXFLAGS  = -std=c++11
 QMAKE_LFLAGS   += -s
-LIBS           += -lgomp
+LIBS           +=
 QT             += widgets
 
-BUILD_DIR = ../../build
+BUILD_DIR =   ../../build
 MOC_DIR =     $$BUILD_DIR
 RCC_DIR =     $$BUILD_DIR
 OBJECTS_DIR = $$BUILD_DIR

@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.6.2"
+!define PROG_VERSION "4.8.0"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
@@ -79,6 +79,7 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR\plugins"
   File "${PLUGINS_DIR}\invert.dll"
   File "${PLUGINS_DIR}\text-tool.dll"
+  File "${PLUGINS_DIR}\photo-optimizer.dll"
   ; Install icon and shortcut
   File "${MUI_ICON}"
   CreateShortCut "$SMPROGRAMS\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
@@ -117,6 +118,7 @@ Section Uninstall
   Delete "$INSTDIR\photoquick.exe"
   Delete "$INSTDIR\plugins\invert.dll"
   Delete "$INSTDIR\plugins\text-tool.dll"
+  Delete "$INSTDIR\plugins\photo-optimizer.dll"
   Delete "$INSTDIR\imageformats\qjpeg4.dll"
   Delete "$INSTDIR\imageformats\qsvg4.dll"
   Delete "$INSTDIR\imageformats\qico4.dll"
