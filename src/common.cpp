@@ -94,6 +94,9 @@ bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exi
         return img.save(out_filename, "JPEG", quality);
     ExifInfo exif;
     exif_read(exif, infile);
+    if (exif.count(0x0112)>0) {//fix Tag_Orientation
+        exif[0x0112].integer = 1;
+    }
     fclose(infile);
     // if image is >1M, even if exif empty, we add exif to add thumbnail
     if (exif.empty() && (img.width()*img.height()<1000000))

@@ -577,10 +577,7 @@ std::string create_exif_data(ExifInfo exif, const char *thumbnail, int thumb_siz
         if (exif.count(tag_no)>0)
             subifd_tags_count++;
     }
-    // Fix some tag values
-    if (exif.count(Tag_Orientation)>0) {
-        exif[Tag_Orientation].integer = 1;
-    }
+    // Change some tag values
     if (exif.count(Tag_Software)==0) {
         ExifTag software = {Tag_Software, STRING, 11, NULL, 0, 0.0, {0,1}};
         software.str = (char*) malloc(11);

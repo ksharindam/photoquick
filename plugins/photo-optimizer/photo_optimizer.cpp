@@ -18,7 +18,7 @@
 
 #define PLUGIN_NAME "Photo Optimizer"
 #define PLUGIN_MENU "Tools/Photos Compressor"
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     Q_EXPORT_PLUGIN2(photo-optimizer, ToolPlugin);
@@ -29,7 +29,8 @@
 
 QImage loadImage(QString fileName);
 bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exif_filename);
-
+bool add_thumbnail_to_jpg(QImage thumbnail, QString filename, QString out_filename);
+FILE* qfopen(QString filename, const char *mode);
 
 PhotoOptimizerDialog:: PhotoOptimizerDialog(QWidget *parent) : QDialog(parent)
 {
@@ -311,7 +312,6 @@ CompressTask:: CompressTask(QString file_name, QString out_dir,
     long_edge = long_edge_len;
 }
 
-
 /* Actually we dont do any compression. As mobile and digital cameras
    save photos unoptimized, so if we load and save photos with default
    quality, file size is greatly reduced (becomes 1/3 or 1/4 of original).
@@ -346,18 +346,26 @@ CompressTask:: run()
     QString tmp_name = out_filename + ".txt";
     bool ok = saveJpegWithExif(img, -1, tmp_name, filename);
     if (ok) {
-        if (QFileInfo(out_filename).exists())// rename/move fails if file already exists
+        if (QFileInfo(out_filename).exists())// copy/move fails if file already exists
             QFile(out_filename).remove();
-        if (QFileInfo(tmp_name).size()<QFileInfo(filename).size())
+        if (QFileInfo(tmp_name).size()<QFileInfo(filename).size()) {
             QFile(tmp_name).rename(out_filename);
-        else {
-            QFile(filename).copy(out_filename);
+        }
+        else {// already compressed, add a thumbnail so filemanager can display very fast
+            if (img.width()*img.height() >= 1000000) {
+                QImage thumb = img.width()>img.height() ? img.scaledToWidth(160) : img.scaledToHeight(160);
+                img = QImage();// free memory
+                ok = add_thumbnail_to_jpg(thumb, filename, out_filename);
+            }
+            else QFile(filename).copy(out_filename);
         }
         if (QFileInfo(tmp_name).exists())
             QFile(tmp_name).remove();
     }
     emit compressFinished(ok);
 }
+
+
 
 // Creates a FILE* from QString filename
 FILE* qfopen(QString filename, const char *mode)
@@ -367,10 +375,6 @@ FILE* qfopen(QString filename, const char *mode)
         io_mode |= QIODevice::ReadOnly;
     if (QString(mode).contains("w"))
         io_mode |= QIODevice::WriteOnly;
-    if (QString(mode).contains("a"))
-        io_mode |= QIODevice::Append;
-    if (QString(mode).contains("r+") or QString(mode).contains("w+"))
-        io_mode |= QIODevice::ReadWrite;
 
     QFile qf(filename);
     if (!qf.open(io_mode))
@@ -420,6 +424,9 @@ bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exi
         return img.save(out_filename, "JPEG", quality);
     ExifInfo exif;
     exif_read(exif, infile);
+    if (exif.count(0x0112)>0) {//fix Tag_Orientation
+        exif[0x0112].integer = 1;
+    }
     fclose(infile);
     // if image is >1M, even if exif empty, we add exif to add thumbnail
     if (exif.empty() && (img.width()*img.height()<1000000))
@@ -449,6 +456,39 @@ bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exi
     }
     fclose(out);
     buff.buffer().clear();
+    exif_free(exif);
+    return ok;
+}
+
+bool add_thumbnail_to_jpg(QImage thumbnail, QString filename, QString out_filename)
+{
+    // read exif from infile
+    FILE *infile = qfopen(filename, "r");
+    if (!infile) {
+        return false;
+    }
+    ExifInfo exif;
+    exif_read(exif, infile);
+    fclose(infile);
+    // create outfile
+    FILE *out = qfopen(out_filename, "w");
+    if (!out) {
+        return false;
+    }
+    // create thumbnail
+    QBuffer thumb_buff;
+    thumb_buff.open(QIODevice::WriteOnly);
+    thumbnail.save(&thumb_buff, "JPEG");
+    // read main image
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly);
+    QByteArray bArr = file.readAll();
+    file.close();
+    bool ok = write_jpeg_with_exif(bArr.data(), bArr.size(),
+                            thumb_buff.buffer().data(), thumb_buff.size(), exif, out);
+    thumb_buff.buffer().clear();
+    bArr.clear();
+    fclose(out);
     exif_free(exif);
     return ok;
 }
