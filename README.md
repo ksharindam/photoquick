@@ -27,9 +27,12 @@ For Windows download .exe package and install it.
 For Linux download .AppImage package, mark it executable, and double click to run.  
 
 ### Build (Linux)
+This program supports both Qt4 and Qt5. Qt4 is not available on newer distros.  
+But Qt4 is preferred over Qt5.  
+
 Install dependencies...  
 **Build dependencies ...**  
- * libqt4-dev  
+ * libqt4-dev or qtbase5-dev  
 
 To build this program, extract the source code zip.  
 Open terminal and change directory to src/  
@@ -46,10 +49,10 @@ To uninstall, run ...
 `sudo make uninstall`  
 
 **Runtime Dependencies**  
-* libqtcore4  
-* libqtgui4  
-* libqt4-svg  (optional for svg support)  
-* libgomp1
+* libqtcore4 or libqt5core5a  
+* libqtgui4 or libqt5gui5  
+* libqt4-svg or libqt5svg5  (optional for svg support)  
+* libgomp1  
 
 ### Build (Windows)
 Download Qt 4.8.7 and minGW32  
