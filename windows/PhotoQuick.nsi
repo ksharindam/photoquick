@@ -73,15 +73,16 @@ Section "MainSection" SEC01
   File "${QTPLUGINS_DIR}\imageformats\qico4.dll"
   File "${QTPLUGINS_DIR}\imageformats\qgif4.dll"
   File "${QTPLUGINS_DIR}\imageformats\qtiff4.dll"
-  SetOutPath "$INSTDIR"
-  File "${BUILDDIR}\photoquick.exe"
   ; Install plugins
   SetOutPath "$INSTDIR\plugins"
   File "${PLUGINS_DIR}\invert.dll"
   File "${PLUGINS_DIR}\text-tool.dll"
   File "${PLUGINS_DIR}\photo-optimizer.dll"
-  ; Install icon and shortcut
+  ; Install program and icon
+  SetOutPath "$INSTDIR"
+  File "${BUILDDIR}\photoquick.exe"
   File "${MUI_ICON}"
+  ; Install shortcuts
   CreateShortCut "$SMPROGRAMS\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
   CreateShortCut "$DESKTOP\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
   ; Update environment variable
