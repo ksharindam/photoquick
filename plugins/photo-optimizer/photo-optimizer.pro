@@ -1,5 +1,5 @@
 HEADERS = $$files(*.h)
-SOURCES = $$files(*.cpp) ../../src/exif.cpp
+SOURCES = $$files(*.cpp)
 
 TARGET  = $$qtLibraryTarget(photo-optimizer)
 DESTDIR = ..
