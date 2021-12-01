@@ -86,13 +86,13 @@ PhotoOptimizerDialog:: PhotoOptimizerDialog(QWidget *parent) : QDialog(parent)
     QWidget *widget = new QWidget(this);
     statusbar = new QLabel(widget);
     closeBtn = new QPushButton("Close", widget);
-    optimizeBtn = new QPushButton("Optimize", widget);
+    optimizeBtn = new QPushButton("Compress", widget);
 
     QHBoxLayout *hLayout3 = new QHBoxLayout(widget);
     hLayout3->setContentsMargins(6,6,6,0);
     hLayout3->addWidget(statusbar);
-    hLayout3->addWidget(closeBtn);
     hLayout3->addWidget(optimizeBtn);
+    hLayout3->addWidget(closeBtn);
     hLayout3->setStretch(0,1);
 
     dialogLayout->addWidget(groupBox1);
@@ -139,7 +139,9 @@ PhotoOptimizerDialog:: setPhotos(QStringList files, QString dir)
     selectedPhotosLabel->setText(QString("%1 photos in \"%2\"").arg(
                                 selected_files.count()).arg(QDir(dir).dirName()));
     target_dir = dir + "-compressed";
-    outDirLabel->setText(target_dir);
+    QFontMetrics fontMetrics(outDirLabel->font());
+    QString text = fontMetrics.elidedText(target_dir, Qt::ElideMiddle, 350);
+    outDirLabel->setText(text);
 }
 
 void
@@ -171,6 +173,8 @@ PhotoOptimizerDialog:: chooseTargetDir()
     if (dir.isEmpty())
         return;
     target_dir = dir;
+    QFontMetrics fontMetrics(outDirLabel->font());
+    dir = fontMetrics.elidedText(dir, Qt::ElideMiddle, outDirLabel->width()-2);
     outDirLabel->setText(dir);
 }
 
@@ -232,6 +236,7 @@ PhotoOptimizerDialog:: optimize()
         connect(task, SIGNAL(compressFinished(bool)), this, SLOT(onCompressFinish(bool)));
         pool->start(task);
     }
+    statusbar->setText("Compressing...");
 }
 
 void
@@ -248,7 +253,7 @@ PhotoOptimizerDialog:: onCompressFinish(bool success)
         optimizeBtn->setEnabled(true);
         return;
     }
-    statusbar->setText(QString("Completed %1/%2").arg(finished_count).arg(selected_files.count()));
+    statusbar->setText(QString("Compressing... %1/%2").arg(finished_count).arg(selected_files.count()));
     if (task_index<selected_files.count()){
         CompressTask *task = new CompressTask(selected_files[task_index], target_dir,
                                                 short_edge, long_edge);
