@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.8.1"
+!define PROG_VERSION "4.9.0"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
@@ -73,6 +73,7 @@ Section "MainSection" SEC01
   File "${QTPLUGINS_DIR}\imageformats\qico4.dll"
   File "${QTPLUGINS_DIR}\imageformats\qgif4.dll"
   File "${QTPLUGINS_DIR}\imageformats\qtiff4.dll"
+  File "${QTPLUGINS_DIR}\imageformats\qwebp.dll"
   ; Install plugins
   SetOutPath "$INSTDIR\plugins"
   File "${PLUGINS_DIR}\invert.dll"
@@ -95,6 +96,7 @@ Section "MainSection" SEC01
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".svg" "SVG Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".ico" "Windows Icon"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".tiff" "TIFF Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".webp" "WebP Image"
 SectionEnd
 
 Section -Post
@@ -125,6 +127,7 @@ Section Uninstall
   Delete "$INSTDIR\imageformats\qico4.dll"
   Delete "$INSTDIR\imageformats\qgif4.dll"
   Delete "$INSTDIR\imageformats\qtiff4.dll"
+  Delete "$INSTDIR\imageformats\qwebp.dll"
   Delete "$INSTDIR\QtGui4.dll"
   Delete "$INSTDIR\QtCore4.dll"
   Delete "$INSTDIR\libwinpthread-1.dll"
@@ -148,6 +151,7 @@ Section Uninstall
   ${unregisterExtension} ".svg" "SVG Image"
   ${unregisterExtension} ".ico" "Windows Icon"
   ${unregisterExtension} ".tiff" "TIFF Image"
+  ${unregisterExtension} ".webp" "WebP Image"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
