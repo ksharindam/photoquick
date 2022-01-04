@@ -27,18 +27,21 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 
     connect(configureBtn, SIGNAL(clicked()), this, SLOT(configure()));
     connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
+    connect(checkMinSpacing, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleMinSpacing(bool)));
     connect(checkAddBorder, SIGNAL(clicked(bool)), gridPaper, SLOT(toggleBorder(bool)));
     connect(helpBtn, SIGNAL(clicked()), this, SLOT(showHelp()));
     connect(gridPaper, SIGNAL(addPhotoRequested(QImage)), this, SLOT(addPhoto(QImage)));
 
     addPhoto(img);
     QSettings settings(this);
+    settings.beginGroup("PhotoGrid");
     DPI = settings.value("DPI", 300).toInt();
-    cellW = settings.value("GridCellW", 3.0).toFloat();
-    cellH = settings.value("GridCellH", 4.0).toFloat();
-    paperW = settings.value("GridPaperW", 6.0).toFloat();
-    paperH = settings.value("GridPaperH", 4.0).toFloat();
-    unit = settings.value("GridPaperUnit", 0).toInt();
+    cellW = settings.value("CellW", 3.0).toFloat();
+    cellH = settings.value("CellH", 4.0).toFloat();
+    paperW = settings.value("PaperW", 6.0).toFloat();
+    paperH = settings.value("PaperH", 4.0).toFloat();
+    unit = settings.value("PaperUnit", 0).toInt();
+    settings.endGroup();
     if (paperW<1.0 or paperW>30.0 or paperH<1.0 or paperH>30.0 or unit>1) {
         QMessageBox::critical(parent, "Error loading settings",
                 "Error loading paper size settings.\nPlease Configure photo grid.");
@@ -82,12 +85,14 @@ GridDialog:: configure()
     setup();
     // save settings
     QSettings settings(this);
+    settings.beginGroup("PhotoGrid");
     settings.setValue("DPI", DPI);
-    settings.setValue("GridCellW", cellW);
-    settings.setValue("GridCellH", cellH);
-    settings.setValue("GridPaperW", paperW);
-    settings.setValue("GridPaperH", paperH);
-    settings.setValue("GridPaperUnit", unit);
+    settings.setValue("CellW", cellW);
+    settings.setValue("CellH", cellH);
+    settings.setValue("PaperW", paperW);
+    settings.setValue("PaperH", paperH);
+    settings.setValue("PaperUnit", unit);
+    settings.endGroup();
 }
 
 void
@@ -106,11 +111,11 @@ GridDialog:: addPhoto(QImage img)
     if (img.isNull())
         return;
     Thumbnail *thumbnail = new Thumbnail(img, frame);
-    verticalLayout->addWidget(thumbnail);
+    verticalLayout->insertWidget(verticalLayout->count()-1, thumbnail);
     connect(thumbnail, SIGNAL(clicked(Thumbnail*)), gridPaper, SLOT(setPhoto(Thumbnail*)));
     thumbnailGr->append(thumbnail);
     thumbnailGr->selectThumbnail(thumbnail);
-    gridPaper->photo = img;
+    gridPaper->photo = &thumbnail->photo;
 }
 
 void
@@ -209,6 +214,13 @@ void calcRowsCols(int &paperW, int &paperH, int W, int H, int &rows, int &cols)
     }
 }
 
+
+bool
+PhotoCell:: intersects(QRect rect)
+{
+    return QRect(x,y,w,h).intersects(rect);
+}
+
 // GridPaper class methods
 GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 {
@@ -219,56 +231,93 @@ GridPaper:: GridPaper(QWidget *parent) : QLabel(parent)
 }
 
 void
-GridPaper:: setupGrid()
+GridPaper:: calcSpacingsMargins()
 {
-    boxes.clear();
-    image_dict.clear();
-    calcRowsCols(paperW, paperH, W, H, rows, cols);
     spacingX = (paperW-cols*W)/float(cols+1);
     spacingY = (paperH-rows*H)/float(rows+1);
+    // half milimeter uniform spacing
+    if (min_spacing){
+        float spacing = 0.5/25.4*DPI;
+        spacingX = spacing < spacingX ? spacing : spacingX;
+        spacingY = spacing < spacingY ? spacing : spacingY;
+    }
+    marginX = (paperW-cols*W-(cols-1)*spacingX)/2;
+    marginY = (paperH-rows*H-(rows-1)*spacingY)/2;
+}
+
+void
+GridPaper:: setupGrid()
+{
+    calcRowsCols(paperW, paperH, W, H, rows, cols);
+    calcSpacingsMargins();
     // Setup Foreground Grid
     float screenDPI = QApplication::desktop()->logicalDpiX();
     scale = screenDPI/DPI;
     int w = W*scale;
     int h = H*scale;
-    float spacing_x = spacingX*scale;
-    float spacing_y = spacingY*scale;
+
+    float spacing_x = spacingX * scale;
+    float spacing_y = spacingY * scale;
+    float margin_x =  marginX * scale;
+    float margin_y =  marginY * scale;
+
+    // may have extra cells from prev configuration, remove them
+    while (cells.count()>cols*rows)
+        cells.pop_back();
+    // set pos and size of each cells
     for (int i=0; i<cols*rows; ++i) {
+        if (i==cells.count())
+            cells.append(PhotoCell());
         int row = i/cols;            // Position of the box as row & col
         int col = i%cols;
-        int box_x = spacing_x + col*(spacing_x+w);
-        int box_y = spacing_y + row*(spacing_y+h);
-        QRect box = QRect(box_x, box_y, w, h);
-        boxes << box;
+        cells[i].x = margin_x + col*(spacing_x+w);
+        cells[i].y = margin_y + row*(spacing_y+h);
+        cells[i].w = w;
+        cells[i].h = h;
+        if (not cells[i].photo.isNull())// from prev setup
+            cells[i].photo = cells[i].src_photo->scaled(w, h, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
+    redraw();
+}
+
+void
+GridPaper:: redraw()
+{
     // create canvas pixmap for displaying on screen
     canvas_pixmap = QPixmap(paperW*scale, paperH*scale);
     canvas_pixmap.fill();
     // draw empty cells
     painter.begin(&canvas_pixmap);
-    foreach (QRect box, boxes)
-        painter.drawRect(box.x(), box.y(), box.width()-1, box.height()-1);
+    for (PhotoCell &cell : cells){
+        if (not cell.photo.isNull()) {
+            // center align the image in the box
+            QImage img = cell.photo;
+            QPoint offset = QPoint(cell.w-img.width(), cell.h-img.height())/2;
+            QPoint img_pos = QPoint(cell.x, cell.y)+offset;
+            painter.drawImage(img_pos, img);
+            if (add_border)
+                painter.drawRect(img_pos.x(), img_pos.y(), img.width()-1, img.height()-1);
+        }
+        else {
+            painter.drawRect(cell.x, cell.y, cell.w-1, cell.h-1);
+        }
+    }
     painter.end();
     setPixmap(canvas_pixmap);
 }
 
+void
+GridPaper:: toggleMinSpacing(bool enable)
+{
+    min_spacing = enable;
+    setupGrid();
+}
 
 void
 GridPaper:: toggleBorder(bool enable)
 {
     add_border = enable;
-    // first fill cells with image, then draw border if reauired. empty cells are untouched
-    painter.begin(&canvas_pixmap);
-    foreach (int index, image_dict.keys()) {
-        QRect box = boxes[index];
-        QImage img = image_dict.value(index).scaled(box.width(), box.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        QPoint offset = QPoint(box.width()-img.width(), box.height()-img.height())/2;
-        painter.drawImage(box.topLeft()+offset, img);
-        if (enable)
-            painter.drawRect(box.x()+offset.x(), box.y()+offset.y(), img.width()-1, img.height()-1);
-    }
-    painter.end();
-    setPixmap(canvas_pixmap);
+    redraw();
 }
 
 void
@@ -283,12 +332,11 @@ GridPaper:: mouseMoveEvent(QMouseEvent *ev)
 {
     if (not mouse_pressed)
         return;
-    int rect_w = ev->pos().x() - click_pos.x();
-    int rect_h = ev->pos().y() - click_pos.y();
-    if (not (abs(rect_w)>2 and abs(rect_h)>2)) return;
+    QRect rect(click_pos, ev->pos());
+    if (not (abs(rect.width())>2 and abs(rect.height())>2)) return;
     QPixmap pm = canvas_pixmap.copy();// copy for temporary drawing
     painter.begin(&pm);
-    painter.drawRect(click_pos.x(), click_pos.y(), rect_w, rect_h);
+    painter.drawRect(rect);
     painter.end();
     this->setPixmap(pm);
 }
@@ -296,40 +344,46 @@ GridPaper:: mouseMoveEvent(QMouseEvent *ev)
 void
 GridPaper:: mouseReleaseEvent(QMouseEvent *ev)
 {
-    int rect_w = ev->pos().x() - click_pos.x() + 1;
-    int rect_h = ev->pos().y() - click_pos.y() + 1;
-    QRect rect(click_pos.x(), click_pos.y(), rect_w, rect_h);
-    // draw images if the rect intersects cells
-    painter.begin(&canvas_pixmap);
-    foreach (QRect box, boxes) {
-        if (not box.intersects(rect))
-            continue;
-        QImage img = photo.scaled(box.width(), box.height(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        painter.fillRect(box, Qt::white); // erase prev photo if any
-        // put the image at the center of the box
-        QPoint offset = QPoint(box.width()-img.width(), box.height()-img.height())/2;
-        painter.drawImage(box.topLeft()+offset, img);
-        if (add_border)
-            painter.drawRect(box.x()+offset.x(), box.y()+offset.y(), img.width()-1, img.height()-1);
-        image_dict[boxes.indexOf(box)] = photo;
-    }
-    painter.end();
-    this->setPixmap(canvas_pixmap);
     mouse_pressed = false;
+    QRect rect(click_pos, ev->pos());
+    // fill cells with images if the rect intersects
+    for (PhotoCell &cell : cells) {
+        if (not cell.intersects(rect))
+            continue;
+        cell.src_photo = photo;
+        cell.photo = photo->scaled(cell.w, cell.h, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    redraw();
 }
 
 void
 GridPaper:: createFinalGrid()
 {
+    if (min_spacing) {
+        int new_W=0, new_H=0;
+        for (PhotoCell &cell : cells) {
+            if (cell.photo.isNull())
+                continue;
+            int w, h;
+            fitToSize(cell.src_photo->width(), cell.src_photo->height(), W, H, w, h);
+            new_W = MAX(w, new_W);
+            new_H = MAX(h, new_H);
+        }
+        W = new_W;
+        H = new_H;
+        calcSpacingsMargins();
+    }
     photo_grid = QImage(paperW, paperH, QImage::Format_RGB32);
     photo_grid.fill(Qt::white);
     QPainter painter(&photo_grid);
-    foreach (int index, image_dict.keys()) {
-        int row = index/cols;
-        int col = index%cols;
-        QImage img = image_dict.value(index).scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        int x = spacingX + col*(spacingX+W)  + (W-img.width())/2/*for center align*/;
-        int y = spacingY + row*(spacingY+H)  + (H-img.height())/2;
+    for (int i=0; i<rows*cols; i++) {
+        if (cells[i].photo.isNull())
+            continue;
+        QImage img = cells[i].src_photo->scaled(W, H, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        int row = i/cols;
+        int col = i%cols;
+        int x = marginX + col*(spacingX+W)  + (W-img.width())/2/*for center align*/;
+        int y = marginY + row*(spacingY+H)  + (H-img.height())/2;
         painter.drawImage(x, y, img);
         if (add_border)
             painter.drawRect(x, y, img.width()-1, img.height()-1);
@@ -367,7 +421,7 @@ GridPaper:: dropEvent(QDropEvent *ev)
 void
 GridPaper:: setPhoto(Thumbnail *thumb)
 {
-    photo = thumb->photo;
+    photo = &thumb->photo;
 }
 
 
@@ -385,11 +439,13 @@ CollageDialog:: CollageDialog(QWidget *parent) : QDialog(parent)
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
     QSettings settings;
-    int W = settings.value("CollageW", 1024).toInt();
-    int H = settings.value("CollageH", 720).toInt();
-    int pdf_w = settings.value("CollagePdfW", 595).toInt();
-    int pdf_h = settings.value("CollagePdfH", 842).toInt();
-    int dpi = settings.value("CollagePdfDpi", 300).toInt();
+    settings.beginGroup("PhotoCollage");
+    int W = settings.value("W", 1024).toInt();
+    int H = settings.value("H", 720).toInt();
+    int pdf_w = settings.value("PdfW", 595).toInt();
+    int pdf_h = settings.value("PdfH", 842).toInt();
+    int dpi = settings.value("PdfDpi", 300).toInt();
+    settings.endGroup();
     collagePaper = new CollagePaper(this, W, H, pdf_w, pdf_h, dpi);
     layout->addWidget(collagePaper);
     connect(collagePaper, SIGNAL(statusChanged(QString)), this, SLOT(showStatus(QString)));
@@ -411,14 +467,15 @@ CollageDialog:: setupBackground()
     CollageSetupDialog *dlg = new CollageSetupDialog(this);
     if (dlg->exec() == QDialog::Rejected) return;
     QSettings settings;
+    settings.beginGroup("PhotoCollage");
     collagePaper->background_filename = "";
     collagePaper->dpi = 0;
     if (dlg->resolutionBtn->isChecked()) {
         collagePaper->W = dlg->widthEdit->text().toInt();
         collagePaper->H = dlg->heightEdit->text().toInt();
-        settings.setValue("CollageW", collagePaper->W);
-        settings.setValue("CollageH", collagePaper->H);
-        settings.setValue("CollagePdfDpi", 0);  // this prevents using pdf paper size
+        settings.setValue("W", collagePaper->W);
+        settings.setValue("H", collagePaper->H);
+        settings.setValue("PdfDpi", 0);  // this prevents using pdf paper size
     }
     else if (dlg->pageSizeBtn->isChecked()) {
         // convert other units to point (1/72 inch))
@@ -431,13 +488,14 @@ CollageDialog:: setupBackground()
         collagePaper->pdf_w = dlg->pageWidth->value()*factor;
         collagePaper->pdf_h = dlg->pageHeight->value()*factor;
         collagePaper->dpi = dlg->dpiCombo->currentText().toInt();
-        settings.setValue("CollagePdfW", collagePaper->pdf_w);
-        settings.setValue("CollagePdfH", collagePaper->pdf_h);
-        settings.setValue("CollagePdfDpi", collagePaper->dpi);
+        settings.setValue("PdfW", collagePaper->pdf_w);
+        settings.setValue("PdfH", collagePaper->pdf_h);
+        settings.setValue("PdfDpi", collagePaper->dpi);
     }
     else {
         collagePaper->background_filename = dlg->filename;
     }
+    settings.endGroup();
     savePdfBtn->setEnabled(collagePaper->dpi != 0);
     collagePaper->setup();
 }
@@ -469,7 +527,7 @@ CollageDialog:: reject()
 void getOptimumSize(int W, int H, int &out_w, int &out_h)
 {
     if (W > H) { // landscape
-        fitToSize(W,H, 1000,670, out_w, out_h);
+        shrinkToFitSize(W,H, 1000,670, out_w, out_h);
     }
     else {
         if (W<=800) {
@@ -523,7 +581,7 @@ CollagePaper:: setup()
         item->x = 0;
         item->y = 0;
         if (item->w > paper.width() or item->h > paper.height())
-            fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+            shrinkToFitSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
     }
     draw();
 }
@@ -538,7 +596,7 @@ CollagePaper:: addItem(CollageItem *item)
     item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
     item->h = round(item->img_h*100/300.0);
     if (item->w > paper.width() or item->h > paper.height())
-        fitToSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
+        shrinkToFitSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
     item->x = MIN(item->x, paper.width() -item->w);
     item->y = MIN(item->y, paper.height()-item->h);
     if (not collageItems.isEmpty())

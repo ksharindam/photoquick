@@ -36,13 +36,27 @@ public slots:
     void selectThumbnail(Thumbnail *thumbnail);
 };
 
+class PhotoCell
+{
+public:
+    int x;
+    int y;
+    int w;
+    int h;
+    QImage photo;
+    QImage *src_photo;
+    bool intersects(QRect rect);
+};
+
 // The canvas on which collage is created and displayed.
 class GridPaper : public QLabel
 {
     Q_OBJECT
 public:
     GridPaper(QWidget *parent);
+    void redraw();
     void setupGrid();
+    void calcSpacingsMargins();
     void mouseMoveEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
@@ -55,15 +69,17 @@ public:
     int paperW, paperH; // original paper size in pixels
     int W, H;          // original cell size in pixels
     int cols, rows, DPI;
-    float scale, spacingX, spacingY;
+    float scale, spacingX, spacingY, marginX, marginY;
+    bool min_spacing;
     bool add_border;
     QPixmap canvas_pixmap; // grid which is displayed on screen
     QPainter painter;
-    QList<QRect> boxes;
-    QMap<int, QImage> image_dict;
-    QImage photo, photo_grid;
+    QList<PhotoCell> cells;
+    QImage *photo;   // currently selected photo
+    QImage photo_grid;
 public slots:
     void setPhoto(Thumbnail *thumb);
+    void toggleMinSpacing(bool ok);
     void toggleBorder(bool ok);
 signals:
     void addPhotoRequested(QImage);
