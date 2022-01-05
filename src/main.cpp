@@ -60,6 +60,7 @@ Window:: Window()
     QMenu *transformMenu = new QMenu(transformBtn);
     transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
     transformMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
+    transformMenu->addAction("Rotate by ...", this, SLOT(rotateAny()));
     transformBtn->setMenu(transformMenu);
     QMenu *decorateMenu = new QMenu(decorateBtn);
     decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
@@ -1009,6 +1010,19 @@ void
 Window:: rotateRight()
 {
     canvas->rotate(90);
+}
+
+void
+Window:: rotateAny()
+{
+    QImage img = canvas->pixmap()->toImage();
+    RotateDialog *dlg = new RotateDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        QTransform transform;
+        transform.rotate(dlg->angle);
+        data.image = data.image.transformed(transform, Qt::SmoothTransformation);
+    }
+    canvas->showScaled();
 }
 
 void

@@ -84,6 +84,7 @@ public slots:
     void origSizeImage();
     void rotateLeft();
     void rotateRight();
+    void rotateAny();
     void playPause();
     // others
     void loadPlugins();

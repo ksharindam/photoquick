@@ -63,6 +63,17 @@ signals:
 };
 
 
+class RotateDialog : public PreviewDialog
+{
+public:
+    int angle;
+    QSpinBox *angleSpin;
+
+    RotateDialog(QLabel *parent, QImage img, float scale);
+    void run();
+};
+
+
 class LensDialog : public PreviewDialog
 {
 public:

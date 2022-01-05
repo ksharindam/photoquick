@@ -145,6 +145,40 @@ PreviewDialog:: preview(QImage img)
 }
 
 
+// ----------- Preview Dialog for Rotate Any Degree --------- //
+
+RotateDialog:: RotateDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    setWindowTitle("Rotate by Any Angle");
+    QLabel *label0 = new QLabel("Enter Angle :", this);
+    angleSpin = new QSpinBox(this);
+    angleSpin->setRange(-359, 359);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                    QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(label0);
+    layout->addWidget(angleSpin);
+    layout->addWidget(btnBox);
+
+    connect(angleSpin, SIGNAL(valueChanged(int)), this, SLOT(onValueChange()));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+    onValueChange();
+}
+
+void
+RotateDialog:: run()
+{
+    angle = angleSpin->value();
+
+    QTransform transform;
+    transform.rotate(angle, Qt::ZAxis);
+    QImage img = image.transformed(transform);
+    preview(img);
+}
+
+
 // ----------- Preview Dialog for Lens Distortion Correction --------- //
 
 LensDialog:: LensDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
