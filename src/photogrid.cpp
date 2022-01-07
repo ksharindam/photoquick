@@ -36,10 +36,10 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
     QSettings settings(this);
     settings.beginGroup("PhotoGrid");
     DPI = settings.value("DPI", 300).toInt();
-    cellW = settings.value("CellW", 3.0).toFloat();
-    cellH = settings.value("CellH", 4.0).toFloat();
-    paperW = settings.value("PaperW", 6.0).toFloat();
-    paperH = settings.value("PaperH", 4.0).toFloat();
+    cellW = settings.value("CellW", 2.9).toFloat();
+    cellH = settings.value("CellH", 3.8).toFloat();
+    paperW = settings.value("PaperW", 4.0).toFloat();
+    paperH = settings.value("PaperH", 6.0).toFloat();
     unit = settings.value("PaperUnit", 0).toInt();
     settings.endGroup();
     if (paperW<1.0 or paperW>30.0 or paperH<1.0 or paperH>30.0 or unit>1) {
@@ -47,6 +47,7 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
                 "Error loading paper size settings.\nPlease Configure photo grid.");
         return;
     }
+    gridPaper->min_spacing = true;
     setup();
 }
 
@@ -70,29 +71,16 @@ GridDialog:: configure()
     GridSetupDialog *dialog = new GridSetupDialog(this);
     dialog->spinPhotoWidth->setValue(cellW);
     dialog->spinPhotoHeight->setValue(cellH);
-    dialog->spinPaperWidth->setValue(paperW);
-    dialog->spinPaperHeight->setValue(paperH);
-    dialog->paperSizeUnit->setCurrentIndex(unit);
     dialog->spinDPI->setValue(DPI);
     if ( dialog->exec() != QDialog::Accepted )
         return;
     cellW = dialog->spinPhotoWidth->value();
     cellH = dialog->spinPhotoHeight->value();
-    paperW = dialog->spinPaperWidth->value();
-    paperH = dialog->spinPaperHeight->value();
-    unit = dialog->paperSizeUnit->currentIndex();
+    paperW = dialog->paperW;
+    paperH = dialog->paperH;
+    unit = dialog->unit;
     DPI = dialog->spinDPI->value();
     setup();
-    // save settings
-    QSettings settings(this);
-    settings.beginGroup("PhotoGrid");
-    settings.setValue("DPI", DPI);
-    settings.setValue("CellW", cellW);
-    settings.setValue("CellH", cellH);
-    settings.setValue("PaperW", paperW);
-    settings.setValue("PaperH", paperH);
-    settings.setValue("PaperUnit", unit);
-    settings.endGroup();
 }
 
 void
@@ -148,6 +136,68 @@ GridDialog:: showHelp()
         " drag and drop from file manager.\n\n"
         "Configure : Click Configure button to change page size or photo size.";
     QMessageBox::about(this, "Photo Grid for Printing", helptext);
+}
+
+typedef struct {
+    double w;
+    double h;
+    int unit;
+} PaperSize;
+
+
+GridSetupDialog:: GridSetupDialog(QWidget *parent) : QDialog(parent)
+{
+    setupUi(this);
+    connect(paperSizeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onPaperSizeChange(int)));
+    QSettings settings(this);
+    settings.beginGroup("PhotoGrid");
+    int paper_size_index = settings.value("PaperSizeIndex", 1).toInt();
+    paperW = settings.value("CustomPaperW", 4.0).toFloat();
+    paperH = settings.value("CustomPaperH", 6.0).toFloat();
+    unit = settings.value("CustomPaperUnit", 0).toInt();
+    settings.endGroup();
+    paperSizeCombo->setCurrentIndex(paper_size_index);
+    spinPaperWidth->setValue(paperW);
+    spinPaperHeight->setValue(paperH);
+    paperSizeUnit->setCurrentIndex(unit);
+}
+
+void
+GridSetupDialog:: onPaperSizeChange(int index)
+{
+    bool hide = paperSizeCombo->itemText(index)!="Custom";
+    spinPaperWidth->setHidden(hide);
+    spinPaperHeight->setHidden(hide);
+    xLabel->setHidden(hide);
+    paperSizeUnit->setHidden(hide);
+}
+
+void
+GridSetupDialog:: accept()
+{
+    QList<PaperSize> sizes = {/*A4*/{21.0, 29.7, 1}, /*4R*/{4.0, 6.0, 0}, /*2L*/{5.0, 7.0, 0},
+        {spinPaperWidth->value(), spinPaperHeight->value(), paperSizeUnit->currentIndex()}};
+    PaperSize size = sizes[paperSizeCombo->currentIndex()];
+    paperW = (float)size.w;
+    paperH = (float)size.h;
+    unit = size.unit;
+    // save setup
+    QSettings settings(this);
+    settings.beginGroup("PhotoGrid");
+    settings.setValue("PaperSizeIndex", paperSizeCombo->currentIndex());
+    if (paperSizeCombo->currentText()=="Custom"){
+        settings.setValue("CustomPaperW", paperW);
+        settings.setValue("CustomPaperH", paperH);
+        settings.setValue("CustomPaperUnit", unit);
+    }
+    settings.setValue("PaperW", paperW);
+    settings.setValue("PaperH", paperH);
+    settings.setValue("PaperUnit", unit);
+    settings.setValue("DPI", spinDPI->value());
+    settings.setValue("CellW", spinPhotoWidth->value());
+    settings.setValue("CellH", spinPhotoHeight->value());
+    settings.endGroup();
+    QDialog::accept();
 }
 
 

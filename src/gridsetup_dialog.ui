@@ -10,27 +10,13 @@
     <x>0</x>
     <y>0</y>
     <width>441</width>
-    <height>240</height>
+    <height>205</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Setup Grid</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Paper Size :</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>DPI :</string>
-     </property>
-    </widget>
-   </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
@@ -57,8 +43,8 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="label_5">
+   <item row="1" column="2">
+    <widget class="QLabel" name="xLabel">
      <property name="maximumSize">
       <size>
        <width>10</width>
@@ -74,6 +60,9 @@
     <widget class="QLabel" name="label_6">
      <property name="text">
       <string>x</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
@@ -96,22 +85,47 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="1" colspan="3">
-    <widget class="QSpinBox" name="spinDPI">
+   <item row="1" column="1">
+    <widget class="QDoubleSpinBox" name="spinPaperWidth">
      <property name="alignment">
       <set>Qt::AlignCenter</set>
      </property>
+     <property name="decimals">
+      <number>1</number>
+     </property>
      <property name="minimum">
-      <number>100</number>
+      <double>1.000000000000000</double>
      </property>
      <property name="maximum">
-      <number>1200</number>
+      <double>30.000000000000000</double>
      </property>
      <property name="singleStep">
-      <number>100</number>
+      <double>0.500000000000000</double>
      </property>
      <property name="value">
-      <number>300</number>
+      <double>6.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="3">
+    <widget class="QDoubleSpinBox" name="spinPaperHeight">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="decimals">
+      <number>1</number>
+     </property>
+     <property name="minimum">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>30.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.500000000000000</double>
+     </property>
+     <property name="value">
+      <double>4.000000000000000</double>
      </property>
     </widget>
    </item>
@@ -122,7 +136,7 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="4">
+   <item row="1" column="4">
     <widget class="QComboBox" name="paperSizeUnit">
      <item>
       <property name="text">
@@ -146,47 +160,59 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QDoubleSpinBox" name="spinPaperWidth">
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-     <property name="decimals">
-      <number>1</number>
-     </property>
-     <property name="minimum">
-      <double>1.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>30.000000000000000</double>
-     </property>
-     <property name="singleStep">
-      <double>0.500000000000000</double>
-     </property>
-     <property name="value">
-      <double>6.000000000000000</double>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Paper Size :</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="3">
-    <widget class="QDoubleSpinBox" name="spinPaperHeight">
+   <item row="0" column="1" colspan="2">
+    <widget class="QComboBox" name="paperSizeCombo">
+     <property name="currentIndex">
+      <number>3</number>
+     </property>
+     <item>
+      <property name="text">
+       <string>A4 (210x297mm)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>4R (4x6in)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>2L (5x7in)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Custom</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="0" column="3" colspan="2">
+    <widget class="QSpinBox" name="spinDPI">
      <property name="alignment">
       <set>Qt::AlignCenter</set>
      </property>
-     <property name="decimals">
-      <number>1</number>
+     <property name="suffix">
+      <string> DPI</string>
      </property>
      <property name="minimum">
-      <double>1.000000000000000</double>
+      <number>100</number>
      </property>
      <property name="maximum">
-      <double>30.000000000000000</double>
+      <number>1200</number>
      </property>
      <property name="singleStep">
-      <double>0.500000000000000</double>
+      <number>100</number>
      </property>
      <property name="value">
-      <double>4.000000000000000</double>
+      <number>300</number>
      </property>
     </widget>
    </item>

@@ -1,7 +1,6 @@
 // Based on the specification given in
 // https://www.media.mit.edu/pia/Research/deepview/exif.html
 #include "exif.h"
-#include <stdio.h>
 #include <list>
 #include <sstream>
 #include <cmath>

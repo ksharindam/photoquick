@@ -109,8 +109,14 @@ public slots:
 
 class GridSetupDialog : public QDialog, public Ui_GridSetupDialog
 {
+    Q_OBJECT
 public:
-    GridSetupDialog(QWidget *parent): QDialog(parent) { setupUi(this); }
+    float paperW, paperH;
+    int unit;
+    GridSetupDialog(QWidget *parent);
+    void accept();
+public slots:
+    void onPaperSizeChange(int index);
 };
 
 
