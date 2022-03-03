@@ -35,6 +35,7 @@
 #include <QPainter>
 #include <QDesktopWidget>
 #include <QSettings>
+#include <QClipboard>
 #include <QMenu>
 #include <QRegExp>
 #include <QBuffer>
@@ -42,6 +43,7 @@
 #include <QImageWriter>
 #include <QDesktopServices>
 #include <QUrl>
+
 
 
 Window:: Window()
@@ -54,8 +56,10 @@ Window:: Window()
     fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
     fileMenu->addSeparator();
     fileMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
+    fileMenu->addAction("Copy to Clipboard", this, SLOT(copyToClipboard()));
     fileMenu->addSeparator();
     fileMenu->addAction("Open Image", this, SLOT(openFile()));
+    fileMenu->addAction("Open from Clipboard", this, SLOT(openFromClipboard()));
     fileBtn->setMenu(fileMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
     transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
@@ -123,8 +127,8 @@ Window:: Window()
     timer = new QTimer(this);
     connectSignals();
     // Initialize Variables
-    data.filename = QString("photoquick.jpg");
     data.window = this;
+    QDir::setCurrent(QDir::homePath());
 
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
@@ -251,6 +255,16 @@ Window:: loadPlugins()
 }
 
 void
+Window:: openStartupImage()
+{
+    QImage img = QImage(":/photoquick.jpg");
+    canvas->setImage(img);
+    adjustWindowSize();
+    QFileInfo fi("photoquick.jpg");
+    data.filename = fi.absoluteFilePath();;
+}
+
+void
 Window:: openFile()
 {
     QString filefilter = "Image files (*.jpg *.png *.jpeg *.svg *.gif *.tiff *.ppm *.bmp);;JPEG Images (*.jpg *.jpeg);;"
@@ -298,6 +312,36 @@ Window:: openImage(QString filepath)
     QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
     setWindowTitle(fileinfo.fileName());
+}
+
+void
+Window:: openFromClipboard()
+{
+    QImage img = QApplication::clipboard()->image();
+    if (img.isNull()){
+        QMessageBox::warning(this, "Clipboard Empty !", "No image in Clipboard !");
+        return;
+    }
+    canvas->scale = fitToScreenScale(img);
+    canvas->setImage(img);
+    adjustWindowSize();
+    disableButtons(VIEW_BUTTON, false);
+    disableButtons(EDIT_BUTTON, false);
+    playPauseBtn->setIcon(QIcon(":/icons/play.png"));
+    // set filename and window title
+    QFileInfo fileinfo("Image.jpg");
+    QString filename = fileinfo.absoluteFilePath();
+    data.filename = getNewFileName(filename);
+    fileinfo.setFile(data.filename);
+    setWindowTitle(fileinfo.fileName());
+}
+
+void
+Window:: copyToClipboard()
+{
+    if (data.image.isNull())
+        return;
+    QApplication::clipboard()->setImage(data.image);
 }
 
 void
@@ -1275,9 +1319,7 @@ int main(int argc, char *argv[])
         win->openImage(app.arguments().at(1));
     }
     else {
-        QImage img = QImage(":/photoquick.jpg");
-        win->canvas->setImage(img);
-        win->adjustWindowSize();
+        win->openStartupImage();
     }
     // plugins will be loaded after first image is shown.
     // Thus even if it has hundreds plugins, startup will not be slower

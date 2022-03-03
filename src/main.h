@@ -15,10 +15,6 @@ class Window : public QMainWindow, Ui_MainWindow
 {
     Q_OBJECT
 public:
-    Window();
-    void openImage(QString filename);
-    void saveImage(QString filename);
-    void adjustWindowSize(bool animation=false);
     //Variables declaration
     Canvas *canvas;
     ImageData data;
@@ -26,8 +22,13 @@ public:
     int btnboxes_w, statusbar_h, windowdecor_w, windowdecor_h;
     QTimer *timer;      // Slideshow timer
     QMap<QString, QMenu*> menu_dict;
-private:
+    // functions
+    Window();
+    void openStartupImage();
+    void openImage(QString filename);
+    void saveImage(QString filename);
     void connectSignals();
+    void adjustWindowSize(bool animation=false);
     float fitToScreenScale(QImage img);
     float fitToWindowScale(QImage img);
     void disableButtons(ButtonType type, bool disable);
@@ -35,6 +36,8 @@ private:
     void addMaskWidget();
 public slots:
     void openFile();
+    void openFromClipboard();
+    void copyToClipboard();
     void overwrite();
     void saveAs();
     void saveACopy();
