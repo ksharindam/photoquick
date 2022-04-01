@@ -69,6 +69,7 @@ public slots:
     void sigmoidContrast(); // Enhance low light images
     void enhanceLight();
     void gammaCorrection();
+    void adjustColorLevels();
     void whiteBalance();
     void enhanceColors();
     void vignetteFilter();

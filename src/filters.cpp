@@ -706,6 +706,32 @@ void unsharpMask(QImage &img, float factor, int thresh)
 
 
 //************* ------------ Level Image ------------ ****************
+
+void levelImageChannel(QImage &img, int channel, float black_pt, float white_pt,
+                        float out_black, float out_white)
+{
+    int w = img.width();
+    int h = img.height();
+    // pre-calculate output values for all input values
+    uchar output_val[256]={};
+    for (int i=0; i<256; i++){
+        float lin_val = 255.0*srgb_to_linear(i/255.0);
+        lin_val = out_black + (out_white-out_black)*(lin_val-black_pt)/(white_pt-black_pt);
+        int val = 255.0*linear_to_srgb(lin_val/255.0);
+        output_val[i] = Clamp(val);
+    }
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        uchar *row;
+        #pragma omp critical
+        { row = (uchar*) img.scanLine(y); }
+        for (int x=0; x<w; x++) {
+            row[4*x+channel] = output_val[row[4*x+channel]];
+        }
+    }
+}
+
 #define ScaleColor(x, mini, maxi) (255.0*((x)-(mini))/((maxi)-(mini)))
 
 // scale the colors range so that black_pt becomes 0 and white_pt becomes 255.

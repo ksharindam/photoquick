@@ -46,6 +46,7 @@ class PreviewDialog : public QDialog
 {
     Q_OBJECT
 public:
+    QLabel *canvas;
     QImage image;
     float scale;
     QTimer *timer;
@@ -53,13 +54,11 @@ public:
     // canvas pixmap is passed, and scale is set 1.0
     // else, the original image is passed, and scale is set to canvas->scale
     PreviewDialog(QLabel *parent, QImage img, float scale);
-    void preview(QImage);
+    // implement getResult() in subclass. which apply filter on input image and returns output
+    virtual QImage getResult(QImage img) = 0;
 public slots:
-    void onValueChange();
-    // implement run() in subclass. apply filter, then call preview()
-    virtual void run() = 0;
-signals:
-    void previewRequested(const QPixmap&);
+    void triggerPreview();
+    void preview();
 };
 
 
@@ -70,7 +69,7 @@ public:
     QSpinBox *angleSpin;
 
     RotateDialog(QLabel *parent, QImage img, float scale);
-    void run();
+    QImage getResult(QImage img);
 };
 
 
@@ -85,7 +84,7 @@ public:
     QDoubleSpinBox *zoomSpin;
 
     LensDialog(QLabel *parent, QImage img, float scale);
-    void run();
+    QImage getResult(QImage img);
 };
 
 
@@ -96,7 +95,7 @@ public:
     QSpinBox *thresholdSpin;
 
     ThresholdDialog(QLabel *parent, QImage img, float scale);
-    void run();
+    QImage getResult(QImage img);
 };
 
 
@@ -107,6 +106,37 @@ public:
     QDoubleSpinBox *gammaSpin;
 
     GammaDialog(QLabel *parent, QImage img, float scale);
+    QImage getResult(QImage img);
+};
+
+
+class LevelsWidget : public QLabel
+{
+    Q_OBJECT
+public:
+    int drag_slider;
+    int left_val, right_val;
+    QColor color;
+    QPoint click_pos;
+
+    LevelsWidget(QWidget *parent, int left_val, int right_val, QColor color);
+    void redraw(int l_val, int r_val);
+    void mousePressEvent(QMouseEvent *ev);
+    void mouseReleaseEvent(QMouseEvent *ev);
+    void mouseMoveEvent(QMouseEvent *ev);
+signals:
+    void valueChanged();
+};
+
+
+class LevelsDialog : public PreviewDialog
+{
+public:
+    LevelsWidget *inputRSlider, *inputGSlider, *inputBSlider;
+    LevelsWidget *outputRSlider, *outputGSlider, *outputBSlider;
+
+    LevelsDialog(QLabel *parent, QImage img, float scale);
+    QImage getResult(QImage img);
     void run();
 };
 

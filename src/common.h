@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.9.3"
+#define PROG_VERSION    "4.10.0"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -77,8 +77,28 @@ public:
 
 void debug(const char *format, ...);
 
-// Byte order is ARGB if big endian else BGRA
+
+// Runtime detection of byte order
 inline bool isBigEndian()
 {
     int i=1; return ! *((char *)&i);
 }
+
+// Compile time detection of byte order
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+enum
+{
+    CHANNEL_B,
+    CHANNEL_G,
+    CHANNEL_R,
+    CHANNEL_A
+};
+#else
+enum
+{
+    CHANNEL_A,
+    CHANNEL_R,
+    CHANNEL_G,
+    CHANNEL_B
+};
+#endif

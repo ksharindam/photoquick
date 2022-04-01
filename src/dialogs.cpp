@@ -117,31 +117,33 @@ ExpandBorderDialog:: ExpandBorderDialog(QWidget *parent, int border_w) : QDialog
 
 PreviewDialog:: PreviewDialog(QLabel *canvas, QImage img, float scale) : QDialog(canvas)
 {
+    this->canvas = canvas;
     this->image = img;
     this->scale = scale;
     timer = new QTimer(this);
     timer->setSingleShot(true);
     timer->setInterval(800);
-    connect(timer, SIGNAL(timeout()), this, SLOT(run()));
-    connect(this, SIGNAL(previewRequested(const QPixmap&)), canvas, SLOT(setPixmap(const QPixmap&)));
+    connect(timer, SIGNAL(timeout()), this, SLOT(preview()));
 }
 
 void
-PreviewDialog:: onValueChange()
+PreviewDialog:: triggerPreview()
 {
     timer->start();
 }
 
 void
-PreviewDialog:: preview(QImage img)
+PreviewDialog:: preview()
 {
+    QImage img = getResult(image);
+
     QPixmap pm = QPixmap::fromImage(img);
     if (scale != 1.0) {
         Qt::TransformationMode mode = floorf(scale) == ceilf(scale)? // integer scale
                                     Qt::FastTransformation : Qt::SmoothTransformation;
         pm = pm.scaledToHeight(scale*pm.height(), mode);
     }
-    previewRequested(pm);
+    canvas->setPixmap(pm);
 }
 
 
@@ -160,22 +162,19 @@ RotateDialog:: RotateDialog(QLabel *canvas, QImage img, float scale) : PreviewDi
     layout->addWidget(angleSpin);
     layout->addWidget(btnBox);
 
-    connect(angleSpin, SIGNAL(valueChanged(int)), this, SLOT(onValueChange()));
+    connect(angleSpin, SIGNAL(valueChanged(int)), this, SLOT(triggerPreview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
-
-    onValueChange();
 }
 
-void
-RotateDialog:: run()
+QImage
+RotateDialog:: getResult(QImage img)
 {
     angle = angleSpin->value();
 
     QTransform transform;
     transform.rotate(angle, Qt::ZAxis);
-    QImage img = image.transformed(transform);
-    preview(img);
+    return img.transformed(transform, Qt::SmoothTransformation);
 }
 
 
@@ -210,25 +209,24 @@ LensDialog:: LensDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog
     layout->addWidget(zoomSpin, 2,1,1,1);
     layout->addWidget(btnBox, 3,0,1,2);
 
-    connect(mainSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
-    connect(edgeSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
-    connect(zoomSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
+    connect(mainSpin, SIGNAL(valueChanged(double)), this, SLOT(triggerPreview()));
+    connect(edgeSpin, SIGNAL(valueChanged(double)), this, SLOT(triggerPreview()));
+    connect(zoomSpin, SIGNAL(valueChanged(double)), this, SLOT(triggerPreview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    onValueChange();
+    triggerPreview();
 }
 
-void
-LensDialog:: run()
+QImage
+LensDialog:: getResult(QImage img)
 {
     main = mainSpin->value();
     edge = edgeSpin->value();
     zoom = zoomSpin->value();
 
-    QImage img = image.copy();
     lensDistortion(img, main, edge, zoom);
-    preview(img);
+    return img;
 }
 
 
@@ -248,21 +246,20 @@ ThresholdDialog:: ThresholdDialog(QLabel *canvas, QImage img, float scale) : Pre
     layout->addWidget(thresholdSpin);
     layout->addWidget(btnBox);
 
-    connect(thresholdSpin, SIGNAL(valueChanged(int)), this, SLOT(onValueChange()));
+    connect(thresholdSpin, SIGNAL(valueChanged(int)), this, SLOT(triggerPreview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    onValueChange();
+    triggerPreview();
 }
 
-void
-ThresholdDialog:: run()
+QImage
+ThresholdDialog:: getResult(QImage img)
 {
     thresh = thresholdSpin->value();
 
-    QImage img = image.copy();
     threshold(img, thresh);
-    preview(img);
+    return img;
 }
 
 
@@ -283,19 +280,155 @@ GammaDialog:: GammaDialog(QLabel *canvas, QImage img, float scale) : PreviewDial
     layout->addWidget(gammaSpin);
     layout->addWidget(btnBox);
 
-    connect(gammaSpin, SIGNAL(valueChanged(double)), this, SLOT(onValueChange()));
+    connect(gammaSpin, SIGNAL(valueChanged(double)), this, SLOT(triggerPreview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    onValueChange();
+    triggerPreview();
 }
 
-void
-GammaDialog:: run()
+QImage
+GammaDialog:: getResult(QImage img)
 {
     gamma = gammaSpin->value();
 
-    QImage img = image.copy();
     applyGamma(img, gamma);
-    preview(img);
+    return img;
+}
+
+
+// ----------- Preview Dialog for Color Levels Adjustment --------- //
+
+enum {
+    NO_SLIDER,
+    LEFT_SLIDER,
+    RIGHT_SLIDER
+};
+
+#include <QPainter>
+#include <QMouseEvent>
+
+LevelsWidget:: LevelsWidget(QWidget *parent, int l_val, int r_val, QColor clr) : QLabel(parent)
+{
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setMouseTracking(true);
+    drag_slider = NO_SLIDER;
+    left_val = l_val;
+    right_val = r_val;
+    color = clr;
+    redraw(left_val, right_val);
+}
+
+void
+LevelsWidget:: redraw(int l_val, int r_val)
+{
+    QPixmap pm(256, 32);
+    pm.fill(Qt::white);
+    QPainter painter(&pm);
+    QLinearGradient grad(0,0,255,0);
+    grad.setColorAt(0, Qt::black);
+    grad.setColorAt(1, color);
+    painter.setBrush(QBrush(grad));
+    painter.drawRect(0,0, 255, 16);
+
+    // draw left slider
+    painter.setBrush(Qt::gray);
+    QPoint l_pt(l_val,16);
+    QPoint l_pts[] = {l_pt, l_pt+QPoint(-8, 15), l_pt+QPoint(8,15)};
+    painter.drawConvexPolygon(l_pts,3);
+    // draw right slider
+    painter.setBrush(Qt::red);
+    QPoint r_pt(r_val,16);
+    QPoint r_pts[] = {r_pt, r_pt+QPoint(-8, 15), r_pt+QPoint(8,15)};
+    painter.drawConvexPolygon(r_pts,3);
+    painter.end();
+    setPixmap(pm);
+}
+
+void
+LevelsWidget:: mousePressEvent(QMouseEvent *ev)
+{
+    click_pos = ev->pos();
+    if (abs(click_pos.x()-right_val)<8)
+        drag_slider = RIGHT_SLIDER;
+    else if (abs(click_pos.x()-left_val)<8)
+        drag_slider = LEFT_SLIDER;
+}
+
+void
+LevelsWidget:: mouseReleaseEvent(QMouseEvent *ev)
+{
+    if (drag_slider==LEFT_SLIDER){
+        left_val = MAX(left_val + ev->pos().x() - click_pos.x(), 0);
+        left_val = MIN(left_val, right_val-8);
+    }
+    else if (drag_slider==RIGHT_SLIDER){
+        right_val = MIN(right_val + ev->pos().x() - click_pos.x(), 255);
+        right_val = MAX(left_val+8, right_val);
+    }
+    drag_slider = NO_SLIDER;
+    emit valueChanged();
+}
+
+void
+LevelsWidget:: mouseMoveEvent(QMouseEvent *ev)
+{
+    if (drag_slider==NO_SLIDER)
+        return;
+    if (drag_slider==LEFT_SLIDER){
+        int left = MIN(left_val + ev->pos().x() - click_pos.x(), right_val-8);
+        redraw(MAX(left, 0), right_val);
+    }
+    else {
+        int right = MAX(right_val + ev->pos().x() - click_pos.x(), left_val+8);
+        redraw(left_val, MIN(right, 255));
+    }
+}
+
+
+LevelsDialog:: LevelsDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    setWindowTitle("Adjust Color Levels");
+    QLabel *label0 = new QLabel("Input Levels", this);
+    QLabel *label1 = new QLabel("Output Levels", this);
+    inputRSlider = new LevelsWidget(this,0,255,Qt::red);
+    inputGSlider = new LevelsWidget(this,0,255,Qt::green);
+    inputBSlider = new LevelsWidget(this,0,255,Qt::blue);
+    outputRSlider = new LevelsWidget(this,0,255,Qt::red);
+    outputGSlider = new LevelsWidget(this,0,255,Qt::green);
+    outputBSlider = new LevelsWidget(this,0,255,Qt::blue);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                    QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QGridLayout *layout = new QGridLayout(this);
+
+    layout->addWidget(label0, 0,0,1,1);
+    layout->addWidget(label1, 0,1,1,1);
+    layout->addWidget(inputRSlider, 1,0,1,1);
+    layout->addWidget(outputRSlider, 1,1,1,1);
+    layout->addWidget(inputGSlider, 2,0,1,1);
+    layout->addWidget(outputGSlider, 2,1,1,1);
+    layout->addWidget(inputBSlider, 3,0,1,1);
+    layout->addWidget(outputBSlider, 3,1,1,1);
+    layout->addWidget(btnBox, 4,0,2,2);
+
+    connect(inputRSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(inputGSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(inputBSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(outputRSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(outputGSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(outputBSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+QImage
+LevelsDialog:: getResult(QImage img)
+{
+    levelImageChannel(img, CHANNEL_R, inputRSlider->left_val, inputRSlider->right_val,
+                                    outputRSlider->left_val, outputRSlider->right_val);
+    levelImageChannel(img, CHANNEL_G, inputGSlider->left_val, inputGSlider->right_val,
+                                    outputGSlider->left_val, outputGSlider->right_val);
+    levelImageChannel(img, CHANNEL_B, inputBSlider->left_val, inputBSlider->right_val,
+                                    outputBSlider->left_val, outputBSlider->right_val);
+    return img;
 }

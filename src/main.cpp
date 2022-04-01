@@ -76,6 +76,7 @@ Window:: Window()
     QMenu *filtersMenu = new QMenu(filtersBtn);
     QMenu *colorMenu = filtersMenu->addMenu("Color");
         colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
+        colorMenu->addAction("Adjust Levels...", this, SLOT(adjustColorLevels()));
         colorMenu->addAction("Color Balance", this, SLOT(grayWorldFilter()));
         colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
         colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
@@ -837,7 +838,7 @@ Window:: lensDistort()
     QImage img = canvas->pixmap()->toImage();
     LensDialog *dlg = new LensDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
-        lensDistortion(data.image, dlg->main, dlg->edge, dlg->zoom);
+        data.image = dlg->getResult(data.image);
     }
     canvas->showScaled();
 }
@@ -850,12 +851,23 @@ Window:: toGrayScale()
 }
 
 void
+Window:: adjustColorLevels()
+{
+    QImage img = canvas->pixmap()->toImage();
+    LevelsDialog *dlg = new LevelsDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        data.image = dlg->getResult(data.image);
+    }
+    canvas->showScaled();
+}
+
+void
 Window:: applyThreshold()
 {
     QImage img = canvas->pixmap()->toImage();
     ThresholdDialog *dlg = new ThresholdDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
-        threshold(data.image, dlg->thresh);
+        data.image = dlg->getResult(data.image);
     }
     canvas->showScaled();
 }
@@ -920,7 +932,7 @@ Window:: gammaCorrection()
     QImage img = canvas->pixmap()->toImage();
     GammaDialog *dlg = new GammaDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
-        applyGamma(data.image, dlg->gamma);
+        data.image = dlg->getResult(data.image);
     }
     canvas->showScaled();
 }
@@ -1062,9 +1074,7 @@ Window:: rotateAny()
     QImage img = canvas->pixmap()->toImage();
     RotateDialog *dlg = new RotateDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
-        QTransform transform;
-        transform.rotate(dlg->angle);
-        data.image = data.image.transformed(transform, Qt::SmoothTransformation);
+        data.image = dlg->getResult(data.image);
     }
     canvas->showScaled();
 }

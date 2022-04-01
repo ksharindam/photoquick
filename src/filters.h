@@ -28,6 +28,10 @@ void unsharpMask(QImage &img, float factor=1.0, int thresh=5);
 // remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
 
+// Adjust image levels for a channel
+void levelImageChannel(QImage &img, int channel, float black_pt, float white_pt,
+                                                float out_black, float out_white);
+
 // Sigmoidal Contrast to enhance low light images
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 
