@@ -270,7 +270,7 @@ GammaDialog:: GammaDialog(QLabel *canvas, QImage img, float scale) : PreviewDial
     setWindowTitle("Apply Gamma");
     QLabel *label0 = new QLabel("Enter the value of Gamma :", this);
     gammaSpin = new QDoubleSpinBox(this);
-    gammaSpin->setSingleStep(0.1);
+    gammaSpin->setSingleStep(0.05);
     gammaSpin->setRange(0.1, 10.0);
     gammaSpin->setValue( gamma );
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |

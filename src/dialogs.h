@@ -102,7 +102,7 @@ public:
 class GammaDialog : public PreviewDialog
 {
 public:
-    float gamma = 1.6;
+    float gamma = 1.2;
     QDoubleSpinBox *gammaSpin;
 
     GammaDialog(QLabel *parent, QImage img, float scale);
