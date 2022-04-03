@@ -211,7 +211,7 @@ std::string getPngIdat(char *rawdata, int rawdata_size)
 
 std::string readFile(std::string filename)
 {
-    std::ifstream inFile(filename);
+    std::ifstream inFile(filename, std::ios::binary);
     std::stringstream strStream;
     strStream << inFile.rdbuf();
     std::string str = strStream.str();
