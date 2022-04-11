@@ -809,7 +809,6 @@ int percentile(unsigned int histogram[], float perc, int N)
 
 void stretchContrast(QImage &img)
 {
-    float midpoint = 0.3;
     int w = img.width();
     int h = img.height();
     hsvImg(img);
@@ -826,7 +825,7 @@ void stretchContrast(QImage &img)
     int min = percentile(histogram, 0.5, w*h);
     int max = percentile(histogram, 99.5, w*h);
     for (int i=0; i<256; i++) {
-        int val = 255*ScaledSigmoidal(3, midpoint, i/255.0, min/255.0, max/255.0);
+        int val = ScaleColor(i, min, max);
         histogram[i] = Clamp(val);
     }
     #pragma omp parallel for

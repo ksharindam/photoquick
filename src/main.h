@@ -58,23 +58,27 @@ public slots:
     void magicEraser();
     void iScissor();
     void removeMaskWidget();
-    // filters
+    // color filters
     void toGrayScale();
-    void applyThreshold();
-    void adaptiveThresh();
-    void blur();
-    void sharpenImage();
-    void reduceSpeckleNoise();
-    void removeDust();
-    void sigmoidContrast(); // Enhance low light images
-    void enhanceLight();
-    void gammaCorrection();
     void adjustColorLevels();
+    void grayWorldFilter();
     void whiteBalance();
     void enhanceColors();
+    // threshold filters
+    void applyThreshold();
+    void adaptiveThresh();
+    // brightness filters
+    void adjustGamma();
+    void stretchImageContrast();
+    void sigmoidContrast();
+    // denoise filters
+    void reduceSpeckleNoise();
+    void removeDust();
+    // other filters
+    void blur();
+    void sharpenImage();
     void vignetteFilter();
     void pencilSketchFilter();
-    void grayWorldFilter();
     void lensDistort();
     // info menu
     void imageInfo();

@@ -84,9 +84,9 @@ Window:: Window()
         thresholdMenu->addAction("Threshold", this, SLOT(applyThreshold()));
         thresholdMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
     QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
-        brightnessMenu->addAction("Enhance Contrast", this, SLOT(sigmoidContrast()));
-        brightnessMenu->addAction("Enhance Low Light", this, SLOT(enhanceLight()));
-        brightnessMenu->addAction("Gamma Correction", this, SLOT(gammaCorrection()));
+        brightnessMenu->addAction("Adjust Brightness", this, SLOT(adjustGamma()));
+        brightnessMenu->addAction("Stretch Contrast", this, SLOT(stretchImageContrast()));
+        brightnessMenu->addAction("Sigmoid Contrast", this, SLOT(sigmoidContrast()));
     QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
@@ -919,15 +919,16 @@ Window:: sigmoidContrast()
     sigmoidalContrast(data.image, 0.3);
     canvas->showScaled();
 }
+
 void
-Window:: enhanceLight()
+Window:: stretchImageContrast()
 {
     stretchContrast(data.image);
     canvas->showScaled();
 }
 
 void
-Window:: gammaCorrection()
+Window:: adjustGamma()
 {
     QImage img = canvas->pixmap()->toImage();
     GammaDialog *dlg = new GammaDialog(canvas, img, 1.0);
