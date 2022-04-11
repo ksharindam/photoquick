@@ -111,6 +111,7 @@ public:
 
     InpaintDialog(QImage &img, QWidget *parent);
     void keyPressEvent(QKeyEvent *ev);
+    void done(int val);
 public slots:
     void changeDrawMode(bool checked);
     void changeBrushSize(int size);

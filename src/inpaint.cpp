@@ -2,6 +2,7 @@
 
 #include "inpaint.h"
 #include "common.h"
+#include <QSettings>
 #include <cmath>
 #include <chrono>
 #define TIME_START auto start = std::chrono::steady_clock::now();
@@ -785,13 +786,18 @@ InpaintDialog:: InpaintDialog(QImage &img, QWidget *parent) : QDialog(parent)
     connect(canvas, SIGNAL(mouseReleased(QPoint)), this, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), this, SLOT(onMouseMove(QPoint)));
 
-    brushSizeLabel->setText("Brush Size : 16");
+    QSettings settings(this);
+    settings.beginGroup("Inpaint");
+    int brush_size = settings.value("BrushSize", 16).toInt();
+    settings.endGroup();
+
+    brushSizeLabel->setText(QString("Brush Size : %1").arg(brush_size));
 
     brush_pen = QPen(Qt::white);
     brush_pen.setCapStyle(Qt::RoundCap);
     eraser_pen = QPen(Qt::black);
     eraser_pen.setCapStyle(Qt::RoundCap);
-    setBrushSize(16);
+    setBrushSize(brush_size);
     scaleBy(1.0);
 }
 
@@ -1077,4 +1083,14 @@ InpaintDialog:: updateImageArea(int x, int y, QImage part)
     painter.drawImage(QPoint(x,y), part);
     painter.end();
     scaleBy(scale);
+}
+
+void
+InpaintDialog:: done(int val)
+{
+    QSettings settings(this);
+    settings.beginGroup("Inpaint");
+    settings.setValue("BrushSize", brushSizeSlider->value());
+    settings.endGroup();
+    QDialog::done(val);
 }
