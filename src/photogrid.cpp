@@ -895,10 +895,12 @@ CollagePaper:: savePdf()
         CollageItem *item = collageItems.at(i);
         img.set("Width", item->img_w);
         img.set("Height", item->img_h);
+        // Directly embed jpeg without any changes
         if (item->jpgOnDisk()) {
             std::string path_str = item->filename.toUtf8().constData();
             writer.addObj(img, readFile(path_str) );
         }
+        // Load as QImage, save to buffer as jpeg and then embed
         else {
             QByteArray bArray;
             QBuffer buffer(&bArray);
@@ -1009,8 +1011,9 @@ CollageItem:: isNull()
 bool
 CollageItem:: jpgOnDisk()
 {
-    return (not (not image_.isNull() or this->border or
-            this->filename.endsWith(".png", Qt::CaseInsensitive)));
+    bool is_jpg = this->filename.endsWith(".jpg", Qt::CaseInsensitive) or
+                  this->filename.endsWith(".jpeg", Qt::CaseInsensitive);
+    return is_jpg && !this->border;
 }
 
 bool
