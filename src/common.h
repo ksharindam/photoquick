@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.10.4"
+#define PROG_VERSION    "4.10.5"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -53,6 +53,9 @@ float roundOff(float num, int dec);
 
 // waits for the specified time in milliseconds
 void waitFor(int millisec);
+
+// get file format from magic numbers
+const char* getFormat(QString filename);
 
 // load an image from file
 // Returns an autorotated image according to exif data

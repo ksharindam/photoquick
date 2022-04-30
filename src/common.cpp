@@ -8,6 +8,7 @@
 #include <QBuffer>
 #include <QTransform>
 #include <QIcon>
+#include <QImageReader>
 #include <cmath>
 #include <unistd.h> // dup()
 
@@ -61,11 +62,39 @@ void waitFor(int millisec)
     loop->deleteLater();
 }
 
+const char* getFormat(QString filename)
+{
+    FILE *f = qfopen(filename, "rb");
+    if (f==NULL)
+        return "";
+    uchar buff[12]={};
+    for (int i=0, c=0; i<12 && (c=getc(f))!=EOF; i++){
+        buff[i] = c;
+    }
+    fclose(f);
+    if (buff[0]==0xFF && buff[1]==0xD8 && buff[2]==0xFF)
+        return "jpeg";
+    if (buff[0]==0x89 && buff[1]=='P' && buff[2]=='N' && buff[3]=='G')
+        return "png";
+    if (buff[0]=='G' && buff[1]=='I' && buff[2]=='F' && buff[3]=='8')
+        return "gif";
+    if (buff[8]=='W' && buff[9]=='E' && buff[10]=='B' && buff[11]=='P')
+        return "webp";
+    return "";
+}
+
 // load an image from file
 QImage loadImage(QString fileName)
 {
     QImage img(fileName);
-    if (img.isNull()) return img;
+    if (img.isNull()){
+        // may be file extension is wrong, ignore extension and read again
+        QImageReader reader(fileName);
+        reader.setDecideFormatFromContent(true);
+        reader.read(&img);
+        if (img.isNull())
+            return img;
+    }
     // Converted because filters can only be applied to RGB32 or ARGB32 image
     if (img.hasAlphaChannel() && img.format()!=QImage::Format_ARGB32)
         img = img.convertToFormat(QImage::Format_ARGB32);

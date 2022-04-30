@@ -283,9 +283,28 @@ Window:: openImage(QString filepath)
 
     QImageReader img_reader(filepath);
     int frame_count = img_reader.imageCount();
-    if (frame_count==1) {  // For still images
+    if (frame_count<=1) {  // For still images
+        QString true_format(getFormat(filepath));
+        if (!true_format.isEmpty() && true_format != img_reader.format()){
+            int ret = QMessageBox::warning(this, "Wrong File Extension!", QString(
+            "This Image seems to have wrong file extension.\n"
+            "Actual format is %1\n"
+            "Do you want to Change Extension?").arg(true_format), QMessageBox::Yes | QMessageBox::No);
+            if (ret==QMessageBox::Yes){
+                QString dir = QFileInfo(filepath).dir().absolutePath();
+                QString basename = QFileInfo(filepath).completeBaseName();
+                QString new_name = getNewFileName(dir + "/" + basename + "." + true_format);
+                if (QFile::rename(filepath, new_name)){
+                    filepath = new_name;
+                    fileinfo = QFileInfo(new_name);
+                }
+            }
+        }
         QImage img = loadImage(filepath);  // Returns an autorotated image
-        if (img.isNull()) return;
+        if (img.isNull()){
+            statusbar->showMessage("Unsupported File format");
+            return;
+        }
         canvas->scale = fitToScreenScale(img);
         canvas->setImage(img);
         adjustWindowSize();
@@ -294,7 +313,7 @@ Window:: openImage(QString filepath)
         if (!timer->isActive())
             playPauseBtn->setIcon(QIcon(":/icons/play.png"));
     }
-    else if (frame_count>1) { // For animations
+    else { // For animations
         QMovie *anim = new QMovie(filepath, QByteArray(), this);
         if (anim->isValid()) {
           canvas->setAnimation(anim);
@@ -304,10 +323,6 @@ Window:: openImage(QString filepath)
           disableButtons(VIEW_BUTTON, true);
           disableButtons(EDIT_BUTTON, true);
         }
-    }
-    else { // unsupported file
-        statusbar->showMessage("Unsupported File format");
-        return;
     }
     data.filename = fileinfo.absoluteFilePath();
     QString dir = fileinfo.dir().path();
