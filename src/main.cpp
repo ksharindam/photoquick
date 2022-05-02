@@ -408,7 +408,8 @@ Window:: overwrite()
 void
 Window:: saveAs()
 {
-    QStringList formats = {"jpg", "jp2", "png", "webp", "tiff", "bmp", "ico", "xpm"};
+    QStringList formats = {"jpeg", "jp2", "png", "webp", "tiff", "bmp", "ico", "xpm"};// formats returned by QImageReader
+    QStringList exts = {"jpg", "jp2", "png", "webp", "tiff", "bmp", "ico", "xpm"};
     QStringList names = {"JPEG Image", "JPEG 2000", "PNG Image", "WebP Image",
                 "Tagged Image", "Windows Bitmap", "Windows Icon", "X Pixmap"};
     QStringList supported;
@@ -416,11 +417,19 @@ Window:: saveAs()
         supported << QString(item);
 
     QString filters("All Files (*)");
-    for (int i=0; i<formats.size(); i++) {
-        if (supported.contains(formats[i]))
-            filters += QString(";;%1 (*.%2)").arg(names[i]).arg(formats[i]);
+    for (int i=0; i<exts.size(); i++) {
+        if (supported.contains(exts[i]))
+            filters += QString(";;%1 (*.%2)").arg(names[i]).arg(exts[i]);
     }
-    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", data.filename, filters);
+    // Try to choose same file filter as current image
+    QString selected_filter("All Files (*)");
+    QImageReader reader(data.filename);
+    int index = formats.indexOf(reader.format());
+    if (index>=0){
+        selected_filter = QString("%1 (*.%2)").arg(names[index]).arg(exts[index]);
+    }
+    QString filepath = QFileDialog::getSaveFileName(this, "Save Image", data.filename,
+                                                    filters, &selected_filter);
     if (filepath.isEmpty()) return;
     saveImage(filepath);
 }

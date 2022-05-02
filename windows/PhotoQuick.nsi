@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.10.0"
+!define PROG_VERSION "4.10.6"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
