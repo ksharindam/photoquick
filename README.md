@@ -2,6 +2,7 @@
 ![Release](https://img.shields.io/github/v/release/ksharindam/photoquick)
 ![Release Date](https://img.shields.io/github/release-date/ksharindam/photoquick)
 ![Downloads Total](https://img.shields.io/github/downloads/ksharindam/photoquick/total)
+![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/photoquick/latest/total)
 
 # PhotoQuick (for Linux and Windows)
 A simple handy image viewer and editor with some useful features (written in qt4).
