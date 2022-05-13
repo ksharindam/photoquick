@@ -52,8 +52,9 @@ To uninstall, run ...
 **Runtime Dependencies**  
 * libqtcore4 or libqt5core5a  
 * libqtgui4 or libqt5gui5  
-* libqt4-svg or libqt5svg5  (optional for svg support)  
+* libqt4-svg or libqt5svg5  (for svg support | optional)  
 * libgomp1  
+* wget (for check for updates in linux | optional)  
 
 ### Build (Windows)
 Download Qt 4.8.7 and minGW32  

@@ -41,7 +41,6 @@
 #include <QBuffer>
 #include <cmath>
 #include <QImageWriter>
-#include <QDesktopServices>
 #include <QUrl>
 
 
@@ -1282,7 +1281,8 @@ Window:: disableButtons(ButtonType type, bool disable)
 void
 Window:: checkForUpdate()
 {
-    QDesktopServices::openUrl(QUrl(PROJ_RELEASE));
+    UpdateDialog *dialog = new UpdateDialog(this);
+    dialog->exec();
 }
 
 void

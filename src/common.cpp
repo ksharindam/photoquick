@@ -9,6 +9,7 @@
 #include <QTransform>
 #include <QIcon>
 #include <QImageReader>
+#include <QDesktopServices>
 #include <cmath>
 #include <unistd.h> // dup()
 
@@ -228,6 +229,15 @@ Notifier:: notify(QString title, QString message)
     QTimer::singleShot(3000, this, SLOT(deleteLater()));
 }
 
+// returns the path of the desktop directory
+QString desktopPath()
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+#else
+    return QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
+#endif
+}
 
 #ifdef DEBUG
 void debug(const char *format, ...)

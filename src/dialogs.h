@@ -4,6 +4,7 @@
 #include <QSpinBox>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QTextEdit>
 #include <QImage>
 #include <QTimer>
 
@@ -140,3 +141,24 @@ public:
     void run();
 };
 
+
+class UpdateDialog : public QDialog
+{
+    Q_OBJECT
+public:
+    UpdateDialog(QWidget *parent);
+
+    QLabel *currentVersionLabel;
+    QLabel *latestVersionLabel;
+    QTextEdit *textView;
+    QPushButton *updateBtn;
+    QPushButton *closeBtn;
+    QWidget *buttonBox;
+
+    QString latest_version;
+
+    void download();
+
+private slots:
+    void checkForUpdate();
+};

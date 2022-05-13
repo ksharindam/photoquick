@@ -4,7 +4,7 @@
 #include <QDebug>
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.10.6"
+#define PROG_VERSION    "4.11.0"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -71,6 +71,9 @@ int getJpgFileSize(QImage img, int quality=-1);
 // creates a FILE* from QString filename
 FILE* qfopen(QString filename, const char *mode);
 
+// returns the path of the desktop directory
+QString desktopPath();
+
 class Notifier : public QSystemTrayIcon
 {
 public:
@@ -104,4 +107,13 @@ enum
     CHANNEL_G,
     CHANNEL_B
 };
+#endif
+
+
+// check if armhf architecture, if not then it is assumed to be x86
+#ifdef __arm__
+#define ARCH "armhf"
+//#elif __x86_64__
+#else
+#define ARCH "x86_64"
 #endif

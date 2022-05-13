@@ -3,7 +3,11 @@
 #include "common.h"
 #include "filters.h"
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QGridLayout>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QProcess>
 #include <cmath>
 
 // ------------ Dialog to set JPG image quality for saving ------------
@@ -431,4 +435,131 @@ LevelsDialog:: getResult(QImage img)
     levelImageChannel(img, CHANNEL_B, inputBSlider->left_val, inputBSlider->right_val,
                                     outputBSlider->left_val, outputBSlider->right_val);
     return img;
+}
+
+
+// -----------------   Update Manager Dialog ------------------- //
+
+// check if versionA is later than versionB (versions must be in x.x.x format)
+static bool isLaterThan(QString versionA, QString versionB)
+{
+    QStringList listA = versionA.split(".");
+    QStringList listB = versionB.split(".");
+    for (int i=0; i<3; i++) {
+        if (listA[i].toInt() == listB[i].toInt())
+            continue;
+        return listA[i].toInt() > listB[i].toInt();
+    }
+    return false;
+}
+
+UpdateDialog:: UpdateDialog(QWidget *parent) : QDialog(parent)
+{
+    setWindowTitle("Update PhotoQuick");
+    QGridLayout *layout = new QGridLayout(this);
+    currentVersionLabel = new QLabel(QString("Current Version : %1").arg(PROG_VERSION), this);
+    latestVersionLabel = new QLabel("Latest Release : x.x.x", this);
+    textView = new QTextEdit(this);
+    textView->setReadOnly(true);
+    updateBtn = new QPushButton("Check for Update", this);
+    closeBtn = new QPushButton("Cancel", this);
+    buttonBox = new QWidget(this);
+    QHBoxLayout *buttonLayout = new QHBoxLayout(buttonBox);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(updateBtn);
+    buttonLayout->addWidget(closeBtn);
+
+    layout->addWidget(currentVersionLabel, 0,0,1,1);
+    layout->addWidget(latestVersionLabel, 1,0,1,1);
+    layout->addWidget(textView, 2,0,1,1);
+    layout->addWidget(buttonBox, 3,0,1,1);
+
+    connect(closeBtn, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(updateBtn, SIGNAL(clicked()), this, SLOT(checkForUpdate()));
+
+    textView->hide();
+}
+
+
+void
+UpdateDialog:: checkForUpdate()
+{
+    if (not latest_version.isEmpty()) {
+        return download();
+    }
+    updateBtn->setEnabled(false);
+    // show textView and enlarge window and place to center
+    int win_w = this->width();
+    int win_h = this->height();
+    textView->show();
+    move(this->pos() - QPoint((500-win_w)/2, (300-win_h)/2));// place center
+    resize(500,300);
+    textView->setPlainText("Checking for Update...");
+    waitFor(100);
+
+    QString url("https://api.github.com/repos/ksharindam/photoquick/releases/latest");
+    QString info_file =  desktopPath() + "/photoquick.json";
+
+#ifdef _WIN32
+    if (QProcess::execute("certutil", {"-urlcache", "-split", "-f", url, info_file})!=0){
+#else
+    if (QProcess::execute("wget", {"--inet4-only", "-O", info_file, url})!=0){// ipv4 connects faster
+#endif
+        QFile::remove(info_file);// 0 byte photoquick.json file remains if wget fails
+        textView->setPlainText("Failed to connect !\nCheck your internet connection.");
+        updateBtn->setEnabled(true);
+        return;
+    }
+
+    QFile file(info_file);
+    if (!file.open(QFile::ReadOnly)){
+        textView->setPlainText("Error ! Failed to open latest release info file.");
+        return;
+    }
+    QTextStream stream(&file);
+    QString text(stream.readAll());
+    file.close();
+    file.remove();
+
+    int pos = text.indexOf("\"tag_name\"");// parse "tag_name": "v4.4.2"
+    if (pos >= 0) {
+        int begin = text.indexOf("\"", pos+10) + 2;
+        int end = text.indexOf("\"", begin);
+        latest_version = text.mid(begin, end-begin);
+        latestVersionLabel->setText(QString("Latest Release : %1").arg(latest_version));
+    }
+    if (not latest_version.isEmpty()) {
+        if (isLaterThan(latest_version, PROG_VERSION)) {// latest version is available
+            // body contains changelog and release info
+            pos = text.indexOf("\"body\"");// parse "body": "### Changelog\r\n4.4.1 : fixed bug \r\n"
+            if (pos >= 0) {
+                int begin = text.indexOf("\"", pos+6) + 1;
+                int end = text.indexOf("\"", begin);
+                QString body = text.mid(begin, end-begin);
+                textView->setPlainText(body.split("\\r\\n").join("\n"));
+            }
+            updateBtn->setText("Download");
+        }
+        else {
+            latest_version = "";
+            textView->setPlainText("You are already using the latest version");
+        }
+    }
+    else {
+        textView->setPlainText("Error ! Unable to parse release version.");
+    }
+    updateBtn->setEnabled(true);
+}
+
+void
+UpdateDialog:: download()
+{
+#ifdef _WIN32
+    QString filename = QString("PhotoQuick-%1.exe").arg(latest_version);// eg. PhotoQuick-4.4.2.exe
+#else
+    // currently we provide PhotoQuick-x86_64.AppImage and PhotoQuick-armhf.AppImage
+    QString filename = QString("PhotoQuick-%1.AppImage").arg(ARCH);
+#endif
+    QString addr("https://github.com/ksharindam/photoquick/releases/latest/download/%1");
+    QDesktopServices::openUrl(QUrl(addr.arg(filename)));
 }
