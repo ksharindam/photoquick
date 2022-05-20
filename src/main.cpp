@@ -41,6 +41,7 @@
 #include <QBuffer>
 #include <cmath>
 #include <QImageWriter>
+#include <QDesktopServices>
 #include <QUrl>
 
 
@@ -250,6 +251,7 @@ Window:: loadPlugins()
             }
         }
     }
+    menu_dict["Info"]->addAction("Get Plugins", this, SLOT(getPlugins()));
     menu_dict["Info"]->addAction("Check for Update", this, SLOT(checkForUpdate()));
     menu_dict["Info"]->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
@@ -1284,6 +1286,14 @@ Window:: checkForUpdate()
     UpdateDialog *dialog = new UpdateDialog(this);
     dialog->exec();
 }
+
+void
+Window:: getPlugins()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/ksharindam/photoquick-plugins/releases/latest"));
+}
+
+
 
 void
 Window:: closeEvent(QCloseEvent *ev)

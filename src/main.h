@@ -82,6 +82,7 @@ public slots:
     void lensDistort();
     // info menu
     void imageInfo();
+    void getPlugins();
     void checkForUpdate();
     void showAbout();
     // file and view options
