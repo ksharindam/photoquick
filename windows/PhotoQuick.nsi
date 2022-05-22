@@ -1,6 +1,6 @@
 ; HM NIS Edit Wizard helper defines
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.12.0"
+!define PROG_VERSION "4.12.1"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
@@ -31,10 +31,19 @@ SetCompressor lzma
 ; MUI pages
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "..\LICENSE.txt"
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipDirectoryPage
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${PROG_EXEC}"
 !insertmacro MUI_PAGE_FINISH
+
+; Skip choosing directory when updating older version
+Function SkipDirectoryPage
+  ReadRegStr $0 HKLM "${PRODUCT_DIR_REGKEY}" ""
+  ${IF} $0 != ""
+    Abort
+  ${EndIf}
+FunctionEnd
 
 ; Uninstaller pages
 !insertmacro MUI_UNPAGE_INSTFILES
