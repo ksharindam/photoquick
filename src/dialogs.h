@@ -8,16 +8,17 @@
 #include <QImage>
 #include <QTimer>
 
-// Dialog to set JPG image quality for saving
-class QualityDialog : public QDialog
+// Dialog to set JPG Options for saving
+class JpegDialog : public QDialog
 {
     Q_OBJECT
 public:
-    QualityDialog(QWidget *parent, QImage &img);
+    JpegDialog(QWidget *parent, QImage &img);
     QImage image;
     QSpinBox *qualitySpin;
     QLabel *sizeLabel;
     QTimer *timer;
+    QSpinBox *dpiSpin;
 public slots:
     void checkFileSize();
     void toggleCheckSize(bool checked);

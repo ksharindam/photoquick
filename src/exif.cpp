@@ -104,28 +104,6 @@ int getOrientation(FILE *f)
 
 //------------************ Image Exif Reader ************--------------
 
-enum {
-    Tag_Compression       = 0x0103,// U_SHORT
-    Tag_Make              = 0x010f,// STRING
-    Tag_Model             = 0x0110,// STRING
-    Tag_Orientation       = 0x0112,// U_SHORT
-    Tag_Software          = 0x0131,// STRING
-    Tag_DateTime          = 0x0132,// STRING * 20
-    Tag_JpegIFOffset      = 0x0201,// U_LONG
-    Tag_JpegIFByteCount   = 0x0202,// U_LONG
-    Tag_ExposureTime      = 0x829a,// U_RATIONAL
-    Tag_FNumber           = 0x829d,// U_RATIONAL
-    Tag_ExifOffset        = 0x8769,// U_LONG
-    Tag_ISOSpeedRatings   = 0x8827,// U_SHORT * 2
-    Tag_ExifVersion       = 0x9000,// UNDEFINED * 4
-    Tag_DateTimeOriginal  = 0x9003,// STRING * 20
-    Tag_BrightnessValue   = 0x9203,// RATIONAL
-    Tag_MeteringMode      = 0x9207,// U_SHORT
-    Tag_LightSource       = 0x9208,// U_SHORT
-    Tag_Flash             = 0x9209,// U_SHORT
-    Tag_FocalLength       = 0x920a,// U_RATIONAL
-};
-
 // known tags that will be read
 static std::map<int, std::string> tag_names =
 {
@@ -148,7 +126,8 @@ static std::map<int, std::string> tag_names =
 
 // IFD0 and SubIFD tags that will be saved
 static std::list<int> ifd0_entries = {
-    Tag_Make, Tag_Model, Tag_Orientation, Tag_Software, Tag_DateTime/*, Tag_ExifOffset*/
+    Tag_Make, Tag_Model, Tag_Orientation, Tag_XResolution, Tag_YResolution, Tag_ResolutionUnit,
+    Tag_Software, Tag_DateTime/*, Tag_ExifOffset*/
 };
 
 static std::list<int> subifd_entries = {
@@ -168,21 +147,6 @@ static const char* metering_modes[] = {
     "average", "center weighted", "spot", "multi-spot", "multi-segment"
 };
 
-// Exif Tag data types (dont modify this)
-enum {
-    U_BYTE=1,
-    STRING,// 1 byte
-    U_SHORT,//2 bytes
-    U_LONG,// 4 bytes
-    U_RATIONAL,//8 bytes (4 bytes numerator, 4 bytes denominator)
-    BYTE,
-    UNDEFINED,// 1 byte
-    SHORT,
-    LONG,
-    RATIONAL,
-    FLOAT,// 4 bytes
-    DOUBLE// 8 bytes
-};
 
 static int get_component_size(int data_format)
 {

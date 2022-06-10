@@ -2,9 +2,10 @@
 #include <QImage>
 #include <QSystemTrayIcon>
 #include <QDebug>
+#include "exif.h"
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.12.1"
+#define PROG_VERSION    "4.13.0"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -61,8 +62,8 @@ const char* getFormat(QString filename);
 // Returns an autorotated image according to exif data
 QImage loadImage(QString filename);
 
-// Reads exif data from exif_filename and saves img as jpeg with that exif
-bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exif_filename);
+// saves img as jpeg with that exif
+bool saveJpegWithExif(QImage img, int quality, QString filename, ExifInfo &exif);
 
 // get filesize in bytes when a QImage is saved as jpeg
 int getJpgFileSize(QImage img, int quality=-1);

@@ -1,7 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "common.h"
-#include "exif.h"
 #include <QTimer>
 #include <QEventLoop>
 #include <QFile>
@@ -118,29 +117,24 @@ QImage loadImage(QString fileName)
     return img;
 }
 
-
-bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exif_filename)
+/* When we add exif ?
+  Exif is added if either the passed Exif is not empty or resolution is > 1MP.
+  If image is >1M, even if exif empty, we add exif to add thumbnail.
+  If output resolution is <0.3MP, original exif info is discarded and only
+  explicitly added exif infos are saved (such as, DPI, Software).
+*/
+bool saveJpegWithExif(QImage img, int quality, QString out_filename, ExifInfo &exif)
 {
-    // image too small, do not add thumbnail
-    if (img.width()*img.height()<300000)
-        return img.save(out_filename, "JPEG", quality);
-
-    FILE *infile = qfopen(exif_filename, "r");
-    if (!infile)
-        return img.save(out_filename, "JPEG", quality);
-    ExifInfo exif;
-    exif_read(exif, infile);
-    if (exif.count(0x0112)>0) {//fix Tag_Orientation
-        exif[0x0112].integer = 1;
-    }
-    fclose(infile);
-    // if image is >1M, even if exif empty, we add exif to add thumbnail
     if (exif.empty() && (img.width()*img.height()<1000000))
         return img.save(out_filename, "JPEG", quality);
 
+    // fix Tag_Orientation
+    if (exif.count(0x0112)>0) {
+        exif[0x0112].integer = 1;
+    }
+
     FILE *out = qfopen(out_filename, "w");
     if (!out) {
-        exif_free(exif);
         return false;
     }
     QBuffer buff;
@@ -162,7 +156,6 @@ bool saveJpegWithExif(QImage img, int quality, QString out_filename, QString exi
     }
     fclose(out);
     buff.buffer().clear();
-    exif_free(exif);
     return ok;
 }
 

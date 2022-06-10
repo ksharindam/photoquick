@@ -379,15 +379,37 @@ Window:: saveImage(QString filename)
             painter.drawImage(0,0, data.image);
             painter.end();
         }
-        QualityDialog *dlg = new QualityDialog(this, img);
+        JpegDialog *dlg = new JpegDialog(this, img);
         if (dlg->exec()!=QDialog::Accepted){
             return;
         }
         int quality = dlg->qualitySpin->value();
         // save with exif
-        if (not saveJpegWithExif(img, quality, filename, data.filename)) {
+        ExifInfo exif;
+        // if output resolution is < 0.3MP, discard original image exif info
+        if (img.width()*img.height()>300000){
+            FILE *infile = qfopen(data.filename, "r");
+            if (infile){
+                exif_read(exif, infile);
+                fclose(infile);
+            }
+        }
+        // Some online services require DPI to be saved in jpg
+        if (dlg->dpiSpin->isEnabled()){
+            int dpi = dlg->dpiSpin->value();
+            ExifTag xresolution = {Tag_XResolution, U_RATIONAL, 1, NULL, 0, 0.0, {dpi,1}};
+            ExifTag yresolution = {Tag_YResolution, U_RATIONAL, 1, NULL, 0, 0.0, {dpi,1}};
+            ExifTag resolution_unit = {Tag_ResolutionUnit, U_SHORT, 1, NULL, 2, 0.0, {0,1}};
+            exif[Tag_XResolution] = xresolution;
+            exif[Tag_YResolution] = yresolution;
+            exif[Tag_ResolutionUnit] = resolution_unit;
+        }
+
+        if (not saveJpegWithExif(img, quality, filename, exif)) {
+            exif_free(exif);
             goto fail;
         }
+        exif_free(exif);
     }
     else if (not img.save(filename, NULL, -1)) {
         goto fail;

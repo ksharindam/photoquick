@@ -10,11 +10,11 @@
 #include <QProcess>
 #include <cmath>
 
-// ------------ Dialog to set JPG image quality for saving ------------
+// ------------ Dialog to set JPG Options for saving ------------
 
-QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
+JpegDialog:: JpegDialog(QWidget *parent, QImage &img) : QDialog(parent), image(img)
 {
-    setWindowTitle("Set Compression");
+    setWindowTitle("JPEG Options");
     timer = new QTimer(this);
     timer->setSingleShot(true);
     timer->setInterval(800);
@@ -25,23 +25,35 @@ QualityDialog:: QualityDialog(QWidget *parent, QImage &img) : QDialog(parent), i
     qualitySpin->setRange(10,100);
     qualitySpin->setValue(75);
     QCheckBox *showSizeCheck = new QCheckBox("Show File Size", this);
-    sizeLabel = new QLabel("Size : Calculating...", this);
+    sizeLabel = new QLabel("Wait...", this);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Save|QDialogButtonBox::Cancel,
                                                     Qt::Horizontal, this);
+    QCheckBox *saveDpiCheck = new QCheckBox("Save DPI :", this);
+    dpiSpin = new QSpinBox(this);
+    dpiSpin->setAlignment(Qt::AlignHCenter);
+    dpiSpin->setSingleStep(50);
+    dpiSpin->setRange(50, 1200);
+    dpiSpin->setValue(300);
+
     QGridLayout *layout = new QGridLayout(this);
-    layout->addWidget(qualityLabel);
-    layout->addWidget(qualitySpin);
-    layout->addWidget(showSizeCheck);
-    layout->addWidget(sizeLabel);
-    layout->addWidget(btnBox);
+    layout->addWidget(qualityLabel, 0,0, 1,1);
+    layout->addWidget(qualitySpin, 0,1, 1,1);
+    layout->addWidget(showSizeCheck, 1,0, 1,1);
+    layout->addWidget(sizeLabel, 1,1, 1,1);
+    layout->addWidget(saveDpiCheck, 2,0, 1,1);
+    layout->addWidget(dpiSpin, 2,1, 1,1);
+    layout->addWidget(btnBox, 3,0, 2,2);
     sizeLabel->hide();
+    dpiSpin->setEnabled(false);
+
     connect(showSizeCheck, SIGNAL(clicked(bool)), this, SLOT(toggleCheckSize(bool)));
+    connect(saveDpiCheck, SIGNAL(clicked(bool)), dpiSpin, SLOT(setEnabled(bool)));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void
-QualityDialog:: toggleCheckSize(bool checked)
+JpegDialog:: toggleCheckSize(bool checked)
 {
     if (checked) {
         sizeLabel->show();
@@ -58,10 +70,10 @@ QualityDialog:: toggleCheckSize(bool checked)
 }
 
 void
-QualityDialog:: checkFileSize()
+JpegDialog:: checkFileSize()
 {
     int filesize = getJpgFileSize(image, qualitySpin->value());
-    QString text = "Size : %1 KB";
+    QString text = "%1 KB";
     sizeLabel->setText(text.arg(QString::number(filesize/1024.0, 'f', 1)));
 }
 
