@@ -108,7 +108,7 @@ ExpandBorderDialog:: ExpandBorderDialog(QWidget *parent, int border_w) : QDialog
     this->resize(250, 120);
     this->setWindowTitle("Expand Image Border");
     QVBoxLayout *vLayout = new QVBoxLayout(this);
-    QLabel *label = new QLabel("Expand each side by :", this);
+    QLabel *label = new QLabel("Expand sides by :", this);
     widthSpin = new QSpinBox(this);
     widthSpin->setAlignment(Qt::AlignHCenter);
     widthSpin->setSuffix(" px");
@@ -118,16 +118,42 @@ ExpandBorderDialog:: ExpandBorderDialog(QWidget *parent, int border_w) : QDialog
     combo = new QComboBox(this);
     QStringList items = {"Clone Edges", "White Color", "Black Color", "Other Color"};
     combo->addItems(items);
+    QCheckBox *allSidesCheck = new QCheckBox("All Sides", this);
+    allSidesCheck->setChecked(true);
+    sidesFrame = new QWidget(this);
+    QGridLayout *sidesLayout = new QGridLayout(sidesFrame);
+    leftCheckBox = new QCheckBox("Left", this);
+    rightCheckBox = new QCheckBox("Right", this);
+    topCheckBox = new QCheckBox("Top", this);
+    bottomCheckBox = new QCheckBox("Bottom", this);
+    sidesLayout->addWidget(topCheckBox, 0,1, 1,1);
+    sidesLayout->addWidget(leftCheckBox, 1,0, 1,1);
+    sidesLayout->addWidget(rightCheckBox, 1,2, 1,1);
+    sidesLayout->addWidget(bottomCheckBox, 2,1, 1,1);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
     vLayout->addWidget(label);
     vLayout->addWidget(widthSpin);
     vLayout->addWidget(label2);
     vLayout->addWidget(combo);
+    vLayout->addWidget(allSidesCheck);
+    vLayout->addWidget(sidesFrame);
     vLayout->addWidget(btnBox);
+    connect(allSidesCheck, SIGNAL(clicked(bool)), this, SLOT(toggleAllSides(bool)));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+    leftCheckBox->setChecked(true);
+    rightCheckBox->setChecked(true);
+    topCheckBox->setChecked(true);
+    bottomCheckBox->setChecked(true);
+    sidesFrame->setHidden(true);
 }
 
+void
+ExpandBorderDialog:: toggleAllSides(bool checked)
+{
+    sidesFrame->setHidden(checked);
+    this->adjustSize();
+}
 
 //------------------ PreviewDialog for Filters ------------------
 

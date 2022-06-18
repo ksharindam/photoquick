@@ -763,31 +763,37 @@ Window:: expandImageBorder()
     if (dlg->exec() != QDialog::Accepted)
         return;
     int w = dlg->widthSpin->value();
+    int left_border = dlg->leftCheckBox->isChecked() ? w : 0;
+    int right_border = dlg->rightCheckBox->isChecked() ? w : 0;
+    int top_border = dlg->topCheckBox->isChecked() ? w : 0;
+    int bottom_border = dlg->bottomCheckBox->isChecked() ? w : 0;
+
+    int new_w = data.image.width() + left_border + right_border;
+    int new_h = data.image.height() + top_border + bottom_border;
+
+    QColor clr;
     int index = dlg->combo->currentIndex();
-    if (index==0) {
+    switch (index) {
+    case 0:// clone edges
         data.image = expandBorder(data.image, w);
+        data.image = data.image.copy(w-left_border, w-top_border, new_w, new_h);
         canvas->showScaled();
         return;
-    }
-    QColor clr;
-    switch (index) {
-    case 1:
-        clr = QColor(255,255,255);
-        break;
-    case 2:
-        clr = QColor(0, 0, 0);
-        break;
-    default:
+    case 3:
         clr = QColorDialog::getColor(QColor(255,255,255), this);
         if (not clr.isValid())
             return;
+        break;
+    default:
+        QList<QColor> colors= {QColor(255,255,255), QColor(0, 0, 0)};
+        clr = colors[index-1];
     }
-    QImage img(data.image.width()+2*w, data.image.height()+2*w, data.image.format());
+    QImage img(new_w, new_h, data.image.format());
     img.fill(clr);
     for (int y=0; y<data.image.height(); y++) {
         QRgb *src = (QRgb*)data.image.constScanLine(y);
-        QRgb *dst = (QRgb*)img.scanLine(y+w);
-        memcpy(dst+w, src, 4*data.image.width());
+        QRgb *dst = (QRgb*)img.scanLine(y+top_border);
+        memcpy(dst+left_border, src, 4*data.image.width());
     }
     data.image = img;
     canvas->showScaled();

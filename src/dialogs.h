@@ -36,10 +36,15 @@ public:
 // dialog to choose border width and size
 class ExpandBorderDialog : public QDialog
 {
+    Q_OBJECT
 public:
     QComboBox *combo;
     QSpinBox *widthSpin;
+    QWidget *sidesFrame;
+    QCheckBox *leftCheckBox, *rightCheckBox, *topCheckBox, *bottomCheckBox;
     ExpandBorderDialog(QWidget *parent, int border_w);
+public slots:
+    void toggleAllSides(bool checked);
 };
 
 // Preview Dialog for filter functions.
