@@ -129,7 +129,6 @@ Window:: Window()
     connectSignals();
     // Initialize Variables
     data.window = this;
-    QDir::setCurrent(QDir::homePath());
 
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
@@ -264,6 +263,7 @@ Window:: openStartupImage()
     adjustWindowSize();
     QFileInfo fi("photoquick.jpg");
     data.filename = fi.absoluteFilePath();;
+    QDir::setCurrent(QDir::homePath());
 }
 
 void
@@ -1390,6 +1390,8 @@ int main(int argc, char *argv[])
     win->show();
     if (argc > 1) {
         win->openImage(app.arguments().at(1));
+        if (win->data.image.isNull()) // failed to open
+            QDir::setCurrent(QDir::homePath());
     }
     else {
         win->openStartupImage();
