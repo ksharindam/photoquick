@@ -1318,6 +1318,9 @@ Window:: checkForUpdate()
 void
 Window:: getPlugins()
 {
+    if (QMessageBox::question(this, "Open Browser?", "Open browser to get latest plugins?",
+            QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+        return;
     QDesktopServices::openUrl(QUrl("https://github.com/ksharindam/photoquick-plugins/releases/latest"));
 }
 
