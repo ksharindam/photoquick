@@ -90,6 +90,7 @@ To open image.jpg with it...
 ### Keyboard Shortcuts
 Reload Image : R  
 Delete Image : Delete  
+Copy Image : Ctrl+C  
 
 ### Supported Image Formats
 All formats supported by Qt are supported in this program.  

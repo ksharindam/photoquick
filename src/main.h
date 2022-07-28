@@ -43,6 +43,7 @@ public slots:
     void saveACopy();
     void autoResizeAndSave();
     void exportToPdf();
+    void printImage();
     void deleteFile();
     void reloadImage();
     void resizeImage();

@@ -33,6 +33,8 @@
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QPainter>
+#include <QPrinter>
+#include <QPrintDialog>
 #include <QDesktopWidget>
 #include <QSettings>
 #include <QClipboard>
@@ -55,11 +57,11 @@ Window:: Window()
     fileMenu->addAction("Save As...", this, SLOT(saveAs()));
     fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
     fileMenu->addSeparator();
+    fileMenu->addAction("Print", this, SLOT(printImage()));
     fileMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
-    fileMenu->addAction("Copy to Clipboard", this, SLOT(copyToClipboard()));
     fileMenu->addSeparator();
     fileMenu->addAction("Open Image", this, SLOT(openFile()));
-    fileMenu->addAction("Open from Clipboard", this, SLOT(openFromClipboard()));
+    fileMenu->addAction("Paste Image", this, SLOT(openFromClipboard()));
     fileBtn->setMenu(fileMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
     transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
@@ -108,6 +110,10 @@ Window:: Window()
     infoMenu->addAction("Image Info", this, SLOT(imageInfo()));
     infoBtn->setMenu(infoMenu);
 
+    QAction *action = new QAction(this);
+    action->setShortcut(QString("Ctrl+C"));
+    connect(action, SIGNAL(triggered()), this, SLOT(copyToClipboard()));
+    this->addAction(action);
     QAction *escapeAction = new QAction(this);
     escapeAction->setShortcut(QString("Esc"));
     connect(escapeAction, SIGNAL(triggered()), this, SLOT(onEscPress()));
@@ -497,6 +503,32 @@ Window:: autoResizeAndSave()
         showNotification("Image Saved !", QFileInfo(path).fileName());
     else {
         showNotification("Failed to Save !", QFileInfo(path).fileName());
+    }
+}
+
+void
+Window:: printImage()
+{
+    QPrinter printer(QPrinter::HighResolution);
+    QPrintDialog *dlg = new QPrintDialog(&printer, this);
+    // disable some options (PrintSelection, PrintCurrentPage are disabled by default)
+    dlg->setOption(QAbstractPrintDialog::PrintPageRange, false);
+    dlg->setOption(QAbstractPrintDialog::PrintCollateCopies, false);
+    if (dlg->exec() == QDialog::Accepted) {
+        QImage img = data.image;
+        if (img.width() > img.height()) {// paper is always portrait, so rotate image
+            QTransform transform;
+            transform.rotate(90);
+            img = img.transformed(transform);
+        }
+        QPainter painter(&printer);
+        QRect rect = painter.viewport();// area inside margin
+        // align the photo to top, and fit inside margin
+        int out_w, out_h;
+        fitToSize(img.width(), img.height(), rect.width(), rect.height(), out_w, out_h);
+        QRect out_rect(rect.x(), rect.y(), out_w, out_h);
+        painter.drawImage(out_rect, img, img.rect());
+        painter.end();
     }
 }
 
