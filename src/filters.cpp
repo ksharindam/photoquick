@@ -398,10 +398,11 @@ void threshold(QImage &img, int thresh)
         #pragma omp critical
         { line = ((QRgb*)img.scanLine(y)); }
         for (int x=0;x<img.width();x++) {
+            int alpha = qAlpha(line[x]);
             if (qGray(line[x]) > thresh)
-                line[x] = qRgb(255,255,255);
+                line[x] = qRgba(255,255,255, alpha);
             else
-                line[x] = qRgb(0,0,0);
+                line[x] = qRgba(0,0,0, alpha);
         }
     }
 }
@@ -861,8 +862,8 @@ void applyGamma(QImage &img, float gamma)
         { row = (QRgb*) img.scanLine(y); }
         for (int x=0; x < w; x++) {
             int clr = row[x];
-            row[x] = qRgb(EncodeGamma(qRed(clr)),
-                        EncodeGamma(qGreen(clr)), EncodeGamma(qBlue(clr)) );
+            row[x] = qRgba(EncodeGamma(qRed(clr)), EncodeGamma(qGreen(clr)),
+                            EncodeGamma(qBlue(clr)), qAlpha(clr));
         }
     }
 }
