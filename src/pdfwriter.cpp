@@ -1,183 +1,300 @@
+/* This file is a part of photoquick program, which is GPLv3 licensed */
 #include "pdfwriter.h"
+#include <sstream>
+#include <fstream>
 #include <clocale>
 
-PdfWriter:: PdfWriter()
+std::string getPngIdat(const char *rawdata, int rawdata_size);
+std::string imgMatrix(float x, float y, float w, float h, int rotation);
+
+
+PdfDocument:: PdfDocument()
 {
+    producer = "PhotoQuick by Arindamsoft";
     // this prevents using comma (,) as decimal point in string formatting
     setlocale(LC_NUMERIC, "C");
-    version = "1.4";
-    producer = "PDF Writer by Arindam";
-    header = format("%%PDF-%s\n", version.c_str());
+    // add Info, Catalog, Pages root dictionary
+    info = new PdfObject(PDF_OBJ_DICT);
+    addObject(info);
+    catalog = new PdfObject(PDF_OBJ_DICT);
+    addObject(catalog);
+    pages_parent = new PdfObject(PDF_OBJ_DICT);
+    addObject(pages_parent);
+    // set values
+    pages = new PdfObject(PDF_OBJ_ARRAY);
+    pages_parent->add("/Type", "/Pages");
+    pages_parent->add("/Kids", pages);
+    catalog->add("/Type", "/Catalog");
+    catalog->add("/Pages", pages_parent);
 }
 
-void
-PdfWriter:: begin(std::string filename)
+PdfPage*
+PdfDocument:: newPage(int w, int h)
 {
-    stream.open(filename, std::ios::out|std::ios::binary);
-    stream << header;
-    offset = stream.tellp();
-}
-
-PdfObj
-PdfWriter:: createPage(int w, int h, std::string Contents, std::string Resources)
-{
-    PdfObj page;
-    page.set("Type", "/Page");
-    page.set("MediaBox", format("[0 0 %d %d]",w,h));
-    page.set("Parent", "3 0 R");
-    page.set("Resources", Resources);
-    page.set("Contents", Contents);
+    PdfPage *page = new PdfPage(w, h, pages_parent);
+    addObject(page);
+    addObject(page->contents);
+    pages->append(page);
     return page;
 }
 
 void
-PdfWriter:: addPage(PdfObj &page)
+PdfDocument:: addObject(PdfObject *obj)
 {
-    addObj(page);
-    pages.push_back(page.id);
+    obj_table.push_back(obj);
+    obj->obj_no = obj_table.size();
 }
 
-int
-PdfWriter:: addObj(PdfObj &obj, std::string Stream, int id)
+PdfObject*
+PdfDocument:: addImage(const char *buff, int size, int w, int h, PdfImageFormat img_format)
 {
-    if (id) {
-        obj.id = id;
-        obj_offsets.push_front(offset);
+    PdfObject *img = new PdfObject(PDF_OBJ_STREAM);
+    img->add("/Type", "/XObject");
+    img->add("/Subtype", "/Image");
+    img->add("/Width", format("%d", w));
+    img->add("/Height", format("%d", h));
+    if (img_format==PDF_IMG_JPEG){
+        img->add("/ColorSpace", "/DeviceRGB");
+        img->add("/BitsPerComponent", "8");
+        img->add("/Filter", "/DCTDecode"); // jpg = DCTDecode
+        img->stream = std::string(buff, size);
     }
-    else {
-        obj.id = obj_offsets.size() + 4;
-        obj_offsets.push_back(offset);
+    else if (img_format==PDF_IMG_PNG){ // monochrome only
+        img->add("/ColorSpace", "[/Indexed /DeviceRGB 1 <ffffff000000>]");
+        img->add("/BitsPerComponent", "1");
+        img->add("/Filter", "/FlateDecode");// png = FlateDecode
+        img->add("/DecodeParms", format("<</Predictor 15 /Columns %d /BitsPerComponent 1 /Colors 1>>", w));
+        img->stream = getPngIdat(buff, size);
     }
-    std::string strng = obj.toString(Stream);
-    stream << strng;
-    stream.flush();
-    offset = stream.tellp();
-    return obj.id;   // object identifier
+    addObject(img);
+    return img;
 }
 
 void
-PdfWriter:: finish()
+PdfDocument:: save(std::string filename)
 {
-    //save catalog, xref table and close file
-    PdfObj pages_obj;
-    pages_obj.set("Type", "/Pages");
-    pages_obj.set("Count", format("%d", pages.size()));
-    pages_obj.set("Kids", pages);
-    addObj(pages_obj, "", 3);
-    PdfObj info;
-    info.set("Producer", format("(%s)",producer.c_str()));
-    // info.set("CreationDate", creation_date);
-    addObj(info, "", 2);
-    PdfObj catalog;
-    catalog.set("Type", "/Catalog");
-    catalog.set("Pages", pages_obj);
-    addObj(catalog, "", 1);
-    // Create the xref table
-    int xref_count = obj_offsets.size()+1;
-    std::string xref = format("xref\n0 %d\n", xref_count);
-    xref += "0000000000 65535 f \n";
-    for (int offset : obj_offsets)
-        xref += format("%010d 00000 n \n", offset) ;
-    PdfDict trailer;
-    trailer.set("Size", format("%d", xref_count));
-    trailer.set("Root", catalog.byref());
-    trailer.set("Info", info.byref());
-    xref += "trailer\n" + trailer.toString();
-    xref += format("startxref\n%d\n", offset);
-    stream << xref;
+    // create stream to write
+    std::ofstream stream;
+    stream.open(filename, std::ios::out|std::ios::binary);
+    std::string header = "%%PDF-1.4\n";
+    stream << header;
+    // set pages count
+    info->add("/Producer", format("(%s)",producer.c_str()));
+    //info->add("/CreationDate", creation_date);
+    pages_parent->add("/Count", format("%d", pages->array.size()));
+    // write all indirect objects to file
+    for (PdfObject *obj : obj_table){
+        obj->offset = stream.tellp();
+        stream << format("%d 0 obj\n", obj->obj_no);
+        stream << obj->toString() << "\nendobj\n";
+    }
+    // write the cross reference table.
+    /* It starts with xref keyword and followed by one or more sections.
+    Each section starts with first obj number and number of entries, followed by entries
+    in each line. each entry is in nnnnnnnnnn ggggg n eol format. */
+    int xref_offset = stream.tellp();
+    int xref_count = obj_table.size()+1;
+    stream << format("xref\n0 %d\n", xref_count);
+    stream << "0000000000 65535 f \n";// each line is exactly 20 bytes long
+    for (PdfObject *obj : obj_table){
+        stream << format("%010d 00000 n \n", obj->offset);
+    }
+    // write trailer dictionary
+    PdfObject *trailer = new PdfObject(PDF_OBJ_DICT);
+    trailer->add("/Size", format("%d", xref_count));
+    trailer->add("/Root", catalog);
+    trailer->add("/Info", info);
+    stream << "trailer\n" << trailer->toString();
+    stream << format("\nstartxref\n%d\n", xref_offset);
     stream << "%%EOF";
+    stream.flush();
     stream.close();
+    delete trailer;
 }
 
-
-PdfObj:: PdfObj()
+PdfDocument:: ~PdfDocument()
 {
+    for (PdfObject *obj : obj_table){
+        delete obj;
+    }
 }
 
-std::string
-PdfObj:: toString(std::string stream)
+/* ----------------- PdfOjject ------------------ */
+
+PdfObject:: PdfObject(ObjectType type)
 {
-    // must be called after adding obj to writer otherwise id will be 0
-    if (not stream.empty())
-        content.set("Length", format("%d", stream.size()));
-    std::string strng = format("%d 0 obj\n", this->id) + content.toString();
-    if (not stream.empty())
-        strng += "stream\n" + stream + "\nendstream\n";
-    return strng + "endobj\n";
+    this->type = type;
+    obj_no = 0;
+}
+
+bool
+PdfObject:: isIndirect()
+{
+    return obj_no > 0;
+}
+
+void
+PdfObject:: append(PdfObject *item)
+{
+    array.push_back(item);
 }
 
 void
-PdfObj:: set(std::string key, PdfObj value)
+PdfObject:: add(std::string key, PdfObject *val)
 {
-    content.set(key, value.byref());
-}
-void
-PdfObj:: set(std::string key, PdfDict value)
-{
-    content.set(key, value);
-}
-void
-PdfObj:: set(std::string key, std::list<int> value)
-{
-    content.set(key, value);
-}
-void
-PdfObj:: set(std::string key, int value)
-{
-    content.set(key, value);
-}
-void
-PdfObj:: set(std::string key, std::string value)
-{
-    content.set(key, value);
-}
-
-std::string
-PdfObj:: byref()
-{
-    return format("%d 0 R", this->id);
-}
-
-// ************************* PDF Dict Object ***************************
-
-void
-PdfDict:: set(std::string key, std::string val)
-{
+    if (dict.count(key)>0 && !dict[key]->isIndirect()){
+        delete dict[key];
+    }
     dict[key] = val;
 }
-void
-PdfDict:: set(std::string key, int val)
-{
-    dict[key] = format("%d",val);
-}
 
 void
-PdfDict:: set(std::string key, PdfDict val)
+PdfObject:: add(std::string key, std::string val)
 {
-    dict[key] = val.toString();
-}
-
-void
-PdfDict:: set(std::string key, std::list<int> val)
-{
-    std::string strng;
-    strng += "[";
-    for (int i : val)
-        strng += format("%d 0 R\n", i);
-    strng += "]\n";
-    dict[key] = strng;
+    PdfObject *val_obj = new PdfObject(PDF_OBJ_STRING);
+    val_obj->string = val;
+    this->dict[key] = val_obj;
 }
 
 std::string
-PdfDict:: toString()
+PdfObject:: toString()
 {
-    std::string strng = "<<\n";
-    for (auto &pair : dict)
-        strng += format("/%s %s\n", pair.first.c_str(), pair.second.c_str());
-    strng += ">>\n";
-    return strng;
+    std::string str = "";
+
+    switch (type)
+    {
+    case PDF_OBJ_ARRAY:
+        str += "[ ";
+        for (PdfObject *obj : this->array) {
+            if (obj->isIndirect()) {
+                str += format("%d 0 R ", obj->obj_no);
+            }
+            else {
+                str += obj->toString() + " ";
+            }
+        }
+        str += "]";
+        break;
+
+    case PDF_OBJ_STREAM:
+        this->add("/Length", format("%d", this->stream.size()));
+    case PDF_OBJ_DICT:
+        str += "<< ";
+        for (auto &iter : this->dict){
+            str += iter.first + " ";
+            PdfObject *obj = iter.second;
+            if (obj->isIndirect()) {
+                str += format("%d 0 R ", obj->obj_no);
+            }
+            else {
+                str += obj->toString() + " ";
+            }
+        }
+        str += ">>";
+        if (type==PDF_OBJ_STREAM){
+            str += "\nstream\n";
+            str += this->stream;
+            str += "\nendstream";
+        }
+        break;
+
+    case PDF_OBJ_STRING:
+        return this->string;
+    }
+    return str;
 }
 
+PdfObject:: ~PdfObject()
+{
+    switch (type) {
+    case PDF_OBJ_ARRAY:
+        for (PdfObject *obj : array) {
+            if (!obj->isIndirect()) {
+                delete obj;
+            }
+        }
+        array.clear();
+        break;
+    case PDF_OBJ_STREAM:
+    case PDF_OBJ_DICT:
+        for (auto it : dict) {
+            if (!it.second->isIndirect()) {
+                delete it.second;
+            }
+        }
+        dict.clear();
+        break;
+    case PDF_OBJ_STRING:
+    default:
+        break;
+    }
+}
+
+/* ************************* Pdf Page ***************************
+<<
+  /Type /Page
+  /Parent 3 0 R
+  /MediaBox [0 0 595 842]
+  /Resources <</ProcSet [/PDF] /XObject <</img0 4 0 R>> >>
+  /Contents 5 0 R
+>>
+*/
+PdfPage:: PdfPage(int w, int h, PdfObject *parent) : PdfObject(PDF_OBJ_DICT)
+{
+    this->add("/Type", "/Page");
+    this->add("/Parent", parent);
+    this->add("/MediaBox", format("[0 0 %d %d]",w,h));
+    x_objects = new PdfObject(PDF_OBJ_DICT);
+    PdfObject *resources = new PdfObject(PDF_OBJ_DICT);
+    resources->add("/ProcSet", "[/PDF]");
+    resources->add("/XObject", x_objects);
+    this->add("/Resources", resources);
+    contents = new PdfObject(PDF_OBJ_STREAM);
+    this->add("/Contents", contents);
+}
+
+void
+PdfPage:: drawImage(PdfObject *img, float x, float y, float w, float h, int rotation)
+{
+    std::string matrix = imgMatrix(x, y, w, h, rotation);
+    contents->stream += format("q %s /img%d Do Q\n", matrix.c_str(), x_objects->dict.size());
+    x_objects->add(format("/img%d", x_objects->dict.size()), img);
+}
+
+void
+PdfPage:: setLineColor(int r, int g, int b)
+{
+    contents->stream += format("/DeviceRGB CS %g %g %g SC\n", r/255.0, g/255.0, b/255.0);
+}
+
+void
+PdfPage:: setFillColor(int r, int g, int b)
+{
+    contents->stream += format("/DeviceRGB cs %g %g %g sc\n", r/255.0, g/255.0, b/255.0);
+}
+
+const char* paint_cmd(PaintMode mode)
+{
+    switch (mode){
+    case STROKE:
+        return "S";
+    case FILL:
+        return "f";
+    case FILL_N_STROKE:
+        return "B";
+    default:
+        return "n";// do nothing
+    }
+}
+
+void
+PdfPage:: drawRect(float x, float y, float w, float h, float line_width, PaintMode mode)
+{
+    contents->stream += format("q %g w %.4f %.4f %g %g re %s Q\n", line_width, x, y, w, h, paint_cmd(mode));
+}
+
+
+/* ------------------ Parse PNG Image ------------------ */
 
 // read 4 bytes (for network byte order)
 #define read32(a, arr) \
@@ -188,12 +305,12 @@ do {\
     data += 4; \
 } while(0)
 
-std::string getPngIdat(char *rawdata, int rawdata_size)
+std::string getPngIdat(const char *rawdata, int rawdata_size)
 {
     // the png must be complete and valid png
     std::string idat;
 
-    char *data = rawdata + 8; // 1st 8 byte is png signature
+    const char *data = rawdata + 8; // 1st 8 byte is png signature
     int word;
     int size = 0;
     for (int i=8; i<rawdata_size; i+= size+12) { // iterate over each chunk
@@ -240,13 +357,27 @@ std::string imgMatrix(float x, float y, float w, float h, int rotation)
             rot_str = "0 1 -1 0";
             break;
     }
-    std::string matrix = format("%s %s cm\n", rot_str.c_str(), trans_str.c_str()); // translate and then rotate
+    std::string matrix = format("%s %s cm ", rot_str.c_str(), trans_str.c_str()); // translate and then rotate
     if (rot==90 or rot==270) {
         float tmp = w;
         w = h;
         h = tmp;
     }
-    matrix += format("%.4f 0 0 %.4f 0 0 cm\n" ,w, h);      // finally scale image
+    matrix += format("%.4f 0 0 %.4f 0 0 cm", w, h);      // finally scale image
     return matrix;
 }
 
+template<typename... Args>
+std::string format(const char* fmt, Args... args)
+{
+    int len = std::snprintf(nullptr, 0, fmt, args...);
+    if (len <0) {
+        std::cout << "error formatting string";
+        return "";
+    }
+    //std::cout << len << "\n";
+    char buf[len+1];
+    std::snprintf(buf, len+1, fmt, args...);
+    std::string str(buf);
+    return str;
+}

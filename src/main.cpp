@@ -23,6 +23,7 @@
 #include "dialogs.h"
 #include "transform.h"
 #include "photogrid.h"
+#include "photo_collage.h"
 #include "inpaint.h"
 #include "iscissor.h"
 #include "filters.h"
@@ -379,11 +380,7 @@ Window:: saveImage(QString filename)
         filename.endsWith(".jpeg", Qt::CaseInsensitive))
     {
         if (img.hasAlphaChannel()) { // converts background to white
-            img = QImage(img.width(), img.height(), QImage::Format_RGB32);
-            img.fill(Qt::white);
-            QPainter painter(&img);
-            painter.drawImage(0,0, data.image);
-            painter.end();
+            img = removeTransparency(data.image);
         }
         JpegDialog *dlg = new JpegDialog(this, img);
         if (dlg->exec()!=QDialog::Accepted){
@@ -555,6 +552,11 @@ Window:: exportToPdf()
     int dpi;
     float pdf_w, pdf_h;
     switch (dlg->combo->currentIndex()) {
+    case 0:
+    default:
+        pdf_w = 595.0;
+        pdf_h = ceilf((pdf_w*image.height())/image.width());
+        break;
     case 1:
         pdf_w = 595.0; // A4
         pdf_h = 841.0;
@@ -578,9 +580,6 @@ Window:: exportToPdf()
         pdf_w = round( image.width()*72.0/dpi );
         pdf_h = round( image.height()*72.0/dpi );
         break;
-    default:
-        pdf_w = 595.0;
-        pdf_h = ceilf((pdf_w*image.height())/image.width());
     }
     if (dlg->combo->currentIndex()!=0 and dlg->landscape->isChecked() ) {
         int tmp = pdf_w;
@@ -599,12 +598,7 @@ Window:: exportToPdf()
 
     // remove transperancy
     if (image.format()==QImage::Format_ARGB32) {
-        QImage new_img(image.width(), image.height(), QImage::Format_RGB32);
-        new_img.fill(Qt::white);
-        QPainter painter(&new_img);
-        painter.drawImage(0,0, image);
-        painter.end();
-        image = new_img;
+        image = removeTransparency(image);
     }
     if (isMonochrome(image))
         image = image.convertToFormat(QImage::Format_Mono);
@@ -616,63 +610,26 @@ Window:: exportToPdf()
     path = getNewFileName(path);
     std::string path_str = path.toUtf8().constData();
 
-    PdfWriter writer;
-    writer.begin(path_str);
-    PdfObj cont;
-    PdfDict resources;
-    PdfDict imgs;
-    PdfObj img;
-    img.set("Type", "/XObject");
-    img.set("Subtype", "/Image");
-    img.set("Width", image.width());
-    img.set("Height", image.height());
+    PdfDocument doc;
+    PdfPage *page = doc.newPage(pdf_w, pdf_h);
+    PdfObject *img;
+
+    QBuffer buff;
+    buff.open(QIODevice::WriteOnly);
     // using PNG compression is best for Monochrome images
     if (image.format()==QImage::Format_Mono) {
-        img.set("ColorSpace", "[/Indexed /DeviceRGB 1 <ffffff000000>]");
-        img.set("BitsPerComponent", "1");
-        img.set("Filter", "/FlateDecode");
-        PdfDict decode_params;
-        decode_params.set("Predictor", 15);
-        decode_params.set("Columns", image.width());
-        decode_params.set("BitsPerComponent", 1);
-        decode_params.set("Colors", 1);
-        img.set("DecodeParms", decode_params);
-        QByteArray bArray;
-        QBuffer buffer(&bArray);
-        buffer.open(QIODevice::WriteOnly);
-        image.save(&buffer, "PNG");
-        std::string data = getPngIdat(bArray.data(), bArray.size());
-        writer.addObj(img, data);
-        bArray.clear();
-        buffer.close();
+        image.save(&buff, "PNG");
+        img = doc.addImage(buff.data().data(), buff.size(), image.width(), image.height(), PDF_IMG_PNG);
     }
     // Embed image as whole JPEG image
     else {
-        img.set("ColorSpace", "/DeviceRGB");
-        img.set("BitsPerComponent", "8");
-        img.set("Filter", "/DCTDecode"); // jpg = DCTDecode
-        QByteArray bArray;
-        QBuffer buffer(&bArray);
-        buffer.open(QIODevice::WriteOnly);
-        image.save(&buffer, "JPG");
-        std::string data(bArray.data(), bArray.size());
-        writer.addObj(img, data);
-        bArray.clear();
-        buffer.close();
+        image.save(&buff, "JPG");
+        img = doc.addImage(buff.data().data(), buff.size(), image.width(), image.height(), PDF_IMG_JPEG);
     }
+    buff.close();
 
-    std::string matrix = imgMatrix(x, y, img_w, img_h, 0);
-    std::string cont_strm = format("q %s /img0 Do Q\n", matrix.c_str());
-    imgs.set("img0", img.byref());
-
-    writer.addObj(cont, cont_strm);
-    resources.set("XObject", imgs);
-    PdfObj page = writer.createPage(pdf_w, pdf_h);
-    page.set("Contents", cont);
-    page.set("Resources", resources);
-    writer.addPage(page);
-    writer.finish();
-
+    page->drawImage(img, x, y, img_w, img_h);
+    doc.save(path_str);
     showNotification("PDF Saved !", QFileInfo(path).fileName());
 }
 
@@ -847,7 +804,7 @@ void
 Window:: createPhotoCollage()
 {
     CollageDialog *dialog = new CollageDialog(this);
-    dialog->resize(1050, data.max_window_h);
+    dialog->resize(1280, data.max_window_h);
     CollageItem *item = new CollageItem(data.image);
     dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {

@@ -1,76 +1,105 @@
+#pragma once
 #include <string>
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <list>
 #include <map>
 
-class PdfDict
+/* HOW TO USE
+PdfDocument doc;
+PdfPage *page = doc.newPage(595, 842);
+PdfObject *img = doc.addImage(img_buff, buff_size, 480, 640, PDF_IMG_JPEG);
+page->drawImage(img, 0,0,595, 842);
+doc.save(filename);
+*/
+
+typedef enum {
+    PDF_IMG_JPEG,
+    PDF_IMG_PNG
+} PdfImageFormat;
+
+typedef enum {
+    STROKE,
+    FILL,
+    FILL_N_STROKE
+} PaintMode;
+
+/* PDF has 8 basic types of direct objects.
+   boolean, number, string, name, array, dictionary, stream and null object.
+   In this pdf writer - bool, number, string, name and null objects are represented as
+   string object for convenience.
+*/
+
+typedef enum {
+    PDF_OBJ_STRING,
+    PDF_OBJ_ARRAY,
+    PDF_OBJ_DICT,
+    PDF_OBJ_STREAM
+} ObjectType;
+
+
+class PdfObject
 {
 public:
-    PdfDict(){};
-    void set(std::string key, PdfDict val);
-    void set(std::string key, std::list<int> val);
-    void set(std::string key, std::string val);
-    void set(std::string key, int val);
-    std::string toString();
-    std::map<std::string, std::string> dict;
-};
-
-class PdfObj
-{
-public:
-    PdfObj();
-    std::string toString(std::string stream="");
-    void set(std::string key, PdfDict val);
-    void set(std::string key, PdfObj val);
-    void set(std::string key, std::list<int> val);
-    void set(std::string key, int val);
-    void set(std::string key, std::string val);
-    std::string byref();
-    PdfDict content;
-    int id=0;
-};
-
-
-class PdfWriter
-{
-public:
-    PdfWriter();
-    void begin(std::string filename);
-    PdfObj createPage(int w=595, int h=842, std::string Contents="[]",
-                        std::string Resources="<< /ProcSet [/PDF] >>");
-    void addPage(PdfObj &page);
-    int  addObj(PdfObj &obj, std::string Stream="", int id=0);
-    void finish();
-    // member variables
-    std::string version;
-    std::string producer;
-    std::string creation_date;
-    std::string header;
-    std::list<int> pages;
+    ObjectType type;
+    std::string string;
+    std::list<PdfObject*> array;
+    std::map<std::string, PdfObject*> dict;
+    std::string stream;
+    // object of any other type can also act as indirect obj.
+    // only during writing to file, we consider whether it is indirect, and use the obj_no.
+    // obj_no > 0 means it is indirect obj and has been added to obj_table.
+    int obj_no;
     int offset;
-    std::list<int> obj_offsets;
-    std::ofstream stream;
+
+    PdfObject(ObjectType type);
+    // for PDF_OBJ_ARRAY type
+    void append(PdfObject *item);
+    // for PDF_OBJ_DICT and PDF_OBJ_STREAM type
+    void add(std::string key, PdfObject *val);
+    void add(std::string key, std::string val);
+    // other
+    bool isIndirect();// check whether it was added to obj_table
+    std::string toString();
+    // free memory recursively
+    ~PdfObject();
 };
 
-template<typename... Args>
-std::string format(const char* fmt, Args... args)
+class PdfPage : public PdfObject
 {
-    int len = std::snprintf(nullptr, 0, fmt, args...);
-    if (len <0) {
-        std::cout << "error formatting string";
-        return "";
-    }
-    //std::cout << len << "\n";
-    char buf[len+1];
-    std::snprintf(buf, len+1, fmt, args...);
-    std::string str(buf);
-    return str;
-}
+public:
+    PdfObject *x_objects;// a dict of images XObject
+    PdfObject *contents;
 
-std::string getPngIdat(char *rawdata, int rawdata_size);
+    PdfPage(int w, int h, PdfObject *parent);
+    void setLineColor(int r, int g, int b);
+    void setFillColor(int r, int g, int b);
+    void drawImage(PdfObject *img, float x, float y, float w, float h, int rotation=0);
+    void drawRect(float x, float y, float w, float h, float line_width, PaintMode mode);
+};
+
+
+class PdfDocument
+{
+public:
+    std::string producer;
+    PdfObject *info;
+    PdfObject *catalog;// Root
+    PdfObject *pages_parent;// Pages dictionary
+    PdfObject *pages;// Pdf Array of PdfPage
+    std::list<PdfObject*> obj_table;
+
+    PdfDocument();
+    ~PdfDocument();
+    PdfPage*   newPage(int w, int h);
+    void       addObject(PdfObject *obj);
+    PdfObject* addImage(const char *buf, int size, int w, int h, PdfImageFormat format);
+    void       save(std::string filename);
+};
+
+
+// sprintf like string formatting that returns std::string
+template<typename... Args>
+std::string format(const char* fmt, Args... args);
+
 
 std::string readFile(std::string filename);
-
-std::string imgMatrix(float x, float y, float w, float h, int rotation);

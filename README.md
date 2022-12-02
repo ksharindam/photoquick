@@ -5,7 +5,7 @@
 ![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/photoquick/latest/total)
 
 # PhotoQuick (for Linux and Windows)
-A simple handy image viewer and editor with some useful features (written in qt4).
+A simple handy image viewer and editor with some useful features (Qt based).
 
 ### Description
 This program is aimed at ease of use, quick opening, and doing most necessary features.  
@@ -20,6 +20,7 @@ This program is aimed at ease of use, quick opening, and doing most necessary fe
  * Intelligent Scissor  
  * Filters  (Scan Page, Reduce Noise, Auto Contrast, White Balance )  
  * Photo Optimizer & Batch Resize  
+ * Plugin support  
 
 
 ### Download

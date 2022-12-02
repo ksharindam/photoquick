@@ -8,6 +8,7 @@
 #include <QTransform>
 #include <QIcon>
 #include <QImageReader>
+#include <QPainter>
 #include <QDesktopServices>
 #include <cmath>
 #include <unistd.h> // dup()
@@ -81,6 +82,16 @@ const char* getFormat(QString filename)
     if (buff[8]=='W' && buff[9]=='E' && buff[10]=='B' && buff[11]=='P')
         return "webp";
     return "";
+}
+
+QImage removeTransparency(QImage img)
+{
+    QImage opaque_img(img.width(), img.height(), QImage::Format_RGB32);
+    opaque_img.fill(Qt::white);
+    QPainter painter(&opaque_img);
+    painter.drawImage(0,0, img);
+    painter.end();
+    return opaque_img;
 }
 
 // load an image from file
