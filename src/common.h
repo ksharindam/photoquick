@@ -5,7 +5,7 @@
 #include "exif.h"
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.15.0"
+#define PROG_VERSION    "4.15.2"
 #define COPYRIGHT_YEAR  "2017-2021"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"

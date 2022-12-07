@@ -290,7 +290,7 @@ PdfPage:: drawRect(float x, float y, float w, float h, float line_width, PaintMo
 // read 4 bytes (for network byte order)
 #define read32(a, arr) \
 do {\
-    char aa_=0, bb_=0, cc_=0, dd_=0; \
+    unsigned char aa_=0, bb_=0, cc_=0, dd_=0; \
     aa_= arr[0]; bb_= arr[1]; cc_= arr[2]; dd_= arr[3]; \
     (a) = (aa_<<24) + (bb_<<16) + (cc_<<8) + (dd_); \
     data += 4; \
