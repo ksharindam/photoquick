@@ -78,9 +78,9 @@ PdfDocument:: save(std::string filename)
     stream.open(filename, std::ios::out|std::ios::binary);
     std::string header = "%%PDF-1.4\n";
     stream << header;
-    // set pages count
     info->add("/Producer", format("(%s)",producer.c_str()));
     //info->add("/CreationDate", creation_date);
+    // set pages count
     pages_parent->add("/Count", format("%d", pages->array.size()));
     // write all indirect objects to file
     for (PdfObject *obj : obj_table){
@@ -119,7 +119,7 @@ PdfDocument:: ~PdfDocument()
     }
 }
 
-/* ----------------- PdfOjject ------------------ */
+/* ----------------- PdfObject ------------------ */
 
 PdfObject:: PdfObject(ObjectType type)
 {
@@ -157,8 +157,11 @@ PdfObject:: add(std::string key, std::string val)
 }
 
 std::string
-PdfObject:: toString()
+PdfObject:: toString(bool as_direct_obj)
 {
+    if (!as_direct_obj and isIndirect()){
+        return format("%d 0 R", obj_no);
+    }
     std::string str = "";
 
     switch (type)
@@ -166,12 +169,7 @@ PdfObject:: toString()
     case PDF_OBJ_ARRAY:
         str += "[ ";
         for (PdfObject *obj : this->array) {
-            if (obj->isIndirect()) {
-                str += format("%d 0 R ", obj->obj_no);
-            }
-            else {
-                str += obj->toString() + " ";
-            }
+            str += obj->toString(false) + " ";
         }
         str += "]";
         break;
@@ -181,14 +179,7 @@ PdfObject:: toString()
     case PDF_OBJ_DICT:
         str += "<< ";
         for (auto &iter : this->dict){
-            str += iter.first + " ";
-            PdfObject *obj = iter.second;
-            if (obj->isIndirect()) {
-                str += format("%d 0 R ", obj->obj_no);
-            }
-            else {
-                str += obj->toString() + " ";
-            }
+            str += iter.first + " " + iter.second->toString(false) + " ";
         }
         str += ">>";
         if (type==PDF_OBJ_STREAM){

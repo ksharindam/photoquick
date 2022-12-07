@@ -59,7 +59,9 @@ public:
     void add(std::string key, std::string val);
     // other
     bool isIndirect();// check whether it was added to obj_table
-    std::string toString();
+    // if as_direct_obj is true, the obj is considered as direct obj,
+    // and does not return as reference.
+    std::string toString(bool as_direct_obj=true);
     // free memory recursively
     ~PdfObject();
 };
