@@ -325,10 +325,12 @@ TextToolDialog:: onBgColorChange(int index)
     updateCurrentTextbox();
 }
 
-
 void
 TextToolDialog:: accept()
 {
+    // image needs to set pixel density, otherwise drawing text gives weird scaled fonts
+    image.setDotsPerMeterX(this->logicalDpiX()/0.0254);
+    image.setDotsPerMeterY(this->logicalDpiY()/0.0254);
     painter.begin(&image);
     painter.scale(1.0/scale, 1.0/scale);
     for (TextBox &textbox : textboxes) {
