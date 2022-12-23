@@ -76,7 +76,7 @@ PdfDocument:: save(std::string filename)
     // create stream to write
     std::ofstream stream;
     stream.open(filename, std::ios::out|std::ios::binary);
-    std::string header = "%%PDF-1.4\n";
+    std::string header = "%PDF-1.4\n";
     stream << header;
     info->add("/Producer", format("(%s)",producer.c_str()));
     //info->add("/CreationDate", creation_date);
