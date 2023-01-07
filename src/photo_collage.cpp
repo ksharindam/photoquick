@@ -532,7 +532,7 @@ CollagePaper:: savePdf()
                              item->w*scaleX, item->h*scaleY, item->rotation);
         if (item->border)
             page->drawRect(item->x*scaleX, out_h - item->y*scaleY - item->h*scaleY, // img Y to pdf Y
-                             item->w*scaleX, item->h*scaleY, 0.5, STROKE);
+                             item->w*scaleX, item->h*scaleY, 0.3, STROKE);
     }
     doc.save(path.toStdString());
     Notifier *notifier = new Notifier(this);
