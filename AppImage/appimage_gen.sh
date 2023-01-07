@@ -62,5 +62,9 @@ linuxdeploy --appdir . \
 
 
 cd ..
-appimagetool AppDir
-#appimagetool -u "zsync|https://github.com/ksharindam/photoquick/releases/latest/download/PhotoQuick-${ARCH}.AppImage.zsync" AppDir
+
+if [ "$MULTIARCH" = "x86_64-linux-gnu" ]; then
+    appimagetool -u "zsync|https://github.com/ksharindam/photoquick/releases/latest/download/PhotoQuick-x86_64.AppImage.zsync" AppDir
+else
+    appimagetool AppDir
+fi
