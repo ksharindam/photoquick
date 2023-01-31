@@ -1,10 +1,23 @@
 #pragma once
 
-#include "ui_photogrid_dialog.h"
-#include "ui_gridsetup_dialog.h"
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QPen>
+#include <QDesktopWidget>
+#include <QSettings>
+//#include <QBuffer>
+#include <QMimeData>
+#include <QUrl>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
+#include <cmath>
+#include "common.h"
+#include "ui_photogrid_dialog.h"
+#include "ui_gridsetup_dialog.h"
+
+#ifndef __PHOTOQUICK_PHOTOGRID
+#define __PHOTOQUICK_PHOTOGRID
 
 // Thumbnail class holds a photo
 class Thumbnail : public QLabel
@@ -117,4 +130,4 @@ public slots:
     void onPaperSizeChange(int index);
 };
 
-
+#endif /* __PHOTOQUICK_PHOTOGRID */

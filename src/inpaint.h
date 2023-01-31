@@ -1,8 +1,18 @@
 #pragma once
 /* Inpainting Algorithm to Heal damaged photo or erase object */
 
-#include "canvas.h"
 #include <QList>
+#include <QSettings>
+#include <QPainter>
+#include <QMouseEvent>
+#include <cmath>
+#include <chrono>
+#include "common.h"
+#include "canvas.h"
+#include "ui_inpaint_dialog.h"
+
+#ifndef __PHOTOQUICK_INPAINT
+#define __PHOTOQUICK_INPAINT
 
 class MaskedImage
 {
@@ -76,11 +86,6 @@ void MaximizationStep(MaskedImage* target, double** vote);
 
 //*************** Inpainting GUI *******************
 
-#include "ui_inpaint_dialog.h"
-#include <QPainter>
-#include <QMouseEvent>
-
-
 class InpaintDialog : public QDialog, public Ui_InpaintDialog
 {
     Q_OBJECT
@@ -124,3 +129,5 @@ public slots:
     void onMouseRelease(QPoint pos);
     void onMouseMove(QPoint pos);
 };
+
+#endif /* __PHOTOQUICK_INPAINT */

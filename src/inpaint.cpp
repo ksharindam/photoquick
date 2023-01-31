@@ -1,10 +1,7 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "inpaint.h"
-#include "common.h"
-#include <QSettings>
-#include <cmath>
-#include <chrono>
+
 #define TIME_START auto start = std::chrono::steady_clock::now();
 #define TIME_STOP auto end = std::chrono::steady_clock::now();\
     double elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();\

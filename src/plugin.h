@@ -6,6 +6,9 @@
 #include <QImage>
 #include <QWidget>
 
+#ifndef __PHOTOQUICK_PLUGIN
+#define __PHOTOQUICK_PLUGIN
+
 typedef struct {
     QImage image;
     QString filename;
@@ -70,3 +73,5 @@ signals:
 #define Plugin_iid "photoquick.Plugin/1.0"
 
 Q_DECLARE_INTERFACE(Plugin, Plugin_iid);
+
+#endif /* __PHOTOQUICK_PLUGIN */

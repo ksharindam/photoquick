@@ -1,18 +1,4 @@
-#include "common.h"
 #include "photo_collage.h"
-#include "pdfwriter.h"
-#include <QButtonGroup>// Qt5+
-#include <QDialogButtonBox>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QPainter>
-#include <QPen>
-#include <QColorDialog>
-#include <QSettings>
-#include <QBuffer>
-#include <QMimeData>
-#include <QUrl>
-#include <cmath>
 
 enum {
     UNIT_PIXEL,

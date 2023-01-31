@@ -17,99 +17,74 @@
 ...........................................................................
 */
 #include "main.h"
-#include "common.h"
-#include "exif.h"
-#include "plugin.h"
-#include "dialogs.h"
-#include "transform.h"
-#include "photogrid.h"
-#include "photo_collage.h"
-#include "inpaint.h"
-#include "iscissor.h"
-#include "filters.h"
-#include "pdfwriter.h"
-#include <QFileDialog>
-#include <QInputDialog>
-#include <QColorDialog>
-#include <QMessageBox>
-#include <QFileInfo>
-#include <QPainter>
-#include <QPrinter>
-#include <QPrintDialog>
-#include <QDesktopWidget>
-#include <QSettings>
-#include <QClipboard>
-#include <QMenu>
-#include <QRegExp>
-#include <QBuffer>
-#include <cmath>
-#include <QImageWriter>
-#include <QDesktopServices>
-#include <QUrl>
-
-
 
 Window:: Window()
 {
     setupUi(this);
     QMenu *fileMenu = new QMenu(fileBtn);
-    fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
-    fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
-    fileMenu->addAction("Save As...", this, SLOT(saveAs()));
-    fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
-    fileMenu->addSeparator();
-    fileMenu->addAction("Print", this, SLOT(printImage()));
-    fileMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
-    fileMenu->addSeparator();
-    fileMenu->addAction("Open Image", this, SLOT(openFile()));
-    fileMenu->addAction("Paste Image", this, SLOT(openFromClipboard()));
-    fileBtn->setMenu(fileMenu);
+        fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
+        fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
+        fileMenu->addAction("Save As...", this, SLOT(saveAs()));
+        fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
+        fileMenu->addSeparator();
+        fileMenu->addAction("Print", this, SLOT(printImage()));
+        fileMenu->addAction("Export to PDF", this, SLOT(exportToPdf()));
+        fileMenu->addSeparator();
+        fileMenu->addAction("Open Image", this, SLOT(openFile()));
+        fileMenu->addAction("Paste Image", this, SLOT(openFromClipboard()));
+        fileBtn->setMenu(fileMenu);
     QMenu *transformMenu = new QMenu(transformBtn);
-    transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
-    transformMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
-    transformMenu->addAction("Rotate by ...", this, SLOT(rotateAny()));
-    transformBtn->setMenu(transformMenu);
+        QMenu *geometryMenu = transformMenu->addMenu("Geometry");
+            geometryMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
+            geometryMenu->addAction("DeWarping", this, SLOT(deWarping()));
+            geometryMenu->addAction("DeOblique", this, SLOT(deOblique()));
+            geometryMenu->addAction("Lens Distortion", this, SLOT(lensDistort()));
+        transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
+        transformMenu->addAction("Rotate by ...", this, SLOT(rotateAny()));
+        transformBtn->setMenu(transformMenu);
     QMenu *decorateMenu = new QMenu(decorateBtn);
-    decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
-    decorateMenu->addAction("Photo Collage", this, SLOT(createPhotoCollage()));
-    decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
-    decorateMenu->addAction("Expand Border", this, SLOT(expandImageBorder()));
-    decorateBtn->setMenu(decorateMenu);
+        decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
+        decorateMenu->addAction("Photo Collage", this, SLOT(createPhotoCollage()));
+        decorateMenu->addAction("Add Border", this, SLOT(addBorder()));
+        decorateMenu->addAction("Expand Border", this, SLOT(expandImageBorder()));
+        decorateBtn->setMenu(decorateMenu);
     // Filters menu
     QMenu *filtersMenu = new QMenu(filtersBtn);
-    QMenu *colorMenu = filtersMenu->addMenu("Color");
-        colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
-        colorMenu->addAction("Adjust Levels...", this, SLOT(adjustColorLevels()));
-        colorMenu->addAction("Color Balance", this, SLOT(grayWorldFilter()));
-        colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
-        colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
-    QMenu *thresholdMenu = filtersMenu->addMenu("Threshold");
-        thresholdMenu->addAction("Threshold", this, SLOT(applyThreshold()));
-        thresholdMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
-    QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
-        brightnessMenu->addAction("Adjust Brightness", this, SLOT(adjustGamma()));
-        brightnessMenu->addAction("Stretch Contrast", this, SLOT(stretchImageContrast()));
-        brightnessMenu->addAction("Sigmoid Contrast", this, SLOT(sigmoidContrast()));
-    QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
-        noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
-        noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
-    filtersMenu->addAction("Lens Distortion", this, SLOT(lensDistort()));
-    filtersMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
-    filtersMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
-    QMenu *effectsMenu = filtersMenu->addMenu("Effects");
-        effectsMenu->addAction("Vignette", this, SLOT(vignetteFilter()));
-        effectsMenu->addAction("PencilSketch", this, SLOT(pencilSketchFilter()));
-    filtersBtn->setMenu(filtersMenu);
+        QMenu *brightnessMenu = filtersMenu->addMenu("Brightness");
+            brightnessMenu->addAction("Adjust Brightness", this, SLOT(adjustGamma()));
+            brightnessMenu->addAction("Stretch Contrast", this, SLOT(stretchImageContrast()));
+            brightnessMenu->addAction("Sigmoid Contrast", this, SLOT(sigmoidContrast()));
+        QMenu *colorMenu = filtersMenu->addMenu("Color");
+            colorMenu->addAction("GrayScale", this, SLOT(toGrayScale()));
+            colorMenu->addAction("Adjust Levels...", this, SLOT(adjustColorLevels()));
+            colorMenu->addAction("Color Balance", this, SLOT(grayWorldFilter()));
+            colorMenu->addAction("White Balance", this, SLOT(whiteBalance()));
+            colorMenu->addAction("Enhance Colors", this, SLOT(enhanceColors()));
+        QMenu *effectsMenu = filtersMenu->addMenu("Effects");
+            effectsMenu->addAction("Vignette", this, SLOT(vignetteFilter()));
+            effectsMenu->addAction("PencilSketch", this, SLOT(pencilSketchFilter()));
+        QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
+            noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
+            noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
+        QMenu *blurMenu = filtersMenu->addMenu("Smooth");
+            blurMenu->addAction("Box...", this, SLOT(box()));
+            blurMenu->addAction("Sharpen", this, SLOT(sharpenImage()));
+            blurMenu->addAction("Smooth/Blur...", this, SLOT(blur()));
+        QMenu *thresholdMenu = filtersMenu->addMenu("Threshold");
+            thresholdMenu->addAction("Threshold", this, SLOT(applyThreshold()));
+            thresholdMenu->addAction("Scanned Page", this, SLOT(adaptiveThresh()));
+            thresholdMenu->addAction("Edge", this, SLOT(edgeImage()));
+        filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
-    toolsMenu->addAction("Mask Tool", this, SLOT(maskTool()));
-    toolsMenu->addAction("Scissor && Eraser", this, SLOT(iScissor()));
-    toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
-    toolsBtn->setMenu(toolsMenu);
+        toolsMenu->addAction("Mask Tool", this, SLOT(maskTool()));
+        toolsMenu->addAction("Scissor && Eraser", this, SLOT(iScissor()));
+        toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
+        toolsBtn->setMenu(toolsMenu);
     // More info menu
     QMenu *infoMenu = new QMenu(infoBtn);
-    infoMenu->addAction("Image Info", this, SLOT(imageInfo()));
-    infoBtn->setMenu(infoMenu);
+        infoMenu->addAction("Image Info", this, SLOT(imageInfo()));
+        infoBtn->setMenu(infoMenu);
 
     QAction *action = new QAction(this);
     action->setShortcut(QString("Ctrl+C"));
@@ -148,18 +123,19 @@ Window:: Window()
     data.max_window_w = screen_width - windowdecor_w;
     data.max_window_h = screen_height - windowdecor_h;
 
-
     menu_dict["File"] = fileMenu;
     menu_dict["Transform"] = transformMenu;
+    menu_dict["Transform/Geometry"] = geometryMenu;
     menu_dict["Decorate"] = decorateMenu;
     menu_dict["Tools"] = toolsMenu;
     menu_dict["Info"] = infoMenu;
     menu_dict["Filters"] = filtersMenu;
-    menu_dict["Filters/Threshold"] = thresholdMenu;
-    menu_dict["Filters/Color"] = colorMenu;
     menu_dict["Filters/Brightness"] = brightnessMenu;
-    menu_dict["Filters/Noise Removal"] = noiseMenu;
+    menu_dict["Filters/Color"] = colorMenu;
     menu_dict["Filters/Effects"] = effectsMenu;
+    menu_dict["Filters/Noise Removal"] = noiseMenu;
+    menu_dict["Filters/Smooth"] = blurMenu;
+    menu_dict["Filters/Threshold"] = thresholdMenu;
 }
 
 void
@@ -695,25 +671,158 @@ Window:: showAbout()
     QMessageBox::about(this, "About PhotoQuick", text);
 }
 
+QImage Window:: resizeImageBicub (QImage img, unsigned new_height, unsigned new_width)
+{
+    unsigned y, x;
+    unsigned height = img.height();
+    unsigned width = img.width();;
+    float xFactor = (float)width / new_width;
+    float yFactor = (float)height / new_height;
+    float ox, oy;
+    QImage dstImg(new_width, new_height, img.format());
+
+    for (y = 0; y < new_height; y++ )
+    {
+        oy  = ((float)y + 0.5f) * yFactor - 0.5f;
+        QRgb *row = (QRgb*)dstImg.constScanLine(y);
+        for (x = 0; x < new_width; x++ )
+        {
+            ox  = ((float)x  + 0.5f) * xFactor - 0.5f;
+            row[x] = InterpolateBiCubic (img, oy, ox);
+        }
+    }
+    return dstImg;
+}
+
+QImage Window:: resizeImageBiakima (QImage img, unsigned new_height, unsigned new_width)
+{
+    unsigned y, x;
+    unsigned height = img.height();
+    unsigned width = img.width();;
+    float xFactor = (float)width / new_width;
+    float yFactor = (float)height / new_height;
+    float ox, oy;
+    QImage dstImg(new_width, new_height, img.format());
+
+    for (y = 0; y < new_height; y++ )
+    {
+        oy  = ((float)y + 0.5f) * yFactor - 0.5f;
+        QRgb *row = (QRgb*)dstImg.constScanLine(y);
+        for (x = 0; x < new_width; x++ )
+        {
+            ox  = ((float)x  + 0.5f) * xFactor - 0.5f;
+            row[x] = InterpolateBiAkima (img, oy, ox);
+        }
+    }
+    return dstImg;
+}
+
 void
 Window:: resizeImage()
 {
     ResizeDialog *dialog = new ResizeDialog(this, data.image.width(), data.image.height());
-    if (dialog->exec() == 1) {
-        QImage img;
-        Qt::TransformationMode tfmMode = dialog->smoothScaling->isChecked() ?
-                        Qt::SmoothTransformation : Qt::FastTransformation;
+    if (dialog->exec() == 1)
+    {
+        QImage img, imgb;
+        int nwidth, nheight, owidth, oheight;
+        int nsteps, i , nwidthstep, nheightstep;
+        int mode = dialog->comboMethod->currentIndex();
+        Qt::TransformationMode tfmMode = mode ? Qt::SmoothTransformation : Qt::FastTransformation;
+        owidth = data.image.width();
+        oheight = data.image.height();
         QString img_width = dialog->widthEdit->text();
         QString img_height = dialog->heightEdit->text();
-        if ( !img_width.isEmpty() and !img_height.isEmpty() )
-            img = data.image.scaled(img_width.toInt(), img_height.toInt(), Qt::IgnoreAspectRatio, tfmMode);
-        else if (not img_width.isEmpty())
-            img = data.image.scaledToWidth(img_width.toInt(), tfmMode);
-        else if (not img_height.isEmpty())
-            img = data.image.scaledToHeight(img_height.toInt(), tfmMode);
+        nwidth = (img_width.isEmpty()) ? 0 : img_width.toInt();
+        nheight = (img_height.isEmpty()) ? 0 : img_height.toInt();
+        if (nwidth < 1 and nheight < 1) return;
+        nheight = (nheight > 0) ? nheight : (int)((float)oheight * ((float)nwidth / owidth) + 0.5f);
+        nwidth = (nwidth > 0) ? nwidth : (int)((float)owidth * ((float)nheight / oheight) + 0.5f);
+        nheight = (nheight > 0) ? nheight : 1;
+        nwidth = (nwidth > 0) ? nwidth : 1;
+        nsteps = dialog->spinStep->value();
+        if ((nsteps == 1) && !dialog->checkRIS->isChecked())
+        {
+            switch(mode)
+            {
+                case 2:
+                    img = resizeImageBicub (data.image, nheight, nwidth);
+                    break;
+                case 3:
+                    img = resizeImageBiakima (data.image, nheight, nwidth);
+                    break;
+                case 0:
+                case 1:
+                default:
+                    img = data.image.scaled(nwidth, nheight, Qt::IgnoreAspectRatio, tfmMode);
+                    break;
+            }
+        }
         else
-            return;
+        {
+            imgb = data.image.copy();
+            for (i = 0; i < nsteps; i++)
+            {
+                nheightstep = oheight + (nheight - oheight) * (i + 1) / nsteps;
+                nwidthstep = owidth + (nwidth - owidth) * (i + 1) / nsteps;
+                switch(mode)
+                {
+                    case 2:
+                        img = resizeImageBicub (imgb, nheightstep, nwidthstep);
+                        break;
+                    case 3:
+                        img = resizeImageBiakima (imgb, nheightstep, nwidthstep);
+                        break;
+                    case 0:
+                    case 1:
+                    default:
+                        img = imgb.scaled(owidth, oheight, Qt::IgnoreAspectRatio, tfmMode);
+                        break;
+                }
+                imgb = img.copy();
+            }
+            if (dialog->checkRIS->isChecked())
+            {
+                QString multRIS = dialog->multRIS->text();
+                float mult = (multRIS.isEmpty()) ? 0 : multRIS.toFloat();
+                switch(mode)
+                {
+                    case 2:
+                        img = resizeImageBicub (imgb, oheight, owidth);
+                        break;
+                    case 3:
+                        img = resizeImageBiakima (imgb, oheight, owidth);
+                        break;
+                    case 0:
+                    case 1:
+                    default:
+                        img = imgb.scaled(owidth, oheight, Qt::IgnoreAspectRatio, tfmMode);
+                        break;
+                }
+                img = reFilter(img, data.image, mult);
+                for (i = 0; i < nsteps; i++)
+                {
+                    nheightstep = oheight + (nheight - oheight) * (i + 1) / nsteps;
+                    nwidthstep = owidth + (nwidth - owidth) * (i + 1) / nsteps;
+                    switch(mode)
+                    {
+                        case 2:
+                            imgb = resizeImageBicub (img, nheightstep, nwidthstep);
+                            break;
+                        case 3:
+                            imgb = resizeImageBiakima (img, nheightstep, nwidthstep);
+                            break;
+                        case 0:
+                        case 1:
+                        default:
+                            imgb = img.scaled(nwidthstep, nheightstep, Qt::IgnoreAspectRatio, tfmMode);
+                            break;
+                    }
+                    img = imgb.copy();
+                }
+            }
+        }
         canvas->setImage(img);
+        canvas->showScaled();
     }
 }
 
@@ -922,22 +1031,65 @@ Window:: adaptiveThresh()
 }
 
 void
-Window:: blur()
+Window:: blurorbox(int method)
 {
     bool ok;
-    int radius = max(max(data.image.width(), data.image.height())/160, 3);
-    radius = QInputDialog::getInt(this, "Gaussian Blur", "Enter Blur Radius :",
-                                        radius/*val*/, 1/*min*/, 30/*max*/, 1/*step*/, &ok);
-    if (not ok) return;
-    gaussianBlur(data.image, radius);
-    //boxFilter(data.image, radius);
+    int radius = QInputDialog::getInt(this, "Blur Radius", "Enter Blur Radius :",
+                                        1/*val*/, -30/*min*/, 30/*max*/, 1/*step*/, &ok);
+    if ((not ok) || (radius == 0)) return;
+    if (radius < 0)
+    {
+        QImage imgb = data.image.copy();
+        if (method > 0)
+            gaussianBlur(imgb, -radius);
+        else
+            boxFilter(imgb, -radius);
+        imgb = reFilter(imgb, data.image, 1.0f);
+        data.image = imgb;
+    } else {
+        if (method > 0)
+            gaussianBlur(data.image, radius);
+        else
+            boxFilter(data.image, radius);
+    }
     canvas->showScaled();
+}
+
+void
+Window:: box()
+{
+    blurorbox(0);
+}
+
+void
+Window:: blur()
+{
+    blurorbox(1);
 }
 
 void
 Window:: sharpenImage()
 {
     unsharpMask(data.image);
+    canvas->showScaled();
+}
+
+void
+Window:: edgeImage()
+{
+    bool ok;
+    int radius = QInputDialog::getInt(this, "Filter Radius", "Enter Radius :",
+                                        1/*val*/, -30/*min*/, 30/*max*/, 1/*step*/, &ok);
+    if ((not ok) || (radius == 0)) return;
+    if (radius < 0)
+    {
+        QImage imgb = data.image.copy();
+        edgeFilter(imgb, -radius);
+        imgb = reFilter(imgb, data.image, 1.0f);
+        data.image = imgb;
+    } else {
+        edgeFilter(data.image, radius);
+    }
     canvas->showScaled();
 }
 
@@ -951,7 +1103,19 @@ Window:: reduceSpeckleNoise()
 void
 Window:: removeDust()
 {
-    medianFilter(data.image, 1);
+    bool ok;
+    int radius = QInputDialog::getInt(this, "Filter Radius", "Enter Radius :",
+                                        1/*val*/, -30/*min*/, 30/*max*/, 1/*step*/, &ok);
+    if ((not ok) || (radius == 0)) return;
+    if (radius < 0)
+    {
+        QImage imgb = data.image.copy();
+        medianFilter(imgb, -radius);
+        imgb = reFilter(imgb, data.image, 1.0f);
+        data.image = imgb;
+    } else {
+        medianFilter(data.image, radius);
+    }
     canvas->showScaled();
 }
 
@@ -1142,6 +1306,36 @@ Window:: perspectiveTransform()
 }
 
 void
+Window:: deWarping()
+{
+    DeWarpDialog *dlg = new DeWarpDialog(this);
+    if (dlg->exec() != QDialog::Accepted)
+        return;
+    int countnodes = dlg->countSpin->value();
+    frame->hide();
+    frame_2->hide();
+    setWindowTitle("DeWarping");
+    DeWarping *transform = new DeWarping(canvas, statusbar, countnodes);
+    connect(canvas, SIGNAL(mousePressed(QPoint)), transform, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), transform, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), transform, SLOT(onMouseMove(QPoint)));
+    connect(transform, SIGNAL(finished()), this, SLOT(onEditingFinished()));
+}
+
+void
+Window:: deOblique()
+{
+    frame->hide();
+    frame_2->hide();
+    setWindowTitle("DeOblique");
+    DeOblique *transform = new DeOblique(canvas, statusbar);
+    connect(canvas, SIGNAL(mousePressed(QPoint)), transform, SLOT(onMousePress(QPoint)));
+    connect(canvas, SIGNAL(mouseReleased(QPoint)), transform, SLOT(onMouseRelease(QPoint)));
+    connect(canvas, SIGNAL(mouseMoved(QPoint)), transform, SLOT(onMouseMove(QPoint)));
+    connect(transform, SIGNAL(finished()), this, SLOT(onEditingFinished()));
+}
+
+void
 Window:: playPause()
 {
     if (timer->isActive()) {       // Stop slideshow
@@ -1313,8 +1507,6 @@ Window:: getPlugins()
     QDesktopServices::openUrl(QUrl("https://github.com/ksharindam/photoquick-plugins/releases/latest"));
 }
 
-
-
 void
 Window:: closeEvent(QCloseEvent *ev)
 {
@@ -1325,8 +1517,6 @@ Window:: closeEvent(QCloseEvent *ev)
     settings.setValue("WindowDecorHeight", frameGeometry().height() - height());
     QMainWindow::closeEvent(ev);
 }
-
-
 
 // other functions
 QString getNextFileName(QString current)
@@ -1380,12 +1570,14 @@ int main(int argc, char *argv[])
 #endif
     Window *win = new Window();
     win->show();
-    if (argc > 1) {
+    if (argc > 1)
+    {
         win->openImage(app.arguments().at(1));
         if (win->data.image.isNull()) // failed to open
             QDir::setCurrent(QDir::homePath());
     }
-    else {
+    else
+    {
         win->openStartupImage();
     }
     // plugins will be loaded after first image is shown.

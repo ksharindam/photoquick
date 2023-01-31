@@ -3,6 +3,12 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <sstream>
+#include <fstream>
+#include <clocale>
+
+#ifndef __PHOTOQUICK_PDFWRITER
+#define __PHOTOQUICK_PDFWRITER
 
 /* HOW TO USE
 PdfDocument doc;
@@ -105,3 +111,5 @@ std::string format(const char* fmt, Args... args);
 
 
 std::string readFile(std::string filename);
+
+#endif /* __PHOTOQUICK_PDFWRITER */

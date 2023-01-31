@@ -1,13 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "iscissor.h"
-#include "common.h"
-#include "filters.h"
-#include <QColorDialog>
-#include <QButtonGroup>
-#include <QComboBox>
-#include <QDialogButtonBox>
-#include <cmath>
 
 // ---------------------------------------------------------------------
 //*************** Intelligent Scissor and Manual Eraser ****************

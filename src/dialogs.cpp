@@ -1,14 +1,5 @@
 // this file is part of photoquick program which is GPLv3 licensed
 #include "dialogs.h"
-#include "common.h"
-#include "filters.h"
-#include <QDialogButtonBox>
-#include <QPushButton>
-#include <QGridLayout>
-#include <QDesktopServices>
-#include <QUrl>
-#include <QProcess>
-#include <cmath>
 
 // ------------ Dialog to set JPG Options for saving ------------
 
@@ -18,24 +9,24 @@ JpegDialog:: JpegDialog(QWidget *parent, QImage &img) : QDialog(parent), image(i
     timer = new QTimer(this);
     timer->setSingleShot(true);
     timer->setInterval(800);
-    QLabel *qualityLabel = new QLabel("Compression Level :", this);
+    qualityLabel = new QLabel("Compression Level :", this);
     qualitySpin = new QSpinBox(this);
     qualitySpin->setAlignment(Qt::AlignHCenter);
     qualitySpin->setSuffix(" %");
     qualitySpin->setRange(10,100);
     qualitySpin->setValue(75);
-    QCheckBox *showSizeCheck = new QCheckBox("Show File Size", this);
+    showSizeCheck = new QCheckBox("Show File Size", this);
     sizeLabel = new QLabel("Wait...", this);
-    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Save|QDialogButtonBox::Cancel,
+    btnBox = new QDialogButtonBox(QDialogButtonBox::Save|QDialogButtonBox::Cancel,
                                                     Qt::Horizontal, this);
-    QCheckBox *saveDpiCheck = new QCheckBox("Save DPI :", this);
+    saveDpiCheck = new QCheckBox("Save DPI :", this);
     dpiSpin = new QSpinBox(this);
     dpiSpin->setAlignment(Qt::AlignHCenter);
     dpiSpin->setSingleStep(50);
     dpiSpin->setRange(50, 1200);
     dpiSpin->setValue(300);
 
-    QGridLayout *layout = new QGridLayout(this);
+    layout = new QGridLayout(this);
     layout->addWidget(qualityLabel, 0,0, 1,1);
     layout->addWidget(qualitySpin, 0,1, 1,1);
     layout->addWidget(showSizeCheck, 1,0, 1,1);
@@ -587,6 +578,24 @@ UpdateDialog:: checkForUpdate()
         textView->setPlainText("Error ! Unable to parse release version.");
     }
     updateBtn->setEnabled(true);
+}
+
+DeWarpDialog:: DeWarpDialog(QWidget *parent) : QDialog(parent)
+{
+    this->resize(150, 120);
+    this->setWindowTitle("Dewarp Image");
+    vLayout = new QVBoxLayout(this);
+    countLabel = new QLabel("Count nodes :", this);
+    countSpin = new QSpinBox(this);
+    countSpin->setAlignment(Qt::AlignHCenter);
+    countSpin->setRange(2, 50);
+    countSpin->setValue(5);
+    btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    vLayout->addWidget(countLabel);
+    vLayout->addWidget(countSpin);
+    vLayout->addWidget(btnBox);
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void

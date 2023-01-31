@@ -1,12 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "canvas.h"
-#include <QDebug>
-#include <QSizePolicy>
-#include <QTransform>
-#include <QPainter>
-#include <cmath>
-
 
 Canvas:: Canvas(QScrollArea *scrollArea, ImageData *img_dat) : QLabel(scrollArea)
 {

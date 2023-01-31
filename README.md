@@ -1,8 +1,15 @@
+`Origin  :`
 ![License](https://img.shields.io/github/license/ksharindam/photoquick)
 ![Release](https://img.shields.io/github/v/release/ksharindam/photoquick)
 ![Release Date](https://img.shields.io/github/release-date/ksharindam/photoquick)
 ![Downloads Total](https://img.shields.io/github/downloads/ksharindam/photoquick/total)
-![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/photoquick/latest/total)
+![Downloads Latest](https://img.shields.io/github/downloads/ksharindam/photoquick/latest/total)  
+`ORG.IPEP:`
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/ImageProcessing-ElectronicPublications/photoquick)
+![GitHub Release Date](https://img.shields.io/github/release-date/ImageProcessing-ElectronicPublications/photoquick)
+![GitHub repo size](https://img.shields.io/github/repo-size/ImageProcessing-ElectronicPublications/photoquick)
+![GitHub all releases](https://img.shields.io/github/downloads/ImageProcessing-ElectronicPublications/photoquick/total)
+![GitHub](https://img.shields.io/github/license/ImageProcessing-ElectronicPublications/photoquick)  
 
 # PhotoQuick (for Linux and Windows)
 A simple handy image viewer and editor with some useful features (Qt based).
@@ -113,3 +120,6 @@ Photo-Grid
 Scissor Tool  
 ![Scissor Tool](data/screenshots/Screenshot3.jpg)  
 
+### Examples
+
+See [examples](https://github.com/ImageProcessing-ElectronicPublications/photoquick-examples).

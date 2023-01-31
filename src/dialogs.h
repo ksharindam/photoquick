@@ -7,6 +7,18 @@
 #include <QTextEdit>
 #include <QImage>
 #include <QTimer>
+#include <QDialogButtonBox>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QProcess>
+#include <cmath>
+#include "common.h"
+#include "filters.h"
+
+#ifndef __PHOTOQUICK_DIALOGS
+#define __PHOTOQUICK_DIALOGS
 
 // Dialog to set JPG Options for saving
 class JpegDialog : public QDialog
@@ -16,9 +28,12 @@ public:
     JpegDialog(QWidget *parent, QImage &img);
     QImage image;
     QSpinBox *qualitySpin;
-    QLabel *sizeLabel;
+    QLabel *qualityLabel, *sizeLabel;
+    QCheckBox *showSizeCheck, *saveDpiCheck;
     QTimer *timer;
     QSpinBox *dpiSpin;
+    QDialogButtonBox *btnBox;
+    QGridLayout *layout;
 public slots:
     void checkFileSize();
     void toggleCheckSize(bool checked);
@@ -147,6 +162,16 @@ public:
     void run();
 };
 
+class DeWarpDialog : public QDialog
+{
+public:
+    int countn;
+    QVBoxLayout *vLayout;
+    QLabel *countLabel;
+    QSpinBox *countSpin;
+    QDialogButtonBox *btnBox;
+    DeWarpDialog(QWidget *parent);
+};
 
 class UpdateDialog : public QDialog
 {
@@ -168,3 +193,5 @@ public:
 private slots:
     void checkForUpdate();
 };
+
+#endif /* __PHOTOQUICK_DIALOGS */

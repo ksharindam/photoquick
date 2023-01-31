@@ -1,7 +1,24 @@
 #pragma once
 
-#include "ui_collage_dialog.h"
+#include <QButtonGroup>// Qt5+
+#include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QPainter>
+#include <QPen>
+#include <QColorDialog>
+#include <QSettings>
+#include <QBuffer>
+#include <QMimeData>
+#include <QUrl>
 #include <QMouseEvent>
+#include <cmath>
+#include "common.h"
+#include "pdfwriter.h"
+#include "ui_collage_dialog.h"
+
+#ifndef __PHOTOQUICK_COLLAGE
+#define __PHOTOQUICK_COLLAGE
 
 // *********** Collage maker *****************
 class CollageItem
@@ -113,3 +130,4 @@ public slots:
     void onUnitChange(int);
 };
 
+#endif /* __PHOTOQUICK_COLLAGE */

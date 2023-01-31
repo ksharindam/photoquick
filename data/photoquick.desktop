@@ -1,9 +1,11 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
+Encoding=UTF-8
 Name=PhotoQuick
+Comment=A simple handy image viewer and editor with some useful features
 Icon=photoquick
 Exec=photoquick %f
-Categories=Graphics;
-StartupNotify=false
+Categories=Graphics;2DGraphics;RasterGraphics;Qt;
 Terminal=false
+StartupNotify=false

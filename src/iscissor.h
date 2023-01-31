@@ -1,11 +1,18 @@
 #pragma once
 /* Intelligent Scissor and Manual eraser for background removal */
 
-#include "ui_iscissor_dialog.h"
 #include "canvas.h"
 #include <QPainter>
 #include <QTimer>
 #include <vector>
+#include <QColorDialog>
+#include <QButtonGroup>
+#include <QComboBox>
+#include <QDialogButtonBox>
+#include <cmath>
+#include "common.h"
+#include "filters.h"
+#include "ui_iscissor_dialog.h"
 /*
 How drawing works in Scissor :
  first it scales image to create image_scaled,
@@ -29,6 +36,9 @@ Mask mode :
  Brush_scaled is a semi-transperant green brush, drawn on image_scaled
  On mouse release image_scaled is generated from mask and image.
 */
+
+#ifndef __PHOTOQUICK_ISCISSOR
+#define __PHOTOQUICK_ISCISSOR
 
 class GradMap
 {
@@ -153,3 +163,4 @@ signals:
     void bgColorSelected(int, QRgb);
 };
 
+#endif /* __PHOTOQUICK_ISCISSOR */

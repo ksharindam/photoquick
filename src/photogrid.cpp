@@ -1,16 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
-#include "common.h"
 #include "photogrid.h"
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QPen>
-#include <QDesktopWidget>
-#include <QSettings>
-//#include <QBuffer>
-#include <QMimeData>
-#include <QUrl>
-#include <cmath>
 
 #define UNIT_NAMES   {"in", "cm"}
 #define UNIT_FACTORS {1, 1/2.54 }

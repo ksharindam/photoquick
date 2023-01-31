@@ -2,7 +2,21 @@
 #include <QImage>
 #include <QSystemTrayIcon>
 #include <QDebug>
+#include <QTimer>
+#include <QEventLoop>
+#include <QFile>
+#include <QBuffer>
+#include <QTransform>
+#include <QIcon>
+#include <QImageReader>
+#include <QPainter>
+#include <QDesktopServices>
+#include <cmath>
+#include <unistd.h> // dup()
 #include "exif.h"
+
+#ifndef __PHOTOQUICK_COMMON
+#define __PHOTOQUICK_COMMON
 
 #define PROG_NAME       "PhotoQuick"
 #define PROG_VERSION    "4.15.3"
@@ -11,6 +25,13 @@
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
 #define PROJ_RELEASE    "https://github.com/ksharindam/photoquick/releases"
 
+// check if armhf architecture, if not then it is assumed to be x86
+#ifdef __arm__
+#define ARCH "armhf"
+//#elif __x86_64__
+#else
+#define ARCH "x86_64"
+#endif
 
 #define MIN(a,b) ({ __typeof__ (a) _a = (a); \
                     __typeof__ (b) _b = (b); \
@@ -113,11 +134,6 @@ enum
 };
 #endif
 
+int SelectChannelPixel(QRgb pix, int channel);
 
-// check if armhf architecture, if not then it is assumed to be x86
-#ifdef __arm__
-#define ARCH "armhf"
-//#elif __x86_64__
-#else
-#define ARCH "x86_64"
-#endif
+#endif /* __PHOTOQUICK_COMMON */
