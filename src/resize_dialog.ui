@@ -13,18 +13,52 @@
   <property name="windowTitle">
    <string>Resize Image</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="4" column="0" colspan="2">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+  <layout class="QGridLayout" name="baseLayout">
+   <item row="0" column="0" colspan="3">
+    <widget class="QLabel" name="labelSize">
+     <property name="text">
+      <string>Enter width &amp; height (any one or both) :</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="1" column="0">
+    <widget class="QLineEdit" name="widthEdit">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="placeholderText">
+      <string>Width</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="heightEdit">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="placeholderText">
+      <string>Height</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QLineEdit" name="ratioEdit">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="placeholderText">
+      <string>Ratio</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="3">
+    <widget class="QCheckBox" name="checkBox">
+     <property name="text">
+      <string>Show Advanced (steps, DPI and  cm)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="3">
     <widget class="QFrame" name="frame">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
@@ -32,45 +66,89 @@
      <property name="frameShadow">
       <enum>QFrame::Plain</enum>
      </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_5">
+     <layout class="QGridLayout" name="optionalLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelMethod">
         <property name="text">
-         <string>Height :</string>
+         <string>Method</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_3">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboMethod">
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>Nearest</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Smooth(BiLine)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BiCubic</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BiAkima</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="checkRIS">
+        <property name="text">
+         <string>Enable RIS, multiply:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="multRIS">
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="placeholderText">
+         <string>multiply</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelStep">
+        <property name="text">
+         <string>Steps :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="spinStep">
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelDPI">
         <property name="text">
          <string>DPI :</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="spinWidth">
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-        <property name="suffix">
-         <string> cm</string>
-        </property>
-        <property name="decimals">
-         <number>1</number>
-        </property>
-        <property name="singleStep">
-         <double>0.100000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>Width :</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
+      <item row="3" column="1">
        <widget class="QSpinBox" name="spinDPI">
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -86,7 +164,37 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelWidth">
+        <property name="text">
+         <string>Width :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="spinWidth">
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="suffix">
+         <string> cm</string>
+        </property>
+        <property name="decimals">
+         <number>1</number>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelHeight">
+        <property name="text">
+         <string>Height :</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="spinHeight">
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -102,50 +210,16 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QCheckBox" name="smoothScaling">
-        <property name="text">
-         <string>Smooth Scaling</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
      </layout>
     </widget>
    </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QCheckBox" name="checkBox">
-     <property name="text">
-      <string>Show Advanced (DPI and  cm)</string>
+   <item row="5" column="0" colspan="3">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="heightEdit">
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-     <property name="placeholderText">
-      <string>Height</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLineEdit" name="widthEdit">
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-     <property name="placeholderText">
-      <string>Width</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QLabel" name="label_6">
-     <property name="text">
-      <string>Enter width &amp; height (any one or both) :</string>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>

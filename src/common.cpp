@@ -1,19 +1,6 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 
 #include "common.h"
-#include <QTimer>
-#include <QEventLoop>
-#include <QFile>
-#include <QBuffer>
-#include <QTransform>
-#include <QIcon>
-#include <QImageReader>
-#include <QPainter>
-#include <QDesktopServices>
-#include <cmath>
-#include <unistd.h> // dup()
-
-
 
 void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h)
 {
@@ -254,3 +241,9 @@ void debug(const char *format, ...)
 #else
 void debug(const char *, ...) {/* do nothing*/}
 #endif
+
+int SelectChannelPixel(QRgb pix, int channel)
+{
+    int value[5] = {qRed(pix), qGreen(pix), qBlue(pix), qAlpha(pix), 0};
+    return value[channel];
+}

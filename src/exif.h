@@ -2,7 +2,13 @@
 #include <string>
 #include <cstdio>
 #include <map>
+#include <list>
+#include <sstream>
+#include <cmath>
+#include <string.h>// memcpy
 
+#ifndef __PHOTOQUICK_EXIF
+#define __PHOTOQUICK_EXIF
 
 typedef struct {
     unsigned short tag_no;
@@ -71,3 +77,5 @@ enum {
     FLOAT,// 4 bytes
     DOUBLE// 8 bytes
 };
+
+#endif /* __PHOTOQUICK_EXIF */

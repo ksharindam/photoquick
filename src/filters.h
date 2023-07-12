@@ -1,5 +1,11 @@
 #pragma once
 #include <QImage>
+#include <QPainter>
+#include <cmath>
+#include "common.h"
+
+#ifndef __PHOTOQUICK_FILTERS
+#define __PHOTOQUICK_FILTERS
 
 // Convert image to grayscale
 void grayScale(QImage &img);
@@ -24,6 +30,9 @@ void medianFilter(QImage &img, int radius=1);
 
 // Sharpen by Unsharp masking
 void unsharpMask(QImage &img, float factor=1.0, int thresh=5);
+
+// Edge
+void edgeFilter(QImage &img, int radius=1);
 
 // remove speckle noise using crimmins speckle removal
 void despeckle(QImage &img);
@@ -62,3 +71,7 @@ void pencilSketch(QImage &img);
 QImage expandBorder(QImage img, int width);
 
 QRgb borderAverageForTransperant(QImage &img);
+
+QImage reFilter(QImage imgre, QImage img0, float mult);
+
+#endif /* __PHOTOQUICK_FILTERS */

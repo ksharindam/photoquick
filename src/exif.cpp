@@ -1,10 +1,6 @@
 // Based on the specification given in
 // https://www.media.mit.edu/pia/Research/deepview/exif.html
 #include "exif.h"
-#include <list>
-#include <sstream>
-#include <cmath>
-#include <string.h>// memcpy
 
 // pos at TIFF header starts
 thread_local int tiff_offset = 12;

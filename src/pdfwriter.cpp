@@ -1,8 +1,5 @@
 /* This file is a part of photoquick program, which is GPLv3 licensed */
 #include "pdfwriter.h"
-#include <sstream>
-#include <fstream>
-#include <clocale>
 
 std::string getPngIdat(const char *rawdata, int rawdata_size);
 std::string imgMatrix(float x, float y, float w, float h, int rotation);

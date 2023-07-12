@@ -1,9 +1,5 @@
 // this file is part of photoquick program which is GPLv3 licensed
 #include "filters.h"
-#include "common.h"
-#include <QPainter>
-#include <cmath>
-
 
 // macros for measuring execution time
 #include <chrono>
@@ -392,17 +388,21 @@ int calcOtsuThresh(QImage img)
 
 void threshold(QImage &img, int thresh)
 {
+    int dn = (img.hasAlphaChannel()) ? 4 : 3;
     #pragma omp parallel for
-    for (int y=0;y<img.height();y++) {
+    for (int y = 0; y < img.height(); y++)
+    {
         QRgb* line;
         #pragma omp critical
         { line = ((QRgb*)img.scanLine(y)); }
-        for (int x=0;x<img.width();x++) {
-            int alpha = qAlpha(line[x]);
-            if (qGray(line[x]) > thresh)
-                line[x] = qRgba(255,255,255, alpha);
-            else
-                line[x] = qRgba(0,0,0, alpha);
+        for (int x = 0; x < img.width(); x++)
+        {
+            int clr = line[x];
+            int r = (qRed(clr) < thresh) ? 0 : 255;
+            int g = (qGreen(clr) < thresh) ? 0 : 255;
+            int b = (qBlue(clr) < thresh) ? 0 : 255;
+            int a = (qAlpha(clr) < thresh) ? 0 : 255;
+            line[x] = (dn > 3) ? qRgba(r, g, b, a) : qRgb(r, g, b);
         }
     }
 }
@@ -422,50 +422,74 @@ void adaptiveThreshold(QImage &img, float T, int window_size)
         intImg[i] = (ptr + w * i);
 
     // Calculate integral image
-    for (int y=0; y<h; ++y)
+    int dn = (img.hasAlphaChannel()) ? 4 : 3;
+    for (int d = 0; d < dn; d++)
     {
-        QRgb *row = (QRgb*)img.constScanLine(y);
-        int sum=0;
-        for (int x=0;x<w;++x)
+        for (int y = 0; y < h; ++y)
         {
-            sum += qGray(row[x]);
-            if (y==0)
-                intImg[y][x] = qGray(row[x]);
-            else
-                intImg[y][x] = intImg[y-1][x] + sum;
+            QRgb *row = (QRgb*)img.constScanLine(y);
+            int c, sum = 0;
+            for (int x = 0; x < w; ++x)
+            {
+                c = SelectChannelPixel(row[x], d);
+                sum += c;
+                if (y == 0)
+                    intImg[y][x] = c;
+                else
+                    intImg[y][x] = intImg[y-1][x] + sum;
+            }
         }
-    }
-    // Apply Bradley threshold
-    if (window_size==0)
-        window_size = MAX(16, w/32);
-    int s2 = window_size/2;
-    #pragma omp parallel for
-    for (int i=0; i<h; ++i)
-    {
-        int x1,y1,x2,y2, count, sum;
-        y1 = ((i - s2)>0) ? (i - s2) : 0;
-        y2 = ((i + s2)<h) ? (i + s2) : h-1;
-        QRgb *row;
-        #pragma omp critical
-        { row = (QRgb*)img.scanLine(i); }
-        for (int j=0; j<w; ++j)
+        // Apply Bradley threshold
+        if (window_size == 0)
+            window_size = MAX(16, w/32);
+        int s2 = window_size/2;
+        #pragma omp parallel for
+        for (int i = 0; i < h; ++i)
         {
-            x1 = ((j - s2)>0) ? (j - s2) : 0;
-            x2 = ((j + s2)<w) ? (j + s2) : w-1;
+            int x1,y1,x2,y2, count, sum;
+            y1 = ((i - s2) > 0) ? (i - s2) : 0;
+            y2 = ((i + s2) < h) ? (i + s2) : (h - 1);
+            QRgb *row;
+            #pragma omp critical
+            { row = (QRgb*)img.scanLine(i); }
+            for (int j = 0; j < w; ++j)
+            {
+                x1 = ((j - s2)>0) ? (j - s2) : 0;
+                x2 = ((j + s2)<w) ? (j + s2) : w-1;
 
-            count = (x2 - x1)*(y2 - y1);
-            sum = intImg[y2][x2] - intImg[y2][x1] - intImg[y1][x2] + intImg[y1][x1];
+                count = (x2 - x1) * (y2 - y1);
+                sum = intImg[y2][x2] - intImg[y2][x1] - intImg[y1][x2] + intImg[y1][x1];
 
-            // threshold = mean*(1 - T) , where mean = sum/count, T = around 0.15
-            if ((qGray(row[j]) * count) < (int)(sum*(1.0 - T)) )
-                row[j] = qRgb(0,0,0);
-            else
-                row[j] = qRgb(255,255,255);
+                // threshold = mean*(1 - T) , where mean = sum/count, T = around 0.15
+                int clr = row[j];
+                int ct = 0, c = SelectChannelPixel(clr, d);
+                int r = qRed(clr);
+                int g = qGreen(clr);
+                int b = qBlue(clr);
+                int a = qAlpha(clr);
+                if ((c * count) > (int)(sum * (1.0 - T)) )
+                    ct = 255;
+                switch (d)
+                {
+                 case 0:
+                    r = ct;
+                    break;
+                case 1:
+                    g = ct;
+                    break;
+                case 2:
+                    b = ct;
+                    break;
+                default:
+                    a = ct;
+                    break;
+                }
+                row[j] = (dn > 3) ? qRgba(r, g, b, a) : qRgb(r, g, b);
+            }
         }
     }
     free(intImg);
 }
-
 
 //*********---------- Apply Convolution Matrix ---------**********//
 // Kernel Width Must Be An Odd Number
@@ -684,6 +708,7 @@ void unsharpMask(QImage &img, float factor, int thresh)
     boxFilter(mask, 1);
     int w = img.width();
     int h = img.height();
+    int dn = (img.hasAlphaChannel()) ? 4 : 3;
     #pragma omp parallel for
     for (int y=0; y<h; y++)
     {
@@ -700,7 +725,83 @@ void unsharpMask(QImage &img, float factor, int thresh)
             int r = r_diff > thresh? qRed(row[x])   + factor*r_diff : qRed(row[x]);
             int g = g_diff > thresh? qGreen(row[x]) + factor*g_diff : qGreen(row[x]);
             int b = b_diff > thresh? qBlue(row[x])  + factor*b_diff : qBlue(row[x]);
-            row[x] = qRgba(Clamp(r), Clamp(g), Clamp(b), qAlpha(row[x]));
+            row[x] = (dn > 3) ? qRgba(Clamp(r), Clamp(g), Clamp(b), qAlpha(row[x])) : qRgb(Clamp(r), Clamp(g), Clamp(b));
+        }
+    }
+}
+
+
+//**********----------- Edge -----------*************//
+void edgeFilter(QImage &img, int radius/*blur radius*/)
+{
+    int dn, k, w, h, y, x, y0, x0, y1, x1, yf, xf, n;
+    int c, cf, r, g, b, a, sum_r, sum_g, sum_b;
+    QRgb *row_src, *row_dst, *row_f;
+    QImage dest;
+    w = img.width();
+    h = img.height();
+    dn = (img.hasAlphaChannel()) ? 4 : 3;
+    k = 2 * radius - 1;
+
+    dest = img.copy();
+
+    for (y = 0; y < h; y++)
+    {
+        y0 = (y > radius) ? (y - radius) : 0;
+        y1 = ((y + radius) < h) ? (y + radius) : h;
+        row_src = (QRgb*) img.constScanLine(y);
+        row_dst = (QRgb*) dest.scanLine(y);
+
+        for (x = 0; x < w; x++)
+        {
+            x0 = (x > radius) ? (x - radius) : 0;
+            x1 = ((x + radius) < w) ? (x + radius) : w;
+            c = row_src[x];
+            r = qRed(c);
+            g = qGreen(c);
+            b = qBlue(c);
+            a = qAlpha(c);
+            sum_r = sum_g = sum_b = n = 0;
+            for (yf = y0; yf < y1; yf++)
+            {
+                row_f = (QRgb*) img.scanLine(yf);
+                for (xf = x0; xf < x1; xf++)
+                {
+                    cf = row_f[xf];
+                    sum_r += qRed(cf);
+                    sum_g += qGreen(cf);
+                    sum_b += qBlue(cf);
+                    n++;
+                }
+            }
+            sum_r -= (n * r);
+            sum_g -= (n * g);
+            sum_b -= (n * b);
+            sum_r = (sum_r < 0) ? -sum_r : sum_r;
+            sum_g = (sum_g < 0) ? -sum_g : sum_g;
+            sum_b = (sum_b < 0) ? -sum_b : sum_b;
+            sum_r /= k;
+            sum_g /= k;
+            sum_b /= k;
+            sum_r = Clamp(sum_r);
+            sum_g = Clamp(sum_g);
+            sum_b = Clamp(sum_b);
+            row_dst[x] = (dn > 3) ? qRgba(sum_r, sum_g, sum_b, a) : qRgb(sum_r, sum_g, sum_b);
+        }
+    }
+    for (y = 0; y < h; y++)
+    {
+        row_src = (QRgb*) dest.scanLine(y);
+        row_dst = (QRgb*) img.scanLine(y);
+
+        for (x = 0; x < w; x++)
+        {
+            c = row_src[x];
+            r = qRed(c);
+            g = qGreen(c);
+            b = qBlue(c);
+            a = qAlpha(c);
+            row_dst[x] = (dn > 3) ? qRgba(r, g, b, a) : qRgb(r, g, b);
         }
     }
 }
@@ -1592,3 +1693,40 @@ inline bool isSkin(int r, int g, int b){
     ((h>350) or (h<35)) and (s<170) and (v < 310-s);
 }
 #endif
+
+QImage reFilter(QImage imgre, QImage img0, float mult)
+{
+    int width, height, width0, height0, x, y, clr, clrre, r, g, b, a;
+    width = imgre.width();
+    height = imgre.height();
+    width0 = img0.width();
+    height0 = img0.height();
+    if ((width == width0) && (height == height0))
+    {
+        for (y = 0; y < height; y++)
+        {
+            QRgb *row0 = (QRgb*) img0.scanLine(y);
+            QRgb *rowre = (QRgb*) imgre.scanLine(y);
+            for (x = 0; x < width; x++)
+            {
+                clr = row0[x];
+                clrre = rowre[x];
+                r = qRed(clr) + (int)(mult * (qRed(clr) - qRed(clrre)));
+                g = qGreen(clr) + (int)(mult * (qGreen(clr) - qGreen(clrre)));
+                b = qBlue(clr) + (int)(mult * (qBlue(clr) - qBlue(clrre)));
+                r = (r < 0) ? 0 : ((r > 255) ? 255 : r);
+                g = (g < 0) ? 0 : ((g > 255) ? 255 : g);
+                b = (b < 0) ? 0 : ((b > 255) ? 255 : b);
+                if (img0.hasAlphaChannel())
+                {
+                    a = qAlpha(clr) + (int)(mult * (qAlpha(clr) - qAlpha(clrre)));
+                    a = (a < 0) ? 0 : ((a > 255) ? 255 : a);
+                    row0[x] = qRgba(r, g, b, a);
+                } else {
+                    row0[x] = qRgb(r, g, b);
+                }
+            }
+        }
+    }
+    return img0;
+}

@@ -1,0 +1,6 @@
+?package(photoquick):needs="x11" \
+ section="Applications/Graphics" \
+ title="PhotoQuick" \
+ longtitle="A simple handy image viewer and editor with some useful features" \
+ icon="/usr/share/pixmaps/photoquick.xpm" \
+ command="/usr/bin/photoquick"
