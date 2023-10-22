@@ -9,7 +9,7 @@
 
 #define PLUGIN_NAME "Text Tool"
 #define PLUGIN_MENU "Tools/Text Tool"
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     Q_EXPORT_PLUGIN2(text-tool, ToolPlugin);
@@ -32,6 +32,8 @@ static void drawTextBox(QPainter &painter, TextBox textbox, bool border)
         painter.setPen(QColor(textbox.text_color));
         QFont font = painter.font();
         font.setFamily(textbox.font);
+        font.setBold(textbox.bold);
+        font.setItalic(textbox.italic);
         font.setPointSize(textbox.font_size);
         painter.setFont(font);
         int padding = textbox.font_size/2;
@@ -62,6 +64,8 @@ TextToolDialog:: TextToolDialog(QWidget *parent, QImage img) : QDialog(parent)
     connect(plainTextEdit, SIGNAL(textChanged()), this, SLOT(onTextChange()));
     connect(fontComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFontFamilyChange(int)));
     connect(fontSizeSlider, SIGNAL(valueChanged(int)), this, SLOT(onFontSizeChange(int)));
+    connect(boldFontBtn, SIGNAL(clicked(bool)), this, SLOT(enableBoldFont(bool)));
+    connect(italicFontBtn, SIGNAL(clicked(bool)), this, SLOT(enableItalicFont(bool)));
     connect(fontColorCombo, SIGNAL(activated(int)), this, SLOT(onFontColorChange(int)));
     connect(bgColorCombo, SIGNAL(activated(int)), this, SLOT(onBgColorChange(int)));
     connect(textAlignCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onTextAlignmentChange(int)));
@@ -144,6 +148,8 @@ TextToolDialog:: updateCurrentTextbox()
         return;
     textboxes.last().font = tmp_textbox.font;
     textboxes.last().font_size = tmp_textbox.font_size;
+    textboxes.last().bold = tmp_textbox.bold;
+    textboxes.last().italic = tmp_textbox.italic;
     textboxes.last().text_color = tmp_textbox.text_color;
     textboxes.last().bg_color = tmp_textbox.bg_color;
     textboxes.last().alignment = tmp_textbox.alignment;
@@ -294,6 +300,20 @@ TextToolDialog:: onFontSizeChange(int val)
 {
     fontSizeLabel->setText(QString("Size : %1").arg(val));
     tmp_textbox.font_size = val;
+    updateCurrentTextbox();
+}
+
+void
+TextToolDialog:: enableBoldFont(bool enable)
+{
+    tmp_textbox.bold = enable;
+    updateCurrentTextbox();
+}
+
+void
+TextToolDialog:: enableItalicFont(bool enable)
+{
+    tmp_textbox.italic = enable;
     updateCurrentTextbox();
 }
 

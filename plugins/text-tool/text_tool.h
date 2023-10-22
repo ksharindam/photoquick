@@ -49,6 +49,8 @@ public:
     QRect rect;
     QString text;
     int font_size=12;
+    bool bold=false;
+    bool italic=false;
     QRgb text_color=0xff000000;// ARGB black
     QRgb bg_color=0xffffffff;
     int alignment = Qt::AlignCenter;
@@ -94,6 +96,8 @@ public slots:
     void onTextChange();
     void onFontFamilyChange(int index);
     void onFontSizeChange(int val);
+    void enableBoldFont(bool enable);
+    void enableItalicFont(bool enable);
     void onFontColorChange(int index);
     void onBgColorChange(int index);
     void onTextAlignmentChange(int index);
