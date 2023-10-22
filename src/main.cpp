@@ -53,8 +53,8 @@ Window:: Window()
 {
     setupUi(this);
     QMenu *fileMenu = new QMenu(fileBtn);
-    fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
-    fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
+    overwrite_action = fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
+    savecopy_action = fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
     fileMenu->addAction("Save As...", this, SLOT(saveAs()));
     fileMenu->addAction("Save by File Size", this, SLOT(autoResizeAndSave()));
     fileMenu->addSeparator();
@@ -291,7 +291,8 @@ Window:: openImage(QString filepath)
 
     QImageReader img_reader(filepath);
     int frame_count = img_reader.imageCount();
-    if (frame_count<=1) {  // For still images
+    // can not read image if it has wrong file extension
+    if (frame_count<1){
         QString true_format(getFormat(filepath));
         if (!true_format.isEmpty() && true_format != img_reader.format()){
             int ret = QMessageBox::warning(this, "Wrong File Extension!", QString(
@@ -305,9 +306,14 @@ Window:: openImage(QString filepath)
                 if (QFile::rename(filepath, new_name)){
                     filepath = new_name;
                     fileinfo = QFileInfo(new_name);
+                    img_reader.setFileName(filepath);
+                    frame_count = img_reader.imageCount();
                 }
             }
+            else return;
         }
+    }
+    if (frame_count<=1) {  // For still images
         QImage img = loadImage(filepath);  // Returns an autorotated image
         if (img.isNull()){
             statusbar->showMessage("Unsupported File format");
@@ -318,7 +324,7 @@ Window:: openImage(QString filepath)
         adjustWindowSize();
         disableButtons(VIEW_BUTTON, false);
         disableButtons(EDIT_BUTTON, false);
-        if (!timer->isActive())
+        if (!timer->isActive())// not slideshow mode
             playPauseBtn->setIcon(QIcon(":/icons/play.png"));
     }
     else { // For animations
@@ -336,6 +342,11 @@ Window:: openImage(QString filepath)
     QString dir = fileinfo.dir().path();
     QDir::setCurrent(dir);
     setWindowTitle(fileinfo.fileName());
+    // disable overwrite if format is not supported to write
+    QList<QByteArray> supported = QImageWriter::supportedImageFormats();
+    bool can_write = supported.contains(img_reader.format()) and frame_count==1;
+    overwrite_action->setEnabled(can_write);
+    savecopy_action->setEnabled(can_write);
 }
 
 void

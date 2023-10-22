@@ -22,6 +22,7 @@ public:
     int btnboxes_w, statusbar_h, windowdecor_w, windowdecor_h;
     QTimer *timer;      // Slideshow timer
     QMap<QString, QMenu*> menu_dict;
+    QAction *overwrite_action, *savecopy_action;
     // functions
     Window();
     void openStartupImage();
