@@ -72,8 +72,8 @@ public slots:
 class RotateDialog : public PreviewDialog
 {
 public:
-    int angle;
-    QSpinBox *angleSpin;
+    float angle;
+    QDoubleSpinBox *angleSpin;
 
     RotateDialog(QLabel *parent, QImage img, float scale);
     QImage getResult(QImage img);

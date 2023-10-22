@@ -195,8 +195,10 @@ RotateDialog:: RotateDialog(QLabel *canvas, QImage img, float scale) : PreviewDi
 {
     setWindowTitle("Rotate by Any Angle");
     QLabel *label0 = new QLabel("Enter Angle :", this);
-    angleSpin = new QSpinBox(this);
-    angleSpin->setRange(-359, 359);
+    angleSpin = new QDoubleSpinBox(this);
+    angleSpin->setDecimals(1);
+    angleSpin->setSingleStep(0.5);
+    angleSpin->setRange(-90.0, 90.0);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                     QDialogButtonBox::Cancel, Qt::Horizontal, this);
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -204,7 +206,7 @@ RotateDialog:: RotateDialog(QLabel *canvas, QImage img, float scale) : PreviewDi
     layout->addWidget(angleSpin);
     layout->addWidget(btnBox);
 
-    connect(angleSpin, SIGNAL(valueChanged(int)), this, SLOT(triggerPreview()));
+    connect(angleSpin, SIGNAL(valueChanged(double)), this, SLOT(triggerPreview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
 }
