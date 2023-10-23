@@ -43,28 +43,14 @@ Crop:: Crop(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
     statusbar->addPermanentWidget(setRatioBtn);
     QMenu *ratioMenu = new QMenu(setRatioBtn);
     QActionGroup *ratioActions = new QActionGroup(ratioMenu);
-    QAction *action1 = ratioActions->addAction("No Ratio");
-    QAction *action2 = ratioActions->addAction("Ratio - Custom");
-    QAction *action3 = ratioActions->addAction("Ratio - 1:1");
-    QAction *action4 = ratioActions->addAction("Ratio - 3:4");
-    QAction *action5 = ratioActions->addAction("Ratio - 2.5:3.5");
-    QAction *action6 = ratioActions->addAction("Ratio - 3.5:4.5");
-    QAction *action7 = ratioActions->addAction("Fixed Resolution");
-    action1->setCheckable(true);
-    action2->setCheckable(true);
-    action3->setCheckable(true);
-    action4->setCheckable(true);
-    action5->setCheckable(true);
-    action6->setCheckable(true);
-    action7->setCheckable(true);
-    action1->setChecked(true);
-    ratioMenu->addAction(action1);
-    ratioMenu->addAction(action2);
-    ratioMenu->addAction(action3);
-    ratioMenu->addAction(action4);
-    ratioMenu->addAction(action5);
-    ratioMenu->addAction(action6);
-    ratioMenu->addAction(action7);
+    QStringList ratio_names = {"No Ratio", "Custom Ratio", "Square - 1:1",
+            "Photo 4R - 4x6", "Stamp - 2.0x2.5", "Passport - 3.5x4.5", "Fixed Resolution"};
+    for (QString title : ratio_names){
+        QAction *action = ratioActions->addAction(title);
+        action->setCheckable(true);
+        ratioMenu->addAction(action);
+    }
+    ratioActions->actions()[0]->setChecked(true);
     setRatioBtn->setMenu(ratioMenu);
     connect(ratioActions, SIGNAL(triggered(QAction*)), this, SLOT(setCropMode(QAction*)));
     QWidget *spacer = new QWidget(statusbar);
@@ -224,7 +210,7 @@ Crop:: setCropMode(QAction *action)
         p2 = btmright = QPoint( round((fixed_width-1)*scaleX), round((fixed_height-1)*scaleY) );
         crop_mode = FIXED_RESOLUTION;
     }
-    else if (action->text()==QString("Ratio - Custom")) {
+    else if (action->text()==QString("Custom Ratio")) {
         QSettings settings;
         ratio_w = settings.value("CropRatioX", 3.5).toFloat();
         ratio_h = settings.value("CropRatioY", 4.5).toFloat();
@@ -236,24 +222,24 @@ Crop:: setCropMode(QAction *action)
         settings.setValue("CropRatioY", ratio_h);
         crop_mode = FIXED_RATIO;
     }
-    else if (action->text()==QString("Ratio - 3.5:4.5")) {
+    else if (action->text()==QString("Square - 1:1")) {
+        ratio_w = 1.0;
+        ratio_h = 1.0;
+        crop_mode = FIXED_RATIO;
+    }
+    else if (action->text()==QString("Photo 4R - 4x6")) {
+        ratio_w = 2.0;
+        ratio_h = 3.0;
+        crop_mode = FIXED_RATIO;
+    }
+    else if (action->text()==QString("Passport - 3.5x4.5")) {
         ratio_w = 3.5;
         ratio_h = 4.5;
         crop_mode = FIXED_RATIO;
     }
-    else if (action->text()==QString("Ratio - 2.5:3.5")) {
-        ratio_w = 2.5;
-        ratio_h = 3.5;
-        crop_mode = FIXED_RATIO;
-    }
-    else if (action->text()==QString("Ratio - 3:4")) {
-        ratio_w = 3.0;
-        ratio_h = 4.0;
-        crop_mode = FIXED_RATIO;
-    }
-    else if (action->text()==QString("Ratio - 1:1")) {
-        ratio_w = 1.0;
-        ratio_h = 1.0;
+    else if (action->text()==QString("Stamp - 2.0x2.5")) {
+        ratio_w = 2.0;
+        ratio_h = 2.5;
         crop_mode = FIXED_RATIO;
     }
     else
