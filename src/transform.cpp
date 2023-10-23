@@ -156,14 +156,18 @@ Crop:: drawCropBox()
     painter.drawRect(p2.x()-1, p2.y()-1, -drag_box_w+3, -drag_box_w+3);
     painter.end();
     canvas->setPixmap(pm);
-    QString text = "Resolution : %1x%2";
-    if (crop_mode==FIXED_RESOLUTION)
-        statusbar->showMessage(text.arg(fixed_width).arg(fixed_height));
-    else {
-        int width = round((p2.x() - p1.x() + 1)/scaleX);
-        int height = round((p2.y() - p1.y() + 1)/scaleY);
-        statusbar->showMessage(text.arg(width).arg(height));
+    int w, h;
+    if (crop_mode==FIXED_RESOLUTION){
+        w = fixed_width;
+        h = fixed_height;
     }
+    else {
+        w = round((p2.x() - p1.x() + 1)/scaleX);
+        h = round((p2.y() - p1.y() + 1)/scaleY);
+    }
+    int x = round(p1.x()/scaleX);
+    int y = round(p1.y()/scaleY);
+    statusbar->showMessage(QString("CropBox : %1,%2 - %3x%4").arg(x).arg(y).arg(w).arg(h));
 }
 
 void
