@@ -568,3 +568,52 @@ ResizeDialog:: onValueChange(int)
     widthEdit->setText( QString::number(round(DPI * spinWidth->value()/2.54)));
     heightEdit->setText( QString::number(round(DPI * spinHeight->value()/2.54)));
 }
+
+
+
+// *********************************************************************
+//                              Aspect Ratio
+// _____________________________________________________________________
+
+AspectRatioDialog:: AspectRatioDialog(QWidget *parent) : QDialog(parent)
+{
+    this->resize(200, 100);
+    this->setWindowTitle("Scale to Ratio");
+    QGridLayout *layout = new QGridLayout(this);
+    QLabel *label = new QLabel("Enter Aspect Ratio :", this);
+    widthEdit = new QLineEdit(this);
+    widthEdit->setPlaceholderText("Width");
+    heightEdit = new QLineEdit(this);
+    heightEdit->setPlaceholderText("Height");
+    QDoubleValidator *validator = new QDoubleValidator(this);
+    widthEdit->setValidator(validator);
+    heightEdit->setValidator(validator);
+    QLabel *label2 = new QLabel(" : ", this);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    layout->addWidget(label, 0,0, 1,3);
+    layout->addWidget(widthEdit, 1,0, 1,1);
+    layout->addWidget(label2, 1,1, 1,1);
+    layout->addWidget(heightEdit, 1,2, 1,1);
+    layout->addWidget(btnBox, 2,0, 1,3);
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+QImage
+AspectRatioDialog:: getResult(QImage img)
+{
+    // return in case of empty or zero value
+    if (widthEdit->text().toFloat()==0 or heightEdit->text().toFloat()==0)
+        return img;
+    int w = img.width();
+    int h = img.height();
+    float new_aspect = widthEdit->text().toFloat() / heightEdit->text().toFloat();
+    float orig_aspect = (float)w / h;
+    if (new_aspect > orig_aspect){
+        return img.scaled(h*new_aspect, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    else if (new_aspect < orig_aspect){
+        return img.scaled(w, w/new_aspect, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    }
+    return img;
+}

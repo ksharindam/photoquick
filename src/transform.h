@@ -105,3 +105,16 @@ public slots:
     void onValueChange(double value) {onValueChange(int(value));}
 };
 
+
+// _____________________________________________________________________
+// AspectRatioDialog class to get desired image aspect ratio
+
+class AspectRatioDialog : public QDialog
+{
+public:
+    AspectRatioDialog(QWidget *parent);
+    QImage getResult(QImage img);
+private:
+    QLineEdit *widthEdit;
+    QLineEdit *heightEdit;
+};

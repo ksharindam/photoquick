@@ -51,6 +51,7 @@ public slots:
     void cropImage();
     void mirror();
     void perspectiveTransform();
+    void setAspectRatio();
     void addBorder();
     void expandImageBorder();
     void createPhotoGrid();

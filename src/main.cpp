@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2017-2021 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2023 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -68,6 +68,7 @@ Window:: Window()
     transformMenu->addAction("Mirror Image", this, SLOT(mirror()));
     transformMenu->addAction("Un-tilt Image", this, SLOT(perspectiveTransform()));
     transformMenu->addAction("Rotate by ...", this, SLOT(rotateAny()));
+    transformMenu->addAction("Aspect Ratio", this, SLOT(setAspectRatio()));
     transformBtn->setMenu(transformMenu);
     QMenu *decorateMenu = new QMenu(decorateBtn);
     decorateMenu->addAction("Photo Grid", this, SLOT(createPhotoGrid()));
@@ -1127,6 +1128,16 @@ Window:: rotateAny()
 {
     QImage img = canvas->pixmap()->toImage();
     RotateDialog *dlg = new RotateDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        data.image = dlg->getResult(data.image);
+    }
+    canvas->showScaled();
+}
+
+void
+Window:: setAspectRatio()
+{
+    AspectRatioDialog *dlg = new AspectRatioDialog(this);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
     }
