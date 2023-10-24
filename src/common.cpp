@@ -84,15 +84,19 @@ const char* getFormat(QString filename)
     return "";
 }
 
-QImage removeTransparency(QImage img)
+
+QImage setImageBackgroundColor(QImage img, QRgb color)
 {
-    QImage opaque_img(img.width(), img.height(), QImage::Format_RGB32);
-    opaque_img.fill(Qt::white);
-    QPainter painter(&opaque_img);
+    if (color==0x0)// keep transparency
+        return img;
+    QImage result(img.width(), img.height(), QImage::Format_RGB32);
+    result.fill(color);
+    QPainter painter(&result);
     painter.drawImage(0,0, img);
     painter.end();
-    return opaque_img;
+    return result;
 }
+
 
 // load an image from file
 QImage loadImage(QString fileName)

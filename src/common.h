@@ -5,7 +5,7 @@
 #include "exif.h"
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.16.0"
+#define PROG_VERSION    "4.16.1"
 #define COPYRIGHT_YEAR  "2017-2023"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -58,8 +58,8 @@ void waitFor(int millisec);
 // get file format from magic numbers
 const char* getFormat(QString filename);
 
-// convert ARGB32 image to RGB32 image with white background
-QImage removeTransparency(QImage img);
+// convert ARGB32 image to RGB32 image with color background
+QImage setImageBackgroundColor(QImage img, QRgb color);
 
 // load an image from file
 // Returns an autorotated image according to exif data

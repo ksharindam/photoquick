@@ -61,4 +61,4 @@ void pencilSketch(QImage &img);
 
 QImage expandBorder(QImage img, int width);
 
-QRgb borderAverageForTransperant(QImage &img);
+QRgb borderAverageForTransparent(QImage &img);

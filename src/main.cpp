@@ -100,6 +100,7 @@ Window:: Window()
     QMenu *effectsMenu = filtersMenu->addMenu("Effects");
         effectsMenu->addAction("Vignette", this, SLOT(vignetteFilter()));
         effectsMenu->addAction("PencilSketch", this, SLOT(pencilSketchFilter()));
+    bgcolor_action = filtersMenu->addAction("Add Background Color", this, SLOT(addBackgroundColor()));
     filtersBtn->setMenu(filtersMenu);
     // Tools menu
     QMenu *toolsMenu = new QMenu(toolsBtn);
@@ -348,6 +349,8 @@ Window:: openImage(QString filepath)
     bool can_write = supported.contains(img_reader.format()) and frame_count==1;
     overwrite_action->setEnabled(can_write);
     savecopy_action->setEnabled(can_write);
+    // show Background Color Action if image has transparency
+    bgcolor_action->setVisible(data.image.hasAlphaChannel());
 }
 
 void
@@ -392,7 +395,7 @@ Window:: saveImage(QString filename)
         filename.endsWith(".jpeg", Qt::CaseInsensitive))
     {
         if (img.hasAlphaChannel()) { // converts background to white
-            img = removeTransparency(data.image);
+            img = setImageBackgroundColor(data.image, 0xffffff);
         }
         JpegDialog *dlg = new JpegDialog(this, img);
         if (dlg->exec()!=QDialog::Accepted){
@@ -610,7 +613,7 @@ Window:: exportToPdf()
 
     // remove transperancy
     if (image.format()==QImage::Format_ARGB32) {
-        image = removeTransparency(image);
+        image = setImageBackgroundColor(image, 0xffffff);
     }
     if (isMonochrome(image))
         image = image.convertToFormat(QImage::Format_Mono);
@@ -854,6 +857,14 @@ Window:: iScissor()
     dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
         canvas->setImage( dialog->image );
+        // add background color
+        QImage img = canvas->pixmap()->toImage();
+        BgColorDialog *dlg = new BgColorDialog(canvas, img, 1.0);
+        dlg->selectColorName("Transparent");
+        if (dlg->exec()==QDialog::Accepted) {
+            data.image = dlg->getResult(data.image);
+        }
+        canvas->showScaled();
     }
 }
 
@@ -1024,6 +1035,18 @@ void
 Window:: pencilSketchFilter()
 {
     pencilSketch(data.image);
+    canvas->showScaled();
+}
+
+void
+Window:: addBackgroundColor()
+{
+    QImage img = canvas->pixmap()->toImage();
+    BgColorDialog *dlg = new BgColorDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        data.image = dlg->getResult(data.image);
+        bgcolor_action->setVisible(data.image.hasAlphaChannel());
+    }
     canvas->showScaled();
 }
 

@@ -144,7 +144,22 @@ public:
 
     LevelsDialog(QLabel *parent, QImage img, float scale);
     QImage getResult(QImage img);
-    void run();
+};
+
+
+class BgColorDialog : public PreviewDialog
+{
+    Q_OBJECT
+public:
+    BgColorDialog(QLabel *parent, QImage img, float scale);
+    void selectColorName(QString color_name);
+    QImage getResult(QImage img);
+private:
+    QRgb bg_color=0xffffff;
+    std::map<QString, QRgb> color_map;
+    QComboBox *combo;
+public slots:
+    void onColorChange(const QString& color_name);
 };
 
 

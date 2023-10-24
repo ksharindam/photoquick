@@ -3,10 +3,7 @@
 #include "iscissor.h"
 #include "common.h"
 #include "filters.h"
-#include <QColorDialog>
 #include <QButtonGroup>
-#include <QComboBox>
-#include <QDialogButtonBox>
 #include <cmath>
 
 // ---------------------------------------------------------------------
@@ -143,30 +140,6 @@ IScissorDialog:: keyPressEvent(QKeyEvent *ev)
     ev->accept();
 }
 
-void
-IScissorDialog:: accept()
-{
-    if (mode!=ERASER_MODE)
-        return QDialog::accept();
-    // set Background color
-    BgColorDialog *dlg = new BgColorDialog(this);
-    connect(dlg, SIGNAL(bgColorSelected(int,QRgb)), this, SLOT(setBgColor(int,QRgb)));
-    if (dlg->exec()==QDialog::Rejected) {
-        redraw();
-        return;
-    }
-    if (bg_color_type!=TRANSPERANT)
-    {
-        QImage img(image.width(), image.height(), QImage::Format_RGB32);
-        QRgb clr = (bg_color_type==COLOR_WHITE) ? 0xffffff : bg_color;
-        img.fill(clr);
-        painter.begin(&img);
-        painter.drawImage(QPoint(0,0), image);
-        painter.end();
-        image = img;
-    }
-    QDialog::accept();
-}
 
 void
 IScissorDialog:: done(int val)// gets called after accept() or reject()
@@ -176,24 +149,6 @@ IScissorDialog:: done(int val)// gets called after accept() or reject()
     QDialog::done(val);
 }
 
-void
-IScissorDialog:: setBgColor(int type, QRgb bg_clr)
-{
-    bg_color_type = type;
-    bg_color = bg_clr;
-    if (type==TRANSPERANT)
-        redraw();
-    else {
-        //scaleImage();
-        QImage img(image_scaled.width(), image_scaled.height(), QImage::Format_RGB32);
-        QRgb clr = (type==COLOR_WHITE) ? 0xffffff : bg_clr;
-        img.fill(clr);
-        painter.begin(&img);
-        painter.drawImage(QPoint(0,0), image_scaled);
-        painter.end();
-        canvas->setImage(img);
-    }
-}
 
 void
 IScissorDialog:: scaleImage()
@@ -775,7 +730,7 @@ IScissorDialog:: getMaskedImage(QPoint clicked)
         QRgb *mask_row = (QRgb*)mask.constScanLine(y);
         for (int x=0; x<image.width(); x++){
             int clr = row[x];
-            // black regions of mask are made transperant in image
+            // black regions of mask are made transparent in image
             int alpha = qAlpha(clr) - (255-qRed(mask_row[x]));
             if (alpha<0) alpha = 0;
             row[x] = qRgba(qRed(clr), qGreen(clr), qBlue(clr), alpha);
@@ -1105,39 +1060,6 @@ void floodfill(QImage &img, QPoint pos, QRgb newColor)
             x++;
         }
     }
-}
-
-
-
-BgColorDialog:: BgColorDialog(QWidget *parent) : QDialog(parent)
-{
-    this->resize(250, 120);
-    this->setWindowTitle("Background Color");
-    QVBoxLayout *vLayout = new QVBoxLayout(this);
-    QLabel *label = new QLabel("Select Background Color :", this);
-    QComboBox *combo = new QComboBox(this);
-    combo->addItem("Transperant");
-    combo->addItem("White Color");
-    combo->addItem("Choose Other");
-    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    vLayout->addWidget(label);
-    vLayout->addWidget(combo);
-    vLayout->addWidget(btnBox);
-    connect(combo, SIGNAL(activated(int)), this, SLOT(setBgType(int)));
-    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
-}
-
-void
-BgColorDialog:: setBgType(int type)
-{
-    bg_type = type;
-    if (bg_type==2) {
-        QColor clr = QColorDialog::getColor(QColor(bg_color), this);
-        if (clr.isValid())
-            bg_color = clr.rgb();
-    }
-    emit bgColorSelected(bg_type, bg_color);
 }
 
 

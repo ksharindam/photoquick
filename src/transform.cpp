@@ -466,7 +466,7 @@ PerspectiveTransform:: transform()
     }
     else {
         QImage new_img(img.width(), img.height(), QImage::Format_RGB32);
-        new_img.fill(borderAverageForTransperant(img));
+        new_img.fill(borderAverageForTransparent(img));
         QPainter painter(&new_img);
         painter.drawImage(0,0, img);
         painter.end();

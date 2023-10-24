@@ -523,7 +523,7 @@ CollagePaper:: savePdf()
         QImage image = item->originalImage();
         // set white background of transparent images
         if (image.format()==QImage::Format_ARGB32) {
-            image = removeTransparency(image);
+            image = setImageBackgroundColor(image, 0xffffff);
         }
         image.save(&buff, "JPG");
         img = doc.addImage(buff.data().data(), buff.size(), image.width(), image.height(), PDF_IMG_JPEG);

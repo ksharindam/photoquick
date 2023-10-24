@@ -267,9 +267,9 @@ QImage expandBorder(QImage img, int width)
     return dst;
 }
 
-// For images with transperant and opeque part, it calculates
-// border average of non transperant parts
-QRgb borderAverageForTransperant(QImage &img)
+// For images with transparent and opeque part, it calculates
+// border average of non transparent parts
+QRgb borderAverageForTransparent(QImage &img)
 {
     QImage tmp = expandBorder(img, 1);
     int w = img.width();
@@ -282,14 +282,14 @@ QRgb borderAverageForTransperant(QImage &img)
         QRgb *row = (QRgb*) tmp.constScanLine(y);
         for (int x=1; x<=w; x++)
         {
-            if (qAlpha(row[x])==255) {// pixel should be non transperant but has transperant neighbour
+            if (qAlpha(row[x])==255) {// pixel should be non transparent but has transparent neighbour
                 int sum_alpha = 0;
                 for (int i=-1; i<=1; i++) {
                     for (int j=-1; j<=1; j++) {
                         sum_alpha += qAlpha(((QRgb*)tmp.constScanLine(y+i))[x+j]);
                     }
                 }
-                if (sum_alpha < 2295/* 255x9 */){// has transperant neighbour
+                if (sum_alpha < 2295/* 255x9 */){// has transparent neighbour
                     sum_r += qRed(row[x]);
                     sum_g += qGreen(row[x]);
                     sum_b += qBlue(row[x]);

@@ -5,9 +5,12 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QGridLayout>
+#include <QColorDialog>// for BgColorDialog
 #include <QDesktopServices>
 #include <QUrl>
 #include <QProcess>
+#include <QPainter>// for LevelsDialog
+#include <QMouseEvent>
 #include <cmath>
 
 // ------------ Dialog to set JPG Options for saving ------------
@@ -349,8 +352,6 @@ enum {
     RIGHT_SLIDER
 };
 
-#include <QPainter>
-#include <QMouseEvent>
 
 LevelsWidget:: LevelsWidget(QWidget *parent, int l_val, int r_val, QColor clr) : QLabel(parent)
 {
@@ -475,6 +476,70 @@ LevelsDialog:: getResult(QImage img)
     levelImageChannel(img, CHANNEL_B, inputBSlider->left_val, inputBSlider->right_val,
                                     outputBSlider->left_val, outputBSlider->right_val);
     return img;
+}
+
+
+
+// ----------- Preview Dialog for Adding background color to transparent images --------- //
+
+BgColorDialog:: BgColorDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    this->resize(250, 100);
+    this->setWindowTitle("Add Background Color");
+    color_map = {
+        {"White", 0xffffff},
+        {"Black", 0xff000000},
+        {"Coral Blue", 0xafdcec},
+        {"Day Sky Blue", 0x82caff},
+        {"Apache", 0xdfbe6f},
+        {"Pink Flare", 0xe1c0c8},
+    };
+    QVBoxLayout *vLayout = new QVBoxLayout(this);
+    QLabel *label = new QLabel("Select Background Color :", this);
+    combo = new QComboBox(this);
+    combo->addItems({"White", "Black", "Coral Blue", "Day Sky Blue", "Apache",
+            "Pink Flare", "Transparent", "Other"});
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    vLayout->addWidget(label);
+    vLayout->addWidget(combo);
+    vLayout->addWidget(btnBox);
+    connect(combo, SIGNAL(activated(const QString&)), this, SLOT(onColorChange(const QString&)));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+    preview();
+}
+
+void
+BgColorDialog:: onColorChange(const QString& color_name)
+{
+    if (color_map.count(color_name)>0){
+        bg_color = color_map[color_name];
+    }
+    else if (color_name=="Other") {
+        QColor clr = QColorDialog::getColor(QColor(bg_color), this);
+        if (clr.isValid())
+            bg_color = clr.rgb();
+    }
+    else {// keep transparency
+        bg_color = 0x00000000;
+    }
+    preview();
+}
+
+QImage
+BgColorDialog:: getResult(QImage img)
+{
+    return setImageBackgroundColor(img, bg_color);
+}
+
+void
+BgColorDialog:: selectColorName(QString color_name)
+{
+    int index = combo->findText(color_name);
+    if (index==-1)
+        return;
+    combo->setCurrentIndex(index);
+    onColorChange(color_name);
 }
 
 

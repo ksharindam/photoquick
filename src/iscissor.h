@@ -12,7 +12,7 @@ How drawing works in Scissor :
  when placing seeds, draws seed to seed permanent path on image_scaled and
  when showing temporary seed to cursor path, it copies image_scaled and draws over it
  finally it creates a temporary mask, floodfill it and make unmasked areas
- in image transperant
+ in image transparent
 
 Mask mode :
  when mouse is clicked inside loop, mask is generated, and image_scaled is
@@ -26,7 +26,7 @@ How drawing works in Eraser :
 
 Mask mode :
  The brush is solid white brush which is drawn on mask.
- Brush_scaled is a semi-transperant green brush, drawn on image_scaled
+ Brush_scaled is a semi-transparent green brush, drawn on image_scaled
  On mouse release image_scaled is generated from mask and image.
 */
 
@@ -52,12 +52,6 @@ typedef enum {
     PATH_CLOSED
 } SeedMode;
 
-typedef enum {
-    TRANSPERANT,
-    COLOR_WHITE,
-    COLOR_OTHER
-} BgColorType;
-
 // IScissor dialog mode
 enum {
     ERASER_MODE,
@@ -78,9 +72,6 @@ public:
     float scale;
     QPainter painter;
     PaintCanvas *canvas;
-
-    int bg_color_type = TRANSPERANT;
-    QRgb bg_color = 0x80ccff; //light blue
 
     int tool_type = 0;
 
@@ -124,7 +115,6 @@ public:
     void getMaskedImage(QPoint click_pos);
 
     void keyPressEvent(QKeyEvent *ev);
-    void accept();
     void done(int);
 public slots:
     void undo();
@@ -132,24 +122,10 @@ public slots:
     void zoomIn();
     void zoomOut();
     void onToolClick(int);
-    void setBgColor(int type, QRgb clr);
     void setEraserSize(int val);
     void updateEraserSize();
     void onMousePress(QPoint);
     void onMouseRelease(QPoint);
     void onMouseMove(QPoint);
-};
-
-class BgColorDialog : public QDialog
-{
-    Q_OBJECT
-public:
-    BgColorDialog(QWidget *parent);
-    int bg_type = TRANSPERANT;
-    QRgb bg_color = 0x80ccff;
-public slots:
-    void setBgType(int val);
-signals:
-    void bgColorSelected(int, QRgb);
 };
 
