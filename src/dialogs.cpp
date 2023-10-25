@@ -169,6 +169,18 @@ PreviewDialog:: PreviewDialog(QLabel *canvas, QImage img, float scale) : QDialog
     timer->setSingleShot(true);
     timer->setInterval(800);
     connect(timer, SIGNAL(timeout()), this, SLOT(preview()));
+    QTimer::singleShot(30, this, SLOT(repositionWindow()));
+}
+
+void
+PreviewDialog:: repositionWindow()
+{
+    // move to bottom edge of Canvas, so that preview dialog does not guard the canvas
+    QPoint canvas_pos = canvas->mapToGlobal(QPoint(0,0));
+    int canvas_bottom = canvas_pos.y() + canvas->height();
+    QPoint pos = this->mapToGlobal(QPoint(0,0));
+    int bottom = pos.y() + height();
+    this->move(pos.x(), this->y()+ canvas_bottom - bottom);
 }
 
 void

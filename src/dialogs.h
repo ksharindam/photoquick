@@ -66,6 +66,7 @@ public:
 public slots:
     void triggerPreview();
     void preview();
+    void repositionWindow();
 };
 
 
