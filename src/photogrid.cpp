@@ -425,6 +425,8 @@ GridPaper:: createFinalGrid()
     photo_grid = QImage(paperW, paperH, QImage::Format_RGB32);
     photo_grid.fill(Qt::white);
     QPainter painter(&photo_grid);
+    int border_width = (int)round(DPI/300.0);
+    painter.setPen(QPen(Qt::black, border_width));
     for (int i=0; i<rows*cols; i++) {
         if (cells[i].photo.isNull())
             continue;
@@ -434,8 +436,9 @@ GridPaper:: createFinalGrid()
         int x = marginX + col*(spacingX+W)  + (W-img.width())/2/*for center align*/;
         int y = marginY + row*(spacingY+H)  + (H-img.height())/2;
         painter.drawImage(x, y, img);
-        if (add_border)
+        if (add_border){
             painter.drawRect(x, y, img.width()-1, img.height()-1);
+        }
     }
     painter.end();
 }
