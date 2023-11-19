@@ -373,11 +373,11 @@ LevelsWidget:: LevelsWidget(QWidget *parent, int l_val, int r_val, QColor clr) :
     left_val = l_val;
     right_val = r_val;
     color = clr;
-    redraw(left_val, right_val);
+    redraw();
 }
 
 void
-LevelsWidget:: redraw(int l_val, int r_val)
+LevelsWidget:: redraw()
 {
     QPixmap pm(256, 32);
     pm.fill(Qt::white);
@@ -390,12 +390,12 @@ LevelsWidget:: redraw(int l_val, int r_val)
 
     // draw left slider
     painter.setBrush(Qt::gray);
-    QPoint l_pt(l_val,16);
+    QPoint l_pt(left_val,16);
     QPoint l_pts[] = {l_pt, l_pt+QPoint(-8, 15), l_pt+QPoint(8,15)};
     painter.drawConvexPolygon(l_pts,3);
     // draw right slider
     painter.setBrush(Qt::red);
-    QPoint r_pt(r_val,16);
+    QPoint r_pt(right_val,16);
     QPoint r_pts[] = {r_pt, r_pt+QPoint(-8, 15), r_pt+QPoint(8,15)};
     painter.drawConvexPolygon(r_pts,3);
     painter.end();
@@ -403,26 +403,36 @@ LevelsWidget:: redraw(int l_val, int r_val)
 }
 
 void
-LevelsWidget:: mousePressEvent(QMouseEvent *ev)
+LevelsWidget:: setLeftValue(int val)
 {
-    click_pos = ev->pos();
-    if (abs(click_pos.x()-right_val)<8)
-        drag_slider = RIGHT_SLIDER;
-    else if (abs(click_pos.x()-left_val)<8)
-        drag_slider = LEFT_SLIDER;
+    left_val = MAX(0, val);
+    left_val = MIN(left_val, right_val-8);
 }
 
 void
-LevelsWidget:: mouseReleaseEvent(QMouseEvent *ev)
+LevelsWidget:: setRightValue(int val)
 {
-    if (drag_slider==LEFT_SLIDER){
-        left_val = MAX(left_val + ev->pos().x() - click_pos.x(), 0);
-        left_val = MIN(left_val, right_val-8);
+    right_val = MIN(val, 255);
+    right_val = MAX(left_val+8, right_val);
+}
+
+void
+LevelsWidget:: mousePressEvent(QMouseEvent *ev)
+{
+    int pos = ev->pos().x();
+    if (abs(pos-right_val)<8){
+        drag_slider = RIGHT_SLIDER;
+        offset = right_val-pos;// offset of val from mouse pointer
     }
-    else if (drag_slider==RIGHT_SLIDER){
-        right_val = MIN(right_val + ev->pos().x() - click_pos.x(), 255);
-        right_val = MAX(left_val+8, right_val);
+    else if (abs(pos-left_val)<8){
+        drag_slider = LEFT_SLIDER;
+        offset = left_val-pos;
     }
+}
+
+void
+LevelsWidget:: mouseReleaseEvent(QMouseEvent *)
+{
     drag_slider = NO_SLIDER;
     emit valueChanged();
 }
@@ -433,13 +443,30 @@ LevelsWidget:: mouseMoveEvent(QMouseEvent *ev)
     if (drag_slider==NO_SLIDER)
         return;
     if (drag_slider==LEFT_SLIDER){
-        int left = MIN(left_val + ev->pos().x() - click_pos.x(), right_val-8);
-        redraw(MAX(left, 0), right_val);
+        setLeftValue(ev->pos().x() + offset);
     }
     else {
-        int right = MAX(right_val + ev->pos().x() - click_pos.x(), left_val+8);
-        redraw(left_val, MIN(right, 255));
+        setRightValue(ev->pos().x() + offset);
     }
+    redraw();
+}
+
+void
+LevelsWidget:: wheelEvent(QWheelEvent *ev)
+{
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    int inc = ev->delta() > 0 ? 2 : -2;
+#else
+    int inc = ev->angleDelta().y() > 0 ? 2 : -2;
+#endif
+    if (ev->pos().x()>127)
+        setRightValue(right_val+inc);
+    else
+        setLeftValue(left_val+inc);
+
+    redraw();
+    emit valueChanged();
+    ev->accept();
 }
 
 

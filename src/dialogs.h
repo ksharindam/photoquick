@@ -125,13 +125,16 @@ public:
     int drag_slider;
     int left_val, right_val;
     QColor color;
-    QPoint click_pos;
+    int offset;
 
     LevelsWidget(QWidget *parent, int left_val, int right_val, QColor color);
-    void redraw(int l_val, int r_val);
+    void redraw();
+    void setLeftValue(int val);
+    void setRightValue(int val);
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
     void mouseMoveEvent(QMouseEvent *ev);
+    void wheelEvent(QWheelEvent *ev);
 signals:
     void valueChanged();
 };
