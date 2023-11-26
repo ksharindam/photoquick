@@ -100,7 +100,7 @@ All formats supported by Qt are supported in this program.
 
 JPEG2000 and WebP formats are supported via image format plugins.  
 You can get these here...  
-https://github.com/ksharindam/qt4-imageformat-plugins  
+https://github.com/ksharindam/qt-imageformat-plugins  
 
 ### Screenshots
 
