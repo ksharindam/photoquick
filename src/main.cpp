@@ -91,6 +91,7 @@ Window:: Window()
         brightnessMenu->addAction("Adjust Brightness", this, SLOT(adjustGamma()));
         brightnessMenu->addAction("Stretch Contrast", this, SLOT(stretchImageContrast()));
         brightnessMenu->addAction("Sigmoid Contrast", this, SLOT(sigmoidContrast()));
+        brightnessMenu->addAction("Contrast Levels...", this, SLOT(adjustContrastLevel()));
     QMenu *noiseMenu = filtersMenu->addMenu("Noise Removal");
         noiseMenu->addAction("Despeckle", this, SLOT(reduceSpeckleNoise()));
         noiseMenu->addAction("Remove Dust", this, SLOT(removeDust()));
@@ -988,7 +989,18 @@ Window:: sigmoidContrast()
 void
 Window:: stretchImageContrast()
 {
-    stretchContrast(data.image);
+    autoStretchContrast(data.image);
+    canvas->showScaled();
+}
+
+void
+Window:: adjustContrastLevel()
+{
+    QImage img = canvas->pixmap()->toImage();
+    ContrastDialog *dlg = new ContrastDialog(canvas, img, 1.0);
+    if (dlg->exec()==QDialog::Accepted) {
+        data.image = dlg->getResult(data.image);
+    }
     canvas->showScaled();
 }
 

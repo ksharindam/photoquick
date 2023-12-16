@@ -36,7 +36,10 @@ void levelImageChannel(QImage &img, int channel, float black_pt, float white_pt,
 void sigmoidalContrast(QImage &img, float midpoint=0.5 /*0 to 1.0*/);
 
 // Sigmoidal Contrast to enhance low light images
-void stretchContrast(QImage &img);
+void autoStretchContrast(QImage &img);
+
+void stretchContrast(QImage &img, int min, int max);
+
 
 // Gamma Encoding (apply pow(x, 1/gamma) function to each pixel)
 void applyGamma(QImage &img, float gamma=1.6);

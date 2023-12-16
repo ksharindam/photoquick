@@ -151,6 +151,16 @@ public:
 };
 
 
+class ContrastDialog : public PreviewDialog
+{
+public:
+    LevelsWidget *contrastSlider;
+
+    ContrastDialog(QLabel *parent, QImage img, float scale);
+    QImage getResult(QImage img);
+};
+
+
 class BgColorDialog : public PreviewDialog
 {
     Q_OBJECT

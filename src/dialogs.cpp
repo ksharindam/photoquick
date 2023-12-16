@@ -356,6 +356,35 @@ GammaDialog:: getResult(QImage img)
 }
 
 
+
+// ----------- Preview Dialog for Contrast Levels Adjustment --------- //
+
+ContrastDialog:: ContrastDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
+{
+    setWindowTitle("Contrast Levels");
+    QLabel *label0 = new QLabel("Adjust Contrast Levels :", this);
+    contrastSlider = new LevelsWidget(this,0,255,Qt::white);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                    QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+
+    layout->addWidget(label0);
+    layout->addWidget(contrastSlider);
+    layout->addWidget(btnBox);
+
+    connect(contrastSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+QImage
+ContrastDialog:: getResult(QImage img)
+{
+    stretchContrast(img, contrastSlider->left_val, contrastSlider->right_val);
+    return img;
+}
+
+
 // ----------- Preview Dialog for Color Levels Adjustment --------- //
 
 enum {

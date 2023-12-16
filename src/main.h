@@ -74,6 +74,7 @@ public slots:
     void adjustGamma();
     void stretchImageContrast();
     void sigmoidContrast();
+    void adjustContrastLevel();
     // denoise filters
     void reduceSpeckleNoise();
     void removeDust();

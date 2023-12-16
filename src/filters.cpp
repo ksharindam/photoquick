@@ -808,7 +808,7 @@ int percentile(unsigned int histogram[], float perc, int N)
     return A;
 }
 
-void stretchContrast(QImage &img)
+void autoStretchContrast(QImage &img)
 {
     int w = img.width();
     int h = img.height();
@@ -844,6 +844,35 @@ void stretchContrast(QImage &img)
         }
     }
 }
+
+void stretchContrast(QImage &img, int min, int max)
+{
+    int w = img.width();
+    int h = img.height();
+    hsvImg(img);
+    // Calculate percentile
+    unsigned int histogram[256] = {};
+
+    for (int i=0; i<256; i++) {
+        int val = ScaleColor(i, min, max);
+        histogram[i] = Clamp(val);
+    }
+    #pragma omp parallel for
+    for (int y=0; y<h; y++)
+    {
+        int r=0,g=0,b=0;
+        QRgb *row;
+        #pragma omp critical
+        { row = (QRgb*)img.scanLine(y); }
+        for (int x=0; x<w; x++) {
+            int clr = row[x];
+            int hsv = qHsv(qHue(clr), qSat(clr), histogram[qVal(clr)]);
+            hsvToRgb(hsv, r,g,b);
+            row[x] = qRgb(r,g,b);
+        }
+    }
+}
+
 
 // *********------------ Gamma Correction --------------**************
 #define EncodeGamma(x) (255 * powf((x)/255.0f, 1.0f/gamma))
