@@ -5,7 +5,7 @@
 #include "exif.h"
 
 #define PROG_NAME       "PhotoQuick"
-#define PROG_VERSION    "4.17.0"
+#define PROG_VERSION    "4.18.0"
 #define COPYRIGHT_YEAR  "2017-2023"
 #define AUTHOR_NAME     "Arindam Chaudhuri"
 #define AUTHOR_EMAIL    "ksharindam@gmail.com"
@@ -40,6 +40,8 @@ inline const T& clamp( const T& v, const T& lo, const T& hi )
 
 #define SQR(x) ((x)*(x))
 
+// swap two variables
+#define SWAP(a,b) do { auto tmp=a; a=b; b=tmp;} while (0)
 
 void fitToSize(int W, int H, int max_w, int max_h, int &out_w, int &out_h);
 

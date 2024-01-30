@@ -13,74 +13,61 @@ class Thumbnail : public QLabel
 public:
     Thumbnail(QImage img, QWidget *parent);
     void mousePressEvent(QMouseEvent *ev);
-    void select(bool selected);
+    void setSelected(bool select);
     // Variables
     QImage photo;
 signals:
     void clicked(Thumbnail*);
 };
 
-// ThumbnailGroup contains one or more thumbnails, it is used to select a thumbnail
-class ThumbnailGroup : public QObject
+class GridCell
+{
+public:
+    float x;
+    float y;
+    QImage *photo;
+};
+
+
+class GridView : public QLabel
 {
     Q_OBJECT
 public:
-    ThumbnailGroup(QObject *parent) : QObject(parent) {};
-    void append(Thumbnail *thumbnail);
-    // Variables
-    QList<Thumbnail *> thumbnails;
-    Thumbnail *selected_thumb = 0;
-public slots:
-    void selectThumbnail(Thumbnail *thumbnail);
-};
-
-class PhotoCell
-{
-public:
-    int x;
-    int y;
-    int w;
-    int h;
-    QImage photo;
-    QImage *src_photo;
-    bool intersects(QRect rect);
-};
-
-// The canvas on which collage is created and displayed.
-class GridPaper : public QLabel
-{
-    Q_OBJECT
-public:
-    GridPaper(QWidget *parent);
+    GridView(QWidget *parent);
+    void setup();
     void redraw();
-    void setupGrid();
-    void calcSpacingsMargins();
+    QImage cachedScaledImage(QImage *image);
+    QImage finalImage();
+    // event handling
     void mouseMoveEvent(QMouseEvent *ev);
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
     void dragEnterEvent(QDragEnterEvent *ev);
     void dropEvent(QDropEvent *ev);
-    void createFinalGrid();
-    // Variables
-    bool mouse_pressed = false;
-    QPoint click_pos;
-    int paperW, paperH; // original paper size in pixels
-    int W, H;          // original cell size in pixels
-    int cols, rows, DPI;
-    float scale, spacingX, spacingY, marginX, marginY;
-    bool min_spacing;
+
+    // Properties
+    float pageW, pageH;// in points
+    float minMargin;
+    float cellW, cellH;
+    int dpi;
+    bool narrow_spacing;
     bool add_border;
+    // calculated properties
+    int row_count, col_count;
+    float marginX, marginY;// page margin in points
+    float spacing;
+    float px_factor;
+
+    bool mouse_pressed = false;
+    QPoint mouse_press_pos;
+    QImage *curr_photo;
     QPixmap canvas_pixmap; // grid which is displayed on screen
     QPainter painter;
-    QList<PhotoCell> cells;
-    QImage *photo;   // currently selected photo
-    QImage photo_grid;
-public slots:
-    void setPhoto(Thumbnail *thumb);
-    void toggleMinSpacing(bool ok);
-    void toggleBorder(bool ok);
+    std::vector<GridCell> cells;
+    std::map<QImage*, QImage> cached_images;
+    std::map<QImage*, bool> image_rotations;
 signals:
-    void addPhotoRequested(QImage);
+    void photoDropped(QImage);
 };
 
 // The dialog to create the grid
@@ -89,32 +76,17 @@ class GridDialog : public QDialog, public Ui_GridDialog
     Q_OBJECT
 public:
     GridDialog(QImage img, QWidget *parent);
-    void setup();
-    void updateStatus();
     void accept();
+
     // Variables
-    GridPaper *gridPaper;
-    ThumbnailGroup *thumbnailGr;
-    float paperW, paperH; // paper size in inch or cm
-    float cellW, cellH; // grid cell size in centimeter
-    int unit, DPI; // unit 0 = inch, 1 = cm
+    GridView *gridView;
+    std::vector<Thumbnail*> thumbnails;
+    QVBoxLayout *thumbnailLayout;
 public slots:
-    void configure();
+    void setupGrid();
     void addPhoto();
     void addPhoto(QImage);
-    void showHelp();
+    void onPageSizeChange(QString page_size);
+    void selectThumbnail(Thumbnail *thumbnail);
 };
-
-class GridSetupDialog : public QDialog, public Ui_GridSetupDialog
-{
-    Q_OBJECT
-public:
-    float paperW, paperH;
-    int unit;
-    GridSetupDialog(QWidget *parent);
-    void accept();
-public slots:
-    void onPaperSizeChange(int index);
-};
-
 

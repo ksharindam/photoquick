@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2017-2023 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2024 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -809,9 +809,10 @@ Window:: createPhotoGrid()
 {
     GridDialog *dialog = new GridDialog(data.image, this);
     dialog->resize(1020, data.max_window_h);
-    if (dialog->exec() == 1) {
-        canvas->scale = fitToScreenScale(dialog->gridPaper->photo_grid);
-        canvas->setImage(dialog->gridPaper->photo_grid);
+    if (dialog->exec() == QDialog::Accepted) {
+        QImage result = dialog->gridView->finalImage();
+        canvas->scale = fitToScreenScale(result);
+        canvas->setImage(result);
         adjustWindowSize();
     }
 }
