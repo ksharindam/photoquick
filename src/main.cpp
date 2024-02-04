@@ -271,8 +271,7 @@ Window:: openStartupImage()
     QImage img = QImage(":/photoquick.jpg");
     canvas->setImage(img);
     adjustWindowSize();
-    QFileInfo fi("photoquick.jpg");
-    data.filename = fi.absoluteFilePath();;
+    data.filename = QDir::homePath() + "/photoquick.jpg";
     QDir::setCurrent(QDir::homePath());
 }
 
