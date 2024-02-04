@@ -512,9 +512,7 @@ void calcArc(QPoint p/*center*/, QPoint p1, QPoint p2, QPoint p3,
     ang3 = (x>p3.x()) ? ang3+180 : ang3;
     ang3 = ang3<0 ? ang3+360: ang3;
     if (ang1 > ang2) {
-        float tmp = ang1;
-        ang1 = ang2;
-        ang2 = tmp;
+        SWAP(ang1, ang2);
     }
     if (ang1<ang3 and ang3<ang2) {
         start = ang1;

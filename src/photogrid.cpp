@@ -2,10 +2,11 @@
 
 #include "common.h"
 #include "photogrid.h"
+#include "pdfwriter.h"
 #include <QFileDialog>
-#include <QPen>
 #include <QDesktopWidget>
 #include <QSettings>
+#include <QBuffer>
 #include <QMimeData>
 #include <QUrl>
 #include <cmath>
@@ -72,6 +73,7 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
     connect(addBorderBtn, SIGNAL(clicked(bool)), this, SLOT(setupGrid()));
     connect(addPhotoBtn, SIGNAL(clicked()), this, SLOT(addPhoto()));
     connect(gridView, SIGNAL(photoDropped(QImage)), this, SLOT(addPhoto(QImage)));
+    connect(savePdfBtn, SIGNAL(clicked(bool)), gridView, SLOT(savePdf()));
 
     setupGrid();
 }
@@ -327,10 +329,10 @@ GridView:: finalImage()
 
     // if last row is empty, we want to cut and save
     // the empty bottom part of the paper for later use
-    float offset_y = minMargin - cells[0].y;
+    float offsetY = minMargin - cells[0].y;
     for (int i=(row_count-1)*col_count; i<row_count*col_count; i++){
         if (cells[i].photo != NULL){
-            offset_y = 0;
+            offsetY = 0;
             break;
         }
     }
@@ -349,8 +351,8 @@ GridView:: finalImage()
         // center align image inside cell
         int cell_x = cell.x*px_factor + (cell_w-img.width())/2;
         int cell_y = cell.y*px_factor + (cell_h-img.height())/2;
-        if (offset_y)// align to top to save paper
-            cell_y = (cell.y + offset_y) * px_factor;
+        if (offsetY)// align to top to save paper
+            cell_y = (cell.y + offsetY) * px_factor;
         // draw
         painter.drawImage(cell_x, cell_y, img);
         if (add_border){
@@ -360,6 +362,77 @@ GridView:: finalImage()
     painter.end();
     return photo_grid;
 }
+
+
+void
+GridView:: savePdf()
+{
+    QString filename("photogrid.pdf");
+    QString dir = QDir::currentPath();
+    QString path(dir + "/" + filename);
+    int num=1;
+    while (QFileInfo(path).exists()) {
+        filename = "photogrid-" + QString::number(num++) + ".pdf";
+        path = dir + "/" + filename;
+    }
+    if (cells.size()==0)
+        return;
+
+    // if last row is empty, we want to cut and save
+    // the empty bottom part of the paper for later use
+    float offsetY = minMargin - cells[0].y;
+    for (int i=(row_count-1)*col_count; i<row_count*col_count; i++){
+        if (cells[i].photo != NULL){
+            offsetY = 0;
+            break;
+        }
+    }
+    PdfDocument doc;
+    PdfPage *page = doc.newPage(pageW, pageH);
+
+    std::map<QImage*, PdfObject*> pdf_img_map;
+
+    for (auto cell : cells) {
+        if (cell.photo == NULL)
+            continue;
+        if (pdf_img_map.count(cell.photo)<1){
+            QImage image = *cell.photo;
+            // Load as QImage, save to buffer as jpeg and then embed
+            QBuffer buff;
+            buff.open(QIODevice::WriteOnly);
+            // set white background of transparent images
+            if (image.format()==QImage::Format_ARGB32) {
+                image = setImageBackgroundColor(image, 0xffffff);
+            }
+            image.save(&buff, "JPG");
+            pdf_img_map[cell.photo] = doc.addImage(buff.data().data(), buff.size(),
+                                    image.width(), image.height(), PDF_IMG_JPEG);
+            buff.close();
+        }
+        PdfObject *img_obj = pdf_img_map[cell.photo];
+        int img_w = cell.photo->width();
+        int img_h = cell.photo->height();
+        bool rotate = image_rotations[cell.photo];
+        if (rotate)
+            SWAP(img_w, img_h);
+        float scale = fitToSizeScale(img_w, img_h, cellW, cellH);
+        float imgW = scale * img_w;
+        float imgH = scale * img_h;
+        // center align image inside cell
+        int imgX = cell.x + (cellW-imgW)/2;
+        int imgY = cell.y + (cellH-imgH)/2;
+        if (offsetY)// align to top to save paper
+            imgY = cell.y + offsetY;
+        imgY = pageH-imgY-imgH;// imgY in pdf coordinate
+        page->drawImage(img_obj, imgX, imgY, imgW, imgH, rotate ? 90 : 0);
+        if (add_border)
+            page->drawRect(imgX, imgY, imgW, imgH, 0.24, STROKE);
+    }
+    doc.save(path.toStdString());
+    Notifier *notifier = new Notifier(this);
+    notifier->notify("PDF Saved !", "Pdf Saved as \n" + filename);
+}
+
 
 void
 GridView:: mousePressEvent(QMouseEvent *ev)

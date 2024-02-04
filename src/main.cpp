@@ -598,9 +598,7 @@ Window:: exportToPdf()
         break;
     }
     if (dlg->combo->currentIndex()!=0 and dlg->landscape->isChecked() ) {
-        int tmp = pdf_w;
-        pdf_w = pdf_h;
-        pdf_h = tmp;
+        SWAP(pdf_w, pdf_h);
     }
     // get image dimension and position
     int img_w = pdf_w;

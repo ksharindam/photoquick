@@ -66,6 +66,8 @@ public:
     std::vector<GridCell> cells;
     std::map<QImage*, QImage> cached_images;
     std::map<QImage*, bool> image_rotations;
+public slots:
+    void savePdf();
 signals:
     void photoDropped(QImage);
 };

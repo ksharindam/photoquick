@@ -309,12 +309,8 @@ CollagePaper:: rotatePhoto()
     CollageItem *item = collageItems.last();
     item->rotation += 90;
     item->rotation %= 360;  // keep angle between 0 and 359
-    int tmp = item->w;
-    item->w = item->h;
-    item->h = tmp;
-    tmp = item->img_w;
-    item->img_w = item->img_h;
-    item->img_h = tmp;
+    SWAP(item->w, item->h);
+    SWAP(item->img_w, item->img_h);
 
     QTransform tfm;
     tfm.rotate(90);
