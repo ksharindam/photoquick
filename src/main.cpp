@@ -139,6 +139,17 @@ Window:: Window()
     connectSignals();
     // Initialize Variables
     data.window = this;
+    // under Windows, initial dir is Pictures, under Linux it is homepath
+#ifdef Q_OS_WIN
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    QString dir = QDesktopServices::storageLocation(QDesktopServices::PicturesLocation);
+#else
+    QString dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+#endif
+    QDir::setCurrent(dir);
+#else
+    QDir::setCurrent(QDir::homePath());
+#endif
 
     QDesktopWidget *desktop = QApplication::desktop();
     screen_width = desktop->availableGeometry().width();
@@ -271,8 +282,7 @@ Window:: openStartupImage()
     QImage img = QImage(":/photoquick.jpg");
     canvas->setImage(img);
     adjustWindowSize();
-    data.filename = QDir::homePath() + "/photoquick.jpg";
-    QDir::setCurrent(QDir::homePath());
+    data.filename = QFileInfo("photoquick.jpg").absoluteFilePath();
 }
 
 void
@@ -1437,8 +1447,6 @@ int main(int argc, char *argv[])
     win->show();
     if (argc > 1) {
         win->openImage(app.arguments().at(1));
-        if (win->data.image.isNull()) // failed to open
-            QDir::setCurrent(QDir::homePath());
     }
     else {
         win->openStartupImage();

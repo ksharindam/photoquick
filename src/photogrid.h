@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ui_photogrid_dialog.h"
-#include "ui_gridsetup_dialog.h"
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
