@@ -5,6 +5,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QGridLayout>
+#include <QMessageBox>
 #include <QColorDialog>// for BgColorDialog
 #include <QDesktopServices>
 #include <QUrl>
@@ -614,7 +615,7 @@ BgColorDialog:: selectColorName(QString color_name)
 // -----------------   Update Manager Dialog ------------------- //
 
 // check if versionA is later than versionB (versions must be in x.x.x format)
-static bool isLaterThan(QString versionA, QString versionB)
+bool isLaterThan(QString versionA, QString versionB)
 {
     QStringList listA = versionA.split(".");
     QStringList listB = versionB.split(".");
@@ -657,6 +658,12 @@ UpdateDialog:: UpdateDialog(QWidget *parent) : QDialog(parent)
 void
 UpdateDialog:: checkForUpdate()
 {
+#ifdef Q_OS_WIN
+    if (QMessageBox::question(this, "Open Browser?", "Open browser to view latest release?",
+            QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes){
+		QDesktopServices::openUrl(QUrl("https://github.com/ksharindam/photoquick/releases/latest"));
+	}
+#else
     if (not latest_version.isEmpty()) {
         return download();
     }
@@ -673,11 +680,7 @@ UpdateDialog:: checkForUpdate()
     QString url("https://api.github.com/repos/ksharindam/photoquick/releases/latest");
     QString info_file =  desktopPath() + "/photoquick.json";
 
-#ifdef _WIN32
-    if (QProcess::execute("certutil", {"-urlcache", "-split", "-f", url, info_file})!=0){
-#else
     if (QProcess::execute("wget", {"--inet4-only", "-O", info_file, url})!=0){// ipv4 connects faster
-#endif
         QFile::remove(info_file);// 0 byte photoquick.json file remains if wget fails
         textView->setPlainText("Failed to connect !\nCheck your internet connection.");
         updateBtn->setEnabled(true);
@@ -722,17 +725,14 @@ UpdateDialog:: checkForUpdate()
         textView->setPlainText("Error ! Unable to parse release version.");
     }
     updateBtn->setEnabled(true);
+#endif
 }
 
 void
 UpdateDialog:: download()
 {
-#ifdef _WIN32
-    QString filename = QString("PhotoQuick-%1.exe").arg(latest_version);// eg. PhotoQuick-4.4.2.exe
-#else
     // currently we provide PhotoQuick-x86_64.AppImage and PhotoQuick-armhf.AppImage
     QString filename = QString("PhotoQuick-%1.AppImage").arg(ARCH);
-#endif
     QString addr("https://github.com/ksharindam/photoquick/releases/latest/download/%1");
     QDesktopServices::openUrl(QUrl(addr.arg(filename)));
 }
