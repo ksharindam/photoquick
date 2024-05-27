@@ -663,7 +663,7 @@ Window:: deleteFile()
     QFile fi(data.filename);
     if (not fi.exists()) return;
     if (QMessageBox::warning(this, "Delete File?", "Are you sure to permanently delete this image?",
-            QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+            QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
         return;
     if (!fi.remove()) {
         QMessageBox::warning(this, "Delete Failed !", "Could not delete the image");
