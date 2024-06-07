@@ -56,7 +56,7 @@ VIProductVersion "${PROG_VERSION}.0"
 VIFileVersion "${PROG_VERSION}.0"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "PhotoQuick"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "PhotoQuick Image Viewer"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Arindamsoft Co."
+VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Arindamsoft"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PROG_VERSION}.0"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <ksharindam@gmail.com>"
 

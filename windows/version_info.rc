@@ -13,8 +13,8 @@ BEGIN
 	BEGIN
 		BLOCK "040904b0"
 		BEGIN
-			VALUE "CompanyName", "Arindamsoft Co."
-			VALUE "FileDescription", "PhotoQuick Image Viewer"
+			VALUE "CompanyName", "Arindamsoft"
+			VALUE "FileDescription", "PhotoQuick"
 			VALUE "FileVersion", PROG_VERSION
 			VALUE "LegalCopyright", "Arindam Chaudhuri <ksharindam@gmail.com>"
 			VALUE "OriginalFilename", "photoquick"
