@@ -100,6 +100,7 @@ Section "MainSection" SEC01
   ; Associate File Types
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpg" "JPEG Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpeg" "JPEG Image"
+  ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jfif" "JFIF Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".png" "PNG Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".gif" "GIF Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".svg" "SVG Image"
@@ -155,6 +156,7 @@ Section Uninstall
   ;${un.EnvVarUpdate} $0 "QT_PLUGIN_PATH" "R" "HKLM" "$INSTDIR"
   ${unregisterExtension} ".jpg" "JPEG Image"
   ${unregisterExtension} ".jpeg" "JPEG Image"
+  ${unregisterExtension} ".jfif" "JFIF Image"
   ${unregisterExtension} ".png" "PNG Image"
   ${unregisterExtension} ".gif" "GIF Image"
   ${unregisterExtension} ".svg" "SVG Image"
