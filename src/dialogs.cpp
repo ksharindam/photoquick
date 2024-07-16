@@ -363,7 +363,7 @@ GammaDialog:: getResult(QImage img)
 ContrastDialog:: ContrastDialog(QLabel *canvas, QImage img, float scale) : PreviewDialog(canvas,img,scale)
 {
     setWindowTitle("Contrast Levels");
-    QLabel *label0 = new QLabel("Adjust Contrast Levels :", this);
+    label0 = new QLabel(this);
     contrastSlider = new LevelsWidget(this,0,255,Qt::white);
     QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                     QDialogButtonBox::Cancel, Qt::Horizontal, this);
@@ -373,9 +373,19 @@ ContrastDialog:: ContrastDialog(QLabel *canvas, QImage img, float scale) : Previ
     layout->addWidget(contrastSlider);
     layout->addWidget(btnBox);
 
+    connect(contrastSlider, SIGNAL(valueChanged()), this, SLOT(updateText()));
     connect(contrastSlider, SIGNAL(valueChanged()), this, SLOT(preview()));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+
+    updateText();
+}
+
+void
+ContrastDialog:: updateText()
+{
+    label0->setText(QString("Adjust Contrast Levels :              (%1, %2)").arg(
+            contrastSlider->left_val).arg(contrastSlider->right_val));
 }
 
 QImage

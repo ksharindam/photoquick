@@ -153,11 +153,15 @@ public:
 
 class ContrastDialog : public PreviewDialog
 {
+    Q_OBJECT
 public:
     LevelsWidget *contrastSlider;
+    QLabel *label0;
 
     ContrastDialog(QLabel *parent, QImage img, float scale);
     QImage getResult(QImage img);
+public slots:
+    void updateText();
 };
 
 
