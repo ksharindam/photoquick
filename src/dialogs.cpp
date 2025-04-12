@@ -176,12 +176,10 @@ PreviewDialog:: PreviewDialog(QLabel *canvas, QImage img, float scale) : QDialog
 void
 PreviewDialog:: repositionWindow()
 {
-    // move to bottom edge of Canvas, so that preview dialog does not guard the canvas
+    // move to left edge of Canvas, so that preview dialog does not block the canvas
     QPoint canvas_pos = canvas->mapToGlobal(QPoint(0,0));
-    int canvas_bottom = canvas_pos.y() + canvas->height();
-    QPoint pos = this->mapToGlobal(QPoint(0,0));
-    int bottom = pos.y() + height();
-    this->move(pos.x(), this->y()+ canvas_bottom - bottom);
+    int left = max(canvas_pos.x()-width(), 0);
+    this->move(left, y());
 }
 
 void
