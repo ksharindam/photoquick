@@ -190,7 +190,7 @@ Crop:: crop()
 void
 Crop:: finish()
 {
-    canvas->showScaled();
+    canvas->updateImage();
     canvas->drag_to_scroll = true;
     // remove buttons
     while (not crop_widgets.isEmpty()) {
@@ -479,7 +479,7 @@ PerspectiveTransform:: transform()
 void
 PerspectiveTransform:: finish()
 {
-    canvas->showScaled();
+    canvas->updateImage();
     canvas->drag_to_scroll = true;
     QSettings settings;
     settings.setValue("UntiltCrop", cropCheckBox->isChecked());

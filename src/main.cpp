@@ -52,6 +52,13 @@
 Window:: Window()
 {
     setupUi(this);
+    QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
+    layout->setContentsMargins(0, 0, 0, 0);
+    canvas = new Canvas(scrollArea, &data);
+    layout->addWidget(canvas);
+    timer = new QTimer(this);
+    connectSignals();
+    // Create menu
     QMenu *fileMenu = new QMenu(fileBtn);
     overwrite_action = fileMenu->addAction("Overwrite", this, SLOT(overwrite()));
     savecopy_action = fileMenu->addAction("Save a Copy", this, SLOT(saveACopy()));
@@ -118,6 +125,14 @@ Window:: Window()
     action->setShortcut(QString("Ctrl+C"));
     connect(action, SIGNAL(triggered()), this, SLOT(copyToClipboard()));
     this->addAction(action);
+    QAction *undoAction = new QAction(this);
+    undoAction->setShortcut(QString("Ctrl+Z"));
+    connect(undoAction, SIGNAL(triggered()), canvas, SLOT(undo()));
+    this->addAction(undoAction);
+    QAction *redoAction = new QAction(this);
+    redoAction->setShortcut(QString("Ctrl+Y"));
+    connect(redoAction, SIGNAL(triggered()), canvas, SLOT(redo()));
+    this->addAction(redoAction);
     QAction *escapeAction = new QAction(this);
     escapeAction->setShortcut(QString("Esc"));
     connect(escapeAction, SIGNAL(triggered()), this, SLOT(onEscPress()));
@@ -131,12 +146,6 @@ Window:: Window()
     connect(reloadAction, SIGNAL(triggered()), this, SLOT(reloadImage()));
     this->addAction(reloadAction);
 
-    QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
-    layout->setContentsMargins(0, 0, 0, 0);
-    canvas = new Canvas(scrollArea, &data);
-    layout->addWidget(canvas);
-    timer = new QTimer(this);
-    connectSignals();
     // Initialize Variables
     data.window = this;
     // under Windows, initial dir is Pictures, under Linux it is homepath
@@ -253,7 +262,7 @@ Window:: loadPlugins()
                 continue;
             }
             plugin->initialize(&data);
-            connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(showScaled()));
+            connect(pluginObj, SIGNAL(imageChanged()), canvas, SLOT(updateImage()));
             connect(pluginObj, SIGNAL(optimumSizeRequested()), this, SLOT(resizeToOptimum()));
             connect(pluginObj, SIGNAL(sendNotification(QString,QString)), this, SLOT(showNotification(QString,QString)));
             // add menu items and window shortcuts
@@ -280,7 +289,7 @@ void
 Window:: openStartupImage()
 {
     QImage img = QImage(":/photoquick.jpg");
-    canvas->setImage(img);
+    canvas->setNewImage(img);
     adjustWindowSize();
     data.filename = QFileInfo("photoquick.jpg").absoluteFilePath();
 }
@@ -332,7 +341,7 @@ Window:: openImage(QString filepath)
             return;
         }
         canvas->scale = fitToScreenScale(img);
-        canvas->setImage(img);
+        canvas->setNewImage(img);
         adjustWindowSize();
         disableButtons(VIEW_BUTTON, false);
         disableButtons(EDIT_BUTTON, false);
@@ -372,7 +381,7 @@ Window:: openFromClipboard()
         return;
     }
     canvas->scale = fitToScreenScale(img);
-    canvas->setImage(img);
+    canvas->setNewImage(img);
     adjustWindowSize();
     disableButtons(VIEW_BUTTON, false);
     disableButtons(EDIT_BUTTON, false);
@@ -736,7 +745,8 @@ Window:: resizeImage()
             img = data.image.scaledToHeight(img_height.toInt(), tfmMode);
         else
             return;
-        canvas->setImage(img);
+        data.image = img;
+        canvas->updateImage();
     }
 }
 
@@ -764,7 +774,7 @@ Window:: addBorder()
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
         painter.drawRect(width/2, width/2, data.image.width()-width, data.image.height()-width);
-        canvas->showScaled();
+        canvas->updateImage();
     }
 }
 
@@ -789,7 +799,7 @@ Window:: expandImageBorder()
     case 0:// clone edges
         data.image = expandBorder(data.image, w);
         data.image = data.image.copy(w-left_border, w-top_border, new_w, new_h);
-        canvas->showScaled();
+        canvas->updateImage();
         return;
     case 3:
         clr = QColorDialog::getColor(QColor(255,255,255), this);
@@ -808,7 +818,7 @@ Window:: expandImageBorder()
         memcpy(dst+left_border, src, 4*data.image.width());
     }
     data.image = img;
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
@@ -817,9 +827,9 @@ Window:: createPhotoGrid()
     GridDialog *dialog = new GridDialog(data.image, this);
     dialog->resize(1020, data.max_window_h);
     if (dialog->exec() == QDialog::Accepted) {
-        QImage result = dialog->gridView->finalImage();
-        canvas->scale = fitToScreenScale(result);
-        canvas->setImage(result);
+        data.image = dialog->gridView->finalImage();
+        canvas->scale = fitToScreenScale(data.image);
+        canvas->updateImage();
         adjustWindowSize();
     }
 }
@@ -833,7 +843,8 @@ Window:: createPhotoCollage()
     dialog->collagePaper->addItem(item);
     if (dialog->exec() == 1) {
         canvas->scale = fitToScreenScale(dialog->collage);
-        canvas->setImage(dialog->collage);
+        data.image = dialog->collage;
+        canvas->updateImage();
         adjustWindowSize();
     }
 }
@@ -844,7 +855,8 @@ Window:: magicEraser()
     InpaintDialog *dialog = new InpaintDialog(data.image, this);
     dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
-        canvas->setImage(dialog->image);
+        data.image = dialog->image;
+        canvas->updateImage();
     }
 }
 
@@ -865,7 +877,8 @@ Window:: iScissor()
     IScissorDialog *dialog = new IScissorDialog(data.image, ERASER_MODE, this);
     dialog->resize(1020, data.max_window_h);
     if (dialog->exec()==QDialog::Accepted) {
-        canvas->setImage( dialog->image );
+        data.image = dialog->image;
+        canvas->showScaled();
         // add background color
         QImage img = canvas->pixmap()->toImage();
         BgColorDialog *dlg = new BgColorDialog(canvas, img, 1.0);
@@ -873,7 +886,7 @@ Window:: iScissor()
         if (dlg->exec()==QDialog::Accepted) {
             data.image = dlg->getResult(data.image);
         }
-        canvas->showScaled();
+        canvas->updateImage();
     }
 }
 
@@ -913,6 +926,8 @@ Window:: lensDistort()
     LensDialog *dlg = new LensDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -921,7 +936,7 @@ void
 Window:: toGrayScale()
 {
     grayScale(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
@@ -931,6 +946,8 @@ Window:: adjustColorLevels()
     LevelsDialog *dlg = new LevelsDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -942,6 +959,8 @@ Window:: applyThreshold()
     ThresholdDialog *dlg = new ThresholdDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -950,7 +969,7 @@ void
 Window:: adaptiveThresh()
 {
     adaptiveThreshold(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
@@ -963,42 +982,42 @@ Window:: blur()
     if (not ok) return;
     gaussianBlur(data.image, radius);
     //boxFilter(data.image, radius);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: sharpenImage()
 {
     unsharpMask(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: reduceSpeckleNoise()
 {
     despeckle(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: removeDust()
 {
     medianFilter(data.image, 1);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: sigmoidContrast()
 {
     sigmoidalContrast(data.image, 0.3);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: stretchImageContrast()
 {
     autoStretchContrast(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
@@ -1008,6 +1027,8 @@ Window:: adjustContrastLevel()
     ContrastDialog *dlg = new ContrastDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -1019,6 +1040,8 @@ Window:: adjustGamma()
     GammaDialog *dlg = new GammaDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -1027,35 +1050,35 @@ void
 Window:: whiteBalance()
 {
     autoWhiteBalance(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: grayWorldFilter()
 {
     grayWorld(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: enhanceColors()
 {
     enhanceColor(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: vignetteFilter()
 {
     vignette(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
 Window:: pencilSketchFilter()
 {
     pencilSketch(data.image);
-    canvas->showScaled();
+    canvas->updateImage();
 }
 
 void
@@ -1066,6 +1089,8 @@ Window:: addBackgroundColor()
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
         bgcolor_action->setVisible(data.image.hasAlphaChannel());
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -1173,6 +1198,8 @@ Window:: rotateAny()
     RotateDialog *dlg = new RotateDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }
@@ -1183,6 +1210,8 @@ Window:: setAspectRatio()
     AspectRatioDialog *dlg = new AspectRatioDialog(this);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
+        canvas->updateImage();
+        return;
     }
     canvas->showScaled();
 }

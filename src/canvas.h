@@ -16,7 +16,7 @@ class Canvas : public QLabel
 public:
     Canvas(QScrollArea *scrollArea, ImageData *img_dat);
     void setAnimation(QMovie *anim);
-    void setImage(QImage img);
+    void setNewImage(QImage img);
     void setMask(QImage mask);
     void clearMask();
     void rotate(int degree, Qt::Axis axis=Qt::ZAxis);
@@ -27,7 +27,10 @@ public:
     bool animation = false;
     float scale;
     bool drag_to_scroll;    // if click and drag moves image
+    std::vector<QImage> undo_stack;
+    int undo_index = -1;
 private:
+    void addToUndoStack();
     void mousePressEvent(QMouseEvent *ev);
     void mouseReleaseEvent(QMouseEvent *ev);
     void mouseMoveEvent(QMouseEvent *ev);
@@ -37,8 +40,11 @@ private:
     QPoint clk_global;
     QScrollBar *vScrollbar, *hScrollbar;
 public slots:
+    void updateImage();// shows scaled and adds current image to undo_stack
     void showScaled();
     void invertMask();
+    void undo();
+    void redo();
 signals:
     void mousePressed(QPoint);
     void mouseReleased(QPoint);

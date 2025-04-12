@@ -34,15 +34,25 @@ Canvas:: setAnimation(QMovie *anim)
 }
 
 void
-Canvas:: setImage(QImage img)
+Canvas:: setNewImage(QImage img)
 {
     if (this->animation) {
         this->animation = false;
         movie()->deleteLater();
     }
+    undo_stack.clear();
+    undo_index = -1;
     data->image = img;
-    showScaled();
+    updateImage();
 }
+
+void
+Canvas:: updateImage()
+{
+    showScaled();// this must be before addToUndoStack because it applies mask over image
+    addToUndoStack();
+}
+
 
 void
 Canvas:: setMask(QImage mask_img)
@@ -151,6 +161,36 @@ Canvas:: mouseMoveEvent(QMouseEvent *ev)
     // Handle click and drag to scroll
     vScrollbar->setValue(v_scrollbar_pos + clk_global.y() - ev->globalY());
     hScrollbar->setValue(h_scrollbar_pos + clk_global.x() - ev->globalX());
+}
+
+void
+Canvas:: addToUndoStack()
+{
+    if (undo_index < (int)undo_stack.size()-1)
+        undo_stack.resize(undo_index+1);
+    undo_stack.push_back(data->image);
+    undo_index++;
+}
+
+void
+Canvas:: undo()
+{
+    if (undo_index<1)
+        return;
+    undo_index--;
+    data->image = undo_stack[undo_index];
+    showScaled();
+}
+
+
+void
+Canvas:: redo()
+{
+    if (undo_index>(int)undo_stack.size()-2)
+        return;
+    undo_index++;
+    data->image = undo_stack[undo_index];
+    showScaled();
 }
 
 
