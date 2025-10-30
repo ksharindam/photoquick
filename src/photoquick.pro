@@ -31,9 +31,14 @@ win32 {
     RC_FILE += ../windows/version_info.rc
 }
 
+
 # install
 unix {
-    INSTALLS += target
     target.path = /usr/local/bin
+    icons.path = /usr/share/icons/hicolor/scalable/apps
+    icons.files += ../data/photoquick.png
+    desktop.path = /usr/share/applications
+    desktop.files += ../data/photoquick.desktop
+    INSTALLS += target icons desktop
 }
 

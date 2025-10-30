@@ -4,6 +4,7 @@ Type=Application
 Name=PhotoQuick
 Icon=photoquick
 Exec=photoquick %f
+MimeType=image/jpeg;image/png;image/gif;image/svg+xml;image/webp;image/avif;image/jp2;
 Categories=Graphics;
 StartupNotify=false
 Terminal=false
