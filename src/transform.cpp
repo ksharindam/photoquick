@@ -279,7 +279,7 @@ CropRatioDialog(QWidget *parent, double w, double h) : QDialog(parent)
     heightSpin->setAlignment(Qt::AlignHCenter);
     heightSpin->setDecimals(1);
     heightSpin->setSingleStep(0.1);
-    heightSpin->setRange(0.1, 9.9);
+    heightSpin->setRange(0.1, 99.9);
     heightSpin->setValue(h);
     QGridLayout *layout = new QGridLayout(this);
     QLabel *label1 = new QLabel("Width : Height", this);
