@@ -273,7 +273,7 @@ CropRatioDialog(QWidget *parent, double w, double h) : QDialog(parent)
     widthSpin->setAlignment(Qt::AlignHCenter);
     widthSpin->setDecimals(1);
     widthSpin->setSingleStep(0.1);
-    widthSpin->setRange(0.1, 9.9);
+    widthSpin->setRange(0.1, 99.9);
     widthSpin->setValue(w);
     heightSpin = new QDoubleSpinBox(this);
     heightSpin->setAlignment(Qt::AlignHCenter);
