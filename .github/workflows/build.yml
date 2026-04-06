@@ -1,0 +1,52 @@
+name: Build Packages
+on:
+  release:
+    types: [published]
+
+# required for uploading assets
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install Qt5
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          host: windows
+          target: desktop
+          arch: win64_mingw81
+      
+      - name: Install NSIS
+        run: choco install nsis -y
+      
+      - name: Build PhotoQuick
+        run: |
+          cd src
+          qmake photoquick.pro
+          mingw32-make -j4
+          cd ..
+      
+      - name: Build plugins
+        run: |
+          cd plugins
+          qmake
+          mingw32-make -j4
+          cd ..
+      
+      - name: Create Exe installer
+        run: |
+          cd windows
+          & 'C:\Program Files (x86)\NSIS\makensis.exe' /DQTBINDIR="${{ env.QT_ROOT_DIR }}\bin" PhotoQuick.nsi
+      
+      - name: Upload Release Assets
+        uses: AButler/upload-release-assets@v3.0
+        with:
+          files: "windows/*.exe"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
