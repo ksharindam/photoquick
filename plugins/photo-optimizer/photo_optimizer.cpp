@@ -1,5 +1,5 @@
 /*  This file is a part of PhotoQuick Plugins project, and is GNU GPLv3 licensed
-    Copyright (C) 2021 Arindam Chaudhuri <ksharindam@gmail.com>
+    Copyright (C) 2021-2023 Arindam Chaudhuri <ksharindam@gmail.com>
 */
 #include "photo_optimizer.h"
 #include "exif.cpp"// bad idea ? but we can not link exif.o from main program
