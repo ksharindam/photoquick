@@ -29,12 +29,11 @@ For Windows download .exe package and install it.
 For Linux download .AppImage package, mark it executable, and double click to run.  
 
 ### Build (Linux)
-This program supports both Qt4 and Qt5. Qt4 is not available on newer distros.  
-But Qt4 is preferred over Qt5.  
 
 Install dependencies...  
 **Build dependencies ...**  
- * libqt4-dev or qtbase5-dev  
+ * qtbase5-dev  
+ * build-essential  
 
 To build this program, extract the source code zip.  
 Open terminal and change directory to src/  
@@ -51,22 +50,17 @@ To uninstall, run ...
 `sudo make uninstall`  
 
 **Runtime Dependencies**  
-* libqtcore4 or libqt5core5a  
-* libqtgui4 or libqt5gui5  
-* libqt4-svg or libqt5svg5  (for svg support | optional)  
+* libqt5core5a  
+* libqt5gui5  
+* libqt5svg5  (for svg support | optional)  
 * libgomp1  
 * wget (for check for updates in linux | optional)  
 
-### Build (Windows)
-Download Qt 4.8.7 and minGW32  
-Add Qt/4.8.7/bin directory and mingw32/bin directory in PATH environment variable.  
-In src directory open Command Line.  
-Run command...  
-`qmake`  
-`make -j4`  
 
 ### Plugins
 The plugins/ directory contains only sample plugins.  
+Get full set of plugins [here](https://github.com/ksharindam/photoquick-plugins)  
+
 **Build (Linux and Windows) :**  
 Open terminal or command line in project root directory.  
 Then run these commands to compile...  
@@ -97,12 +91,11 @@ Redo : Ctrl+Y
 
 ### Supported Image Formats
 All formats supported by Qt are supported in this program.  
-**Read :** JPG, PNG, GIF, SVG, TIFF, ICO, BMP, XPM, XBM, PPM, PBM, PGM  
-**Write :** JPG, PNG, TIFF, ICO, BMP, XPM, XBM, PPM  
+**Read & Write :** JPG, PNG, GIF, ICO, WEBP  
+**Read Only :** SVG  
 
-JPEG2000 and WebP formats are supported via image format plugins.  
-You can get these here...  
-https://github.com/ksharindam/qt-imageformat-plugins  
+install qt5-image-formats-plugins and kimageformat-plugins to get may other formats support like avif, heif, psd.  
+
 
 ### Screenshots
 
