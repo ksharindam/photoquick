@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (C) 2021-2022 Arindam Chaudhuri <ksharindam@gmail.com> -->
+<!-- Copyright (C) 2021-2026 Arindam Chaudhuri <ksharindam@gmail.com> -->
 <component type="desktop-application">
-  <id>com.ksharindam.photoquick</id>
+  <id>io.github.ksharindam.photoquick</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
 
@@ -36,7 +36,7 @@
     <category>Graphics</category>
   </categories>
 
-  <launchable type="desktop-id">com.ksharindam.photoquick.desktop</launchable>
+  <launchable type="desktop-id">io.github.ksharindam.photoquick.desktop</launchable>
 
   <screenshots>
     <screenshot type="default">
