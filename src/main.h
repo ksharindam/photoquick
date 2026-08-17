@@ -35,6 +35,8 @@ public:
     void disableButtons(ButtonType type, bool disable);
     void closeEvent(QCloseEvent *ev);
     void addMaskWidget();
+    void dragEnterEvent(QDragEnterEvent *ev) override;
+    void dropEvent(QDropEvent *ev) override;
 public slots:
     void openFile();
     void openFromClipboard();

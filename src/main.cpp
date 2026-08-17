@@ -1,6 +1,6 @@
 /*
 ...........................................................................
-|   Copyright (C) 2017-2024 Arindam Chaudhuri <ksharindam@gmail.com>       |
+|   Copyright (C) 2017-2026 Arindam Chaudhuri <ksharindam@gmail.com>       |
 |                                                                          |
 |   This program is free software: you can redistribute it and/or modify   |
 |   it under the terms of the GNU General Public License as published by   |
@@ -46,11 +46,12 @@
 #include <QImageWriter>
 #include <QDesktopServices>
 #include <QUrl>
-
+#include <QMimeData>
 
 
 Window:: Window()
 {
+    setAcceptDrops(true);
     setupUi(this);
     QHBoxLayout *layout = new QHBoxLayout(scrollAreaWidgetContents);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -285,6 +286,42 @@ Window:: loadPlugins()
     menu_dict["Info"]->addAction("Check for Update", this, SLOT(checkForUpdate()));
     menu_dict["Info"]->addAction("About PhotoQuick", this, SLOT(showAbout()));
 }
+
+
+void
+Window::dragEnterEvent(QDragEnterEvent *ev)
+{
+    if (!frame->isVisible()){// in edit mode, file must not be dropped
+        ev->ignore();
+        return;
+    }
+    if (ev->mimeData() && ev->mimeData()->hasUrls()) {
+        ev->acceptProposedAction();
+    } else {
+        ev->ignore();
+    }
+}
+
+void
+Window::dropEvent(QDropEvent *ev)
+{
+    if (!(ev->mimeData() && ev->mimeData()->hasUrls())) {
+        ev->ignore();
+        return;
+    }
+    // Handle the first local file URL that represents an image
+    const QList<QUrl> urls = ev->mimeData()->urls();
+    for (const QUrl &url : urls) {
+        QString path = url.toLocalFile();
+        if (path.isEmpty()) continue;
+        // Use existing logic to open image properly (handles animated images etc.)
+        openImage(path);
+        ev->acceptProposedAction();
+        return; // handle only the first valid file
+    }
+    ev->ignore();
+}
+
 
 void
 Window:: openStartupImage()
