@@ -47,6 +47,17 @@ public slots:
     void toggleAllSides(bool checked);
 };
 
+// dialog to split image into multiple rows and cols
+class SplitDialog : public QDialog
+{
+public:
+    QSpinBox *rowsSpin;
+    QSpinBox *colsSpin;
+    SplitDialog(QWidget *parent);
+    int rowCount();
+    int columnCount();
+};
+
 // Preview Dialog for filter functions.
 // This is Abstract and must be reimplemented
 class PreviewDialog : public QDialog

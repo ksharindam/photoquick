@@ -115,6 +115,7 @@ Window:: Window()
     toolsMenu->addAction("Mask Tool", this, SLOT(maskTool()));
     toolsMenu->addAction("Scissor && Eraser", this, SLOT(iScissor()));
     toolsMenu->addAction("Magic Eraser", this, SLOT(magicEraser()));
+    toolsMenu->addAction("Split Image", this, SLOT(splitImage()));
     toolsBtn->setMenu(toolsMenu);
     // More info menu
     QMenu *infoMenu = new QMenu(infoBtn);
@@ -848,6 +849,36 @@ Window:: createPhotoCollage()
         adjustWindowSize();
     }
 }
+
+void
+Window:: splitImage()
+{
+    SplitDialog *dialog = new SplitDialog(this);
+    if (dialog->exec()!=QDialog::Accepted) {
+        return;
+    }
+    bool success = true;
+    int w = data.image.width();
+    int h = data.image.height();
+    int rows = dialog->rowCount();
+    int cols = dialog->columnCount();
+    for (int i=0; i<rows; i++){
+        int sy = i*h/rows;
+        int ey = (i+1)*h/rows;
+        for (int j=0; j<cols; j++){
+            int sx = j*w/cols;
+            int ex = (j+1)*w/cols;
+            QImage image = data.image.copy(sx,sy,ex-sx,ey-sy);
+            // save a copy
+            QString path = getNewFileName(data.filename);
+            if (not image.save(path, NULL, -1))
+                success = false;
+        }
+    }
+    if (not success)
+        showNotification("Failed !", "Could not save the image");
+}
+
 
 void
 Window:: magicEraser()

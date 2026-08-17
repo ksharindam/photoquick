@@ -67,46 +67,47 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <kshar
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite try
-  
+
   ; Install MinGW64 runtime libraries
   File "${MINGWBINDIR}\libgcc_s_seh-1.dll"
   File "${MINGWBINDIR}\libstdc++-6.dll"
   File "${MINGWBINDIR}\libwinpthread-1.dll"
   File "${MINGWBINDIR}\libgomp-1.dll"
-  
+
   ; Install Qt5 Core Libraries
   File "${QTBINDIR}\Qt5Core.dll"
   File "${QTBINDIR}\Qt5Gui.dll"
   File "${QTBINDIR}\Qt5Widgets.dll"
   File "${QTBINDIR}\Qt5PrintSupport.dll"
   File "${QTBINDIR}\Qt5Svg.dll"
-  
+
   ; Install Qt5 platform and style plugins
   SetOutPath "$INSTDIR\platforms"
   File "${QTBINDIR}\..\plugins\platforms\qwindows.dll"
-  
   SetOutPath "$INSTDIR\styles"
   File "${QTBINDIR}\..\plugins\styles\qwindowsvistastyle.dll"
-  
-  ; Install image format plugins
+  ; Image format plugins
   SetOutPath "$INSTDIR\imageformats"
   File "${QTBINDIR}\..\plugins\imageformats\*.dll"
-  
+  ; Print Support
+  SetOutPath "$INSTDIR\printsupport"
+  File "${QTBINDIR}\..\plugins\printsupport\windowsprintersupport.dll"
+
   ; Install PhotoQuick plugins
   SetOutPath "$INSTDIR\plugins"
   File "${PLUGINS_DIR}\invert.dll"
   File "${PLUGINS_DIR}\text-tool.dll"
   File "${PLUGINS_DIR}\photo-optimizer.dll"
-  
+
   ; Install main executable and icon
   SetOutPath "$INSTDIR"
   File "${BUILDDIR}\photoquick.exe"
   File "..\data\${PROG_ICON}"
-  
+
   ; Create shortcuts
   CreateShortCut "$SMPROGRAMS\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
   CreateShortCut "$DESKTOP\${PROG_NAME}.lnk" "$INSTDIR\${PROG_EXEC}" "" "$INSTDIR\${PROG_ICON}"
-  
+
   ; Associate file types
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpg" "JPEG Image"
   ${registerExtension} "$INSTDIR\${PROG_EXEC}" ".jpeg" "JPEG Image"
@@ -141,43 +142,39 @@ Section Uninstall
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\photoquick.exe"
   Delete "$INSTDIR\${PROG_ICON}"
-  
+
   ; Remove PhotoQuick plugins
   Delete "$INSTDIR\plugins\invert.dll"
   Delete "$INSTDIR\plugins\text-tool.dll"
   Delete "$INSTDIR\plugins\photo-optimizer.dll"
-  
-  ; Remove image format plugins
-  Delete "$INSTDIR\imageformats\*.dll"
-  
-  ; Remove platform and style plugins
-  Delete "$INSTDIR\platforms\qwindows.dll"
-  Delete "$INSTDIR\styles\qwindowsvistastyle.dll"
-  
+
+  ; Remove Qt5 plugins
+  RMDir /r "$INSTDIR\platforms"
+  RMDir /r "$INSTDIR\styles"
+  RMDir /r "$INSTDIR\imageformats"
+  RMDir /r "$INSTDIR\printsupport"
+
   ; Remove Qt5 libraries
   Delete "$INSTDIR\Qt5Core.dll"
   Delete "$INSTDIR\Qt5Gui.dll"
   Delete "$INSTDIR\Qt5Widgets.dll"
   Delete "$INSTDIR\Qt5PrintSupport.dll"
   Delete "$INSTDIR\Qt5Svg.dll"
-  
+
   ; Remove MinGW64 runtime libraries
   Delete "$INSTDIR\libgcc_s_seh-1.dll"
   Delete "$INSTDIR\libstdc++-6.dll"
   Delete "$INSTDIR\libwinpthread-1.dll"
   Delete "$INSTDIR\libgomp-1.dll"
-  
+
   ; Remove shortcuts
   Delete "$DESKTOP\${PROG_NAME}.lnk"
   Delete "$SMPROGRAMS\${PROG_NAME}.lnk"
-  
+
   ; Remove directories
-  RMDir "$INSTDIR\imageformats"
-  RMDir "$INSTDIR\platforms"
-  RMDir "$INSTDIR\styles"
   RMDir "$INSTDIR\plugins"
   RMDir "$INSTDIR"
-  
+
   ; Unregister file associations
   ${unregisterExtension} ".jpg" "JPEG Image"
   ${unregisterExtension} ".jpeg" "JPEG Image"
@@ -189,7 +186,7 @@ Section Uninstall
   ${unregisterExtension} ".tiff" "TIFF Image"
   ${unregisterExtension} ".tif" "TIFF Image"
   ${unregisterExtension} ".webp" "WebP Image"
-  
+
   ; Remove registry entries
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"

@@ -61,6 +61,7 @@ public slots:
     void magicEraser();
     void iScissor();
     void removeMaskWidget();
+    void splitImage();
     // color filters
     void toGrayScale();
     void adjustColorLevels();

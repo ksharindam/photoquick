@@ -258,8 +258,8 @@ CollagePaper:: addItem(CollageItem *item)
         delete item;
         return;
     }
-    item->w = round(item->img_w*100/300.0); // 300 dpi image over 100 ppi screen
-    item->h = round(item->img_h*100/300.0);
+    item->w = round(item->img_w*100.0/out_dpi); // @out_dpi image on 100 ppi screen
+    item->h = round(item->img_h*100.0/out_dpi);
     if (item->w > paper.width() or item->h > paper.height())
         shrinkToFitSize(item->img_w, item->img_h, paper.width(), paper.height(), item->w, item->h);
     item->x = MIN(item->x, paper.width() -item->w);

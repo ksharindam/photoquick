@@ -159,6 +159,48 @@ ExpandBorderDialog:: toggleAllSides(bool checked)
     this->adjustSize();
 }
 
+// ---------------------- Split Dialog --------------------------
+
+SplitDialog:: SplitDialog(QWidget *parent) : QDialog(parent)
+{
+    this->resize(250, 120);
+    this->setWindowTitle("Split Image");
+    QGridLayout *layout = new QGridLayout(this);
+    // split horizontally
+    QLabel *label = new QLabel("Horizonal :", this);
+    colsSpin = new QSpinBox(this);
+    colsSpin->setAlignment(Qt::AlignHCenter);
+    colsSpin->setRange(1, 100);
+    colsSpin->setValue(1);
+    // split vertically
+    QLabel *label2 = new QLabel("Vertical :", this);
+    rowsSpin = new QSpinBox(this);
+    rowsSpin->setAlignment(Qt::AlignHCenter);
+    rowsSpin->setRange(1, 100);
+    rowsSpin->setValue(1);
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    layout->addWidget(label, 0,0,1,1);
+    layout->addWidget(colsSpin, 0,1,1,1);
+    layout->addWidget(label2, 1,0,1,1);
+    layout->addWidget(rowsSpin, 1,1,1,1);
+    layout->addWidget(btnBox, 2,0,1,2);
+    connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
+}
+
+int
+SplitDialog:: rowCount()
+{
+    return rowsSpin->value();
+}
+
+int
+SplitDialog:: columnCount()
+{
+    return colsSpin->value();
+}
+
+
 //------------------ PreviewDialog for Filters ------------------
 
 PreviewDialog:: PreviewDialog(QLabel *canvas, QImage img, float scale) : QDialog(canvas)
