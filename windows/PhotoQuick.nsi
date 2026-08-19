@@ -1,6 +1,6 @@
 ; PhotoQuick Installer for Qt5 + MinGW64
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.21.0"
+!define PROG_VERSION "4.22.0"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
