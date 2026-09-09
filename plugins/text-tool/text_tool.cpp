@@ -69,12 +69,15 @@ TextToolDialog:: TextToolDialog(QWidget *parent, QImage img) : QDialog(parent)
     connect(fontColorCombo, SIGNAL(activated(int)), this, SLOT(onFontColorChange(int)));
     connect(bgColorCombo, SIGNAL(activated(int)), this, SLOT(onBgColorChange(int)));
     connect(textAlignCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onTextAlignmentChange(int)));
+    connect(zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomIndexChange(int)));
 
     // Load settings and init variables
     QSettings settings("photoquick", "plugins", this);
     settings.beginGroup("text-tool");
     fontComboBox->setCurrentIndex(settings.value("FontName", fontComboBox->currentIndex()).toInt());
     fontSizeSlider->setValue(settings.value("FontSize", 12).toInt());
+    boldFontBtn->setChecked(settings.value("Bold", false).toBool());
+    italicFontBtn->setChecked(settings.value("Italic", false).toBool());
     // font color
     other_color = QColor(settings.value("OtherColor", 0xff000000).toInt());
     int index = settings.value("FontColor", 0).toInt();
@@ -96,19 +99,25 @@ TextToolDialog:: TextToolDialog(QWidget *parent, QImage img) : QDialog(parent)
     // scale the canvas to fit to scrollarea width
     int available_w = 1020 - frame->width() - 4;
     int img_w = img.width();
-    float scale_factor = 1.0;
-    while (img_w > available_w) {
-        scale_factor /= 1.5;
-        img_w = roundf(scale_factor*img.width());
+    if (img_w > available_w){
+        float approx_scale = (float)available_w/img_w;
+        int i = zoom_levels.size()-1;
+        while (i>0 && approx_scale<(float)zoom_levels[i]/100){
+            i--;
+        }
+        zoomSlider->setValue(i);
     }
-    scaleBy(scale_factor);
+    if (zoomSlider->value()==11){
+        onZoomIndexChange(11);
+    }
     newTextbox();
 }
 
 void
-TextToolDialog:: scaleBy(float scale)
+TextToolDialog:: onZoomIndexChange(int index)
 {
-    this->scale = scale;
+    // apply scale
+    this->scale = (float)zoom_levels[index]/100;
     if (scale == 1.0)
         image_scaled = image;
     else {
@@ -117,6 +126,7 @@ TextToolDialog:: scaleBy(float scale)
                         Qt::IgnoreAspectRatio, tfm_mode);
     }
     redraw();
+    zoomLabel->setText(QString("Zoom : (%1%)").arg(int(scale*100)));
 }
 
 void
@@ -345,6 +355,7 @@ TextToolDialog:: onBgColorChange(int index)
     updateCurrentTextbox();
 }
 
+
 void
 TextToolDialog:: accept()
 {
@@ -362,6 +373,8 @@ TextToolDialog:: accept()
     settings.beginGroup("text-tool");
     settings.setValue("FontName", fontComboBox->currentIndex());
     settings.setValue("FontSize", tmp_textbox.font_size);
+    settings.setValue("Bold", boldFontBtn->isChecked());
+    settings.setValue("Italic", italicFontBtn->isChecked());
     settings.setValue("FontColor", fontColorCombo->currentIndex());
     settings.setValue("OtherColor", other_color.rgb());
     settings.setValue("BgColor", bgColorCombo->currentIndex());

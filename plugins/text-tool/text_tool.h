@@ -77,6 +77,7 @@ public:
     QColor other_bg_color = Qt::white;
 
     float scale = 1.0;
+    std::vector<int> zoom_levels = {25,30,40,45,50,55,60,65,75,80,90,100,110,120,140,160,180,200};
     bool mouse_pressed = false;
     QPoint click_pos;
     QPoint old_pos;
@@ -85,7 +86,6 @@ public:
     int textbox_entered = -1;// textbox index into which mouse cursor entered, -1=no textbox
 
     TextToolDialog(QWidget *parent, QImage img);
-    void scaleBy(float scale);
     void redraw();
     void updateCurrentTextbox();
     void keyPressEvent(QKeyEvent *ev);
@@ -101,6 +101,7 @@ public slots:
     void onFontColorChange(int index);
     void onBgColorChange(int index);
     void onTextAlignmentChange(int index);
+    void onZoomIndexChange(int index);
     void onMousePress(QPoint pos);
     void onMouseRelease(QPoint pos);
     void onMouseMove(QPoint pos);
