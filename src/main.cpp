@@ -1170,7 +1170,7 @@ Window:: openPrevImage()
     if (not fi.exists()) return;
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();         // This does not include filename
-    QString file_filter("*.jpg *.jpeg *.png *.gif *.svg *.bmp *.tiff");
+    QString file_filter("*.jpg *.jpeg *.png *.webp *.gif *.svg *.bmp *.tiff");
     QStringList image_list = fi.dir().entryList(file_filter.split(" "));
 
     int index = image_list.indexOf(filename);
@@ -1498,7 +1498,7 @@ QString getNextFileName(QString current)
         return QString();
     QString filename = fi.fileName();
     QString basedir = fi.absolutePath();    // This does not include filename
-    QString file_filter("*.jpg *.jpeg *.png *.gif *.svg *.bmp *.tiff");
+    QString file_filter("*.jpg *.jpeg *.png *.gif *.svg *.bmp *.tiff *.webp");
     QStringList image_list = fi.dir().entryList(file_filter.split(" "));
     if (image_list.count()<2)
         return QString();
