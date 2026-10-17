@@ -19,9 +19,9 @@ enum {
     UNIT_POINT
 };
 
-#define PAPER_WIDTHS {595, 420, 288, 360}
-#define PAPER_HEIGHTS {842, 595, 432, 504}
-#define PAPER_SIZE_COUNT 4
+#define PAPER_WIDTHS  {595, 420, 298, 210, 288, 360}
+#define PAPER_HEIGHTS {842, 595, 420, 298, 432, 504}
+#define PAPER_SIZE_COUNT 6
 
 // ******************* Collage Dialog ***********************
 

@@ -94,6 +94,16 @@
            </item>
            <item>
             <property name="text">
+             <string>A6</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>A7</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
              <string>4x6 inch</string>
             </property>
            </item>
