@@ -1,6 +1,6 @@
-; PhotoQuick Installer for Qt5 + MinGW64
+; PhotoQuick Installer for Qt6 + MinGW64
 !define PROG_NAME "PhotoQuick"
-!define PROG_VERSION "4.22.0"
+!define PROG_VERSION "6.0.0"
 !define PROG_PUBLISHER "Arindamsoft"
 !define PROG_ICON "photoquick.ico"
 !define PROG_EXEC "photoquick.exe"
@@ -58,7 +58,7 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Arindam Chaudhuri <kshar
 
 ; Default installation directories
 !ifndef QTBINDIR
-  !define QTBINDIR "C:\Qt\5.15.2\bin"
+  !define QTBINDIR "C:\Qt\6.4.2\bin"
 !endif
 !define MINGWBINDIR "C:\mingw64\bin"
 !define BUILDDIR "..\src"
@@ -74,14 +74,14 @@ Section "MainSection" SEC01
   File "${MINGWBINDIR}\libwinpthread-1.dll"
   File "${MINGWBINDIR}\libgomp-1.dll"
 
-  ; Install Qt5 Core Libraries
-  File "${QTBINDIR}\Qt5Core.dll"
-  File "${QTBINDIR}\Qt5Gui.dll"
-  File "${QTBINDIR}\Qt5Widgets.dll"
-  File "${QTBINDIR}\Qt5PrintSupport.dll"
-  File "${QTBINDIR}\Qt5Svg.dll"
+  ; Install Qt6 Core Libraries
+  File "${QTBINDIR}\Qt6Core.dll"
+  File "${QTBINDIR}\Qt6Gui.dll"
+  File "${QTBINDIR}\Qt6Widgets.dll"
+  File "${QTBINDIR}\Qt6PrintSupport.dll"
+  File "${QTBINDIR}\Qt6Svg.dll"
 
-  ; Install Qt5 platform and style plugins
+  ; Install Qt6 platform and style plugins
   SetOutPath "$INSTDIR\platforms"
   File "${QTBINDIR}\..\plugins\platforms\qwindows.dll"
   SetOutPath "$INSTDIR\styles"
@@ -89,9 +89,6 @@ Section "MainSection" SEC01
   ; Image format plugins
   SetOutPath "$INSTDIR\imageformats"
   File "${QTBINDIR}\..\plugins\imageformats\*.dll"
-  ; Print Support
-  SetOutPath "$INSTDIR\printsupport"
-  File "${QTBINDIR}\..\plugins\printsupport\windowsprintersupport.dll"
 
   ; Install PhotoQuick plugins
   SetOutPath "$INSTDIR\plugins"
@@ -148,18 +145,18 @@ Section Uninstall
   Delete "$INSTDIR\plugins\text-tool.dll"
   Delete "$INSTDIR\plugins\photo-optimizer.dll"
 
-  ; Remove Qt5 plugins
+  ; Remove Qt6 plugins
   RMDir /r "$INSTDIR\platforms"
   RMDir /r "$INSTDIR\styles"
   RMDir /r "$INSTDIR\imageformats"
   RMDir /r "$INSTDIR\printsupport"
 
-  ; Remove Qt5 libraries
-  Delete "$INSTDIR\Qt5Core.dll"
-  Delete "$INSTDIR\Qt5Gui.dll"
-  Delete "$INSTDIR\Qt5Widgets.dll"
-  Delete "$INSTDIR\Qt5PrintSupport.dll"
-  Delete "$INSTDIR\Qt5Svg.dll"
+  ; Remove Qt6 libraries
+  Delete "$INSTDIR\Qt6Core.dll"
+  Delete "$INSTDIR\Qt6Gui.dll"
+  Delete "$INSTDIR\Qt6Widgets.dll"
+  Delete "$INSTDIR\Qt6PrintSupport.dll"
+  Delete "$INSTDIR\Qt6Svg.dll"
 
   ; Remove MinGW64 runtime libraries
   Delete "$INSTDIR\libgcc_s_seh-1.dll"

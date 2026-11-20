@@ -46,6 +46,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QMimeData>
+#include <QStandardPaths>
 
 
 Window:: Window()
