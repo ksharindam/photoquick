@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-image=ubuntu:22.04
+image=debian:12
 
 case "$ARCH" in
     x86_64)
@@ -48,8 +48,8 @@ set -eux
 apt update
 # prevent tzdata from asking timezone during install
 DEBIAN_FRONTEND=noninteractive TZ="Asia/Kolkata" apt install -y tzdata
-apt install -y wget file build-essential qtbase5-dev qt5ct qtwayland5 \
-    qt5-image-formats-plugins kimageformat-plugins
+apt install -y wget file build-essential qt6-base-dev qt6ct qt6-wayland \
+    qt6-image-formats-plugins
 
 
 wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage"
@@ -61,10 +61,10 @@ mv appimagetool*AppImage /usr/bin/appimagetool
 mv linuxdeploy*AppImage /usr/bin/linuxdeploy
 
 cd /source/src
-qmake
+qmake6
 make
 cd /source/plugins
-qmake
+qmake6
 make
 
 cd /source/AppImage

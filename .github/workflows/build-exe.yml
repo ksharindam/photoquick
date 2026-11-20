@@ -1,0 +1,54 @@
+name: Build Exe
+on:
+  workflow_dispatch:
+  #push:
+
+# required for uploading assets
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install Qt5
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.4.2'
+          host: windows
+          target: desktop
+          arch: win64_mingw
+
+      - name: Install NSIS
+        run: choco install nsis -y
+      
+      - name: Build PhotoQuick
+        run: |
+          cd src
+          qmake photoquick.pro
+          mingw32-make -j4
+          cd ..
+      
+      - name: Build plugins
+        run: |
+          cd plugins
+          qmake
+          mingw32-make -j4
+          cd ..
+      
+      - name: Create Exe installer
+        run: |
+          cd windows
+          & 'C:\Program Files (x86)\NSIS\makensis.exe' /DQTBINDIR="${{ env.QT_ROOT_DIR }}\bin" PhotoQuick.nsi
+      
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-exe
+          path: windows/*.exe
+          retention-days: 2
+
