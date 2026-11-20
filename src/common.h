@@ -116,9 +116,9 @@ enum
 #endif
 
 
-// check if armhf architecture, if not then it is assumed to be x86
-#ifdef __arm__
-#define ARCH "armhf"
+// check if aarch64 architecture, if not then it is assumed to be x86
+#ifdef __aarch64__
+#define ARCH "aarch64"
 //#elif __x86_64__
 #else
 #define ARCH "x86_64"
