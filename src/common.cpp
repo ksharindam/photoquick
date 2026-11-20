@@ -10,6 +10,7 @@
 #include <QImageReader>
 #include <QPainter>
 #include <QDesktopServices>
+#include <QStandardPaths>
 #include <cmath>
 #include <unistd.h> // dup()
 
@@ -240,11 +241,7 @@ Notifier:: notify(QString title, QString message)
 // returns the path of the desktop directory
 QString desktopPath()
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     return QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-#else
-    return QDesktopServices::storageLocation(QDesktopServices::DesktopLocation);
-#endif
 }
 
 #ifdef DEBUG

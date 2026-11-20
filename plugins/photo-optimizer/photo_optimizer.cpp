@@ -1,5 +1,5 @@
 /*  This file is a part of PhotoQuick Plugins project, and is GNU GPLv3 licensed
-    Copyright (C) 2021-2023 Arindam Chaudhuri <ksharindam@gmail.com>
+    Copyright (C) 2021-2026 Arindam Chaudhuri <ksharindam@gmail.com>
 */
 #include "photo_optimizer.h"
 #include "exif.cpp"// bad idea ? but we can not link exif.o from main program
@@ -19,10 +19,6 @@
 #define PLUGIN_NAME "Photo Optimizer"
 #define PLUGIN_MENU "Tools/Photos Compressor"
 #define PLUGIN_VERSION "1.1"
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    Q_EXPORT_PLUGIN2(photo-optimizer, ToolPlugin);
-#endif
 
 
 // ********************** Photo Optimizer Dialog ******************** //

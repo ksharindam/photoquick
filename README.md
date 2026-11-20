@@ -32,7 +32,7 @@ For Linux download .AppImage package, mark it executable, and double click to ru
 
 Install dependencies...  
 **Build dependencies ...**  
- * qtbase5-dev  
+ * qt6-base-dev  
  * build-essential  
 
 To build this program, extract the source code zip.  
@@ -41,19 +41,16 @@ Then run these commands to compile...
 ```
 qmake  
 make -j4  
+sudo make install  
 ```
-
-To install run ...  
-`sudo make install`  
 
 To uninstall, run ...  
 `sudo make uninstall`  
 
-**Runtime Dependencies**  
-* libqt5core5a  
-* libqt5gui5  
-* libqt5svg5  (for svg support | optional)  
+**Runtime Extra Dependencies**  
 * libgomp1  
+* libqt6svg6  (svg support | optional)  
+* qt6-image-formats-plugins ( webp, tiff support | optional)  
 * wget (for check for updates in linux | optional)  
 
 

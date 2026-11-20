@@ -20,6 +20,7 @@ Canvas:: Canvas(QScrollArea *scrollArea, ImageData *img_dat) : QLabel(scrollArea
     scale = 1.0;
 }
 
+
 void
 Canvas:: setAnimation(QMovie *anim)
 {
@@ -139,7 +140,7 @@ Canvas:: rotate(int degree, Qt::Axis axis)
 void
 Canvas:: mousePressEvent(QMouseEvent *ev)
 {
-    clk_global = ev->globalPos();
+    clk_global = ev->globalPosition().toPoint();
     v_scrollbar_pos = vScrollbar->value();
     h_scrollbar_pos = hScrollbar->value();
     mouse_pressed = true;
@@ -159,8 +160,9 @@ Canvas:: mouseMoveEvent(QMouseEvent *ev)
     emit mouseMoved(ev->pos());
     if (not (mouse_pressed and drag_to_scroll)) return;
     // Handle click and drag to scroll
-    vScrollbar->setValue(v_scrollbar_pos + clk_global.y() - ev->globalY());
-    hScrollbar->setValue(h_scrollbar_pos + clk_global.x() - ev->globalX());
+    QPoint ev_global = ev->globalPosition().toPoint();
+    vScrollbar->setValue(v_scrollbar_pos + clk_global.y() - ev_global.y());
+    hScrollbar->setValue(h_scrollbar_pos + clk_global.x() - ev_global.x());
 }
 
 void

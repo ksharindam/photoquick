@@ -8,6 +8,7 @@ This file is a part of photoquick program, which is GPLv3 licensed
 #include <QPainter>
 #include <QPushButton>
 #include <QMenu>
+#include <QActionGroup>
 #include <QRect>
 #include <cmath>
 
@@ -27,7 +28,7 @@ Crop:: Crop(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
 {
     mouse_pressed = false;
     canvas->drag_to_scroll = false;
-    pixmap = canvas->pixmap()->copy();
+    pixmap = canvas->pixmap();
     scaleX = float(pixmap.width())/canvas->data->image.width();
     scaleY = float(pixmap.height())/canvas->data->image.height();
     topleft = QPoint(0,0);
@@ -325,7 +326,7 @@ PerspectiveTransform(Canvas *canvas, QStatusBar *statusbar) : QObject(canvas),
 {
     mouse_pressed = false;
     canvas->drag_to_scroll = false;
-    pixmap = canvas->pixmap()->copy();
+    pixmap = canvas->pixmap();
     scaleX = float(pixmap.width())/canvas->data->image.width();
     scaleY = float(pixmap.height())/canvas->data->image.height();
     p1 = topleft = QPoint(0,0);

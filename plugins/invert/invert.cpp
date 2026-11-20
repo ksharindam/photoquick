@@ -1,10 +1,6 @@
 #include "invert.h"
 #include <QDebug>
 
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-// first parameter is name of plugin, usually same as the library file name
-    Q_EXPORT_PLUGIN2(invert, FilterPlugin);
-#endif
 
 void invert(QImage &img);
 

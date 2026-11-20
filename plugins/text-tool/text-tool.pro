@@ -9,7 +9,7 @@ INCLUDEPATH += ../../src
 
 TEMPLATE        = lib
 CONFIG         += plugin
-QMAKE_CXXFLAGS  = -std=c++11 -fopenmp
+QMAKE_CXXFLAGS  = -fopenmp
 QMAKE_LFLAGS   += -s
 LIBS           += -lgomp
 QT             += widgets

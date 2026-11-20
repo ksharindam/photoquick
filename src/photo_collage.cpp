@@ -341,7 +341,7 @@ CollagePaper:: dropEvent(QDropEvent *ev)
 {
     if ( ev->mimeData()->hasUrls() )
     {
-        QPoint item_pos = ev->pos();
+        QPoint item_pos = ev->position().toPoint();
         foreach ( const QUrl & url, ev->mimeData()->urls() )
         {
             QString str = url.toLocalFile();
@@ -548,11 +548,11 @@ CollagePaper:: updateStatus()
     QString status;
     int item_w = item->w*out_w_px/paper.width();
     int item_h = item->h*out_h_px/paper.height();
-    status.sprintf("Resolution : %dx%d", item_w, item_h);
+    status = QString::asprintf("Resolution : %dx%d", item_w, item_h);
     if (out_unit==UNIT_POINT) {
         float item_w_cm = 2.54*item_w/out_dpi;
         float item_h_cm = 2.54*item_h/out_dpi;
-        status += QString().sprintf(",   Size : %.1fx%.1f cm", item_w_cm, item_h_cm);
+        status += QString::asprintf(",   Size : %.1fx%.1f cm", item_w_cm, item_h_cm);
     }
     emit statusChanged(status);
 }

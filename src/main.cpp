@@ -36,11 +36,10 @@
 #include <QPainter>
 #include <QPrinter>
 #include <QPrintDialog>
-#include <QDesktopWidget>
 #include <QSettings>
 #include <QClipboard>
 #include <QMenu>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QBuffer>
 #include <cmath>
 #include <QImageWriter>
@@ -152,19 +151,15 @@ Window:: Window()
     data.window = this;
     // under Windows, initial dir is Pictures, under Linux it is homepath
 #ifdef Q_OS_WIN
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    QString dir = QDesktopServices::storageLocation(QDesktopServices::PicturesLocation);
-#else
     QString dir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-#endif
     QDir::setCurrent(dir);
 #else
     QDir::setCurrent(QDir::homePath());
 #endif
 
-    QDesktopWidget *desktop = QApplication::desktop();
-    screen_width = desktop->availableGeometry().width();
-    screen_height = desktop->availableGeometry().height();
+    QRect available_geometry = QGuiApplication::primaryScreen()->availableGeometry();
+    screen_width = available_geometry.width();
+    screen_height = available_geometry.height();
     QSettings settings;
     btnboxes_w = settings.value("BtnBoxesWidth", 100).toInt();
     statusbar_h = settings.value("StatusBarHeight", 28).toInt();
@@ -948,7 +943,7 @@ Window:: iScissor()
         data.image = dialog->image;
         canvas->showScaled();
         // add background color
-        QImage img = canvas->pixmap()->toImage();
+        QImage img = canvas->pixmap().toImage();
         BgColorDialog *dlg = new BgColorDialog(canvas, img, 1.0);
         dlg->selectColorName("Transparent");
         if (dlg->exec()==QDialog::Accepted) {
@@ -990,7 +985,7 @@ Window:: removeMaskWidget()
 void
 Window:: lensDistort()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     LensDialog *dlg = new LensDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1010,7 +1005,7 @@ Window:: toGrayScale()
 void
 Window:: adjustColorLevels()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     LevelsDialog *dlg = new LevelsDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1023,7 +1018,7 @@ Window:: adjustColorLevels()
 void
 Window:: applyThreshold()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     ThresholdDialog *dlg = new ThresholdDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1091,7 +1086,7 @@ Window:: stretchImageContrast()
 void
 Window:: adjustContrastLevel()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     ContrastDialog *dlg = new ContrastDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1104,7 +1099,7 @@ Window:: adjustContrastLevel()
 void
 Window:: adjustGamma()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     GammaDialog *dlg = new GammaDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1152,7 +1147,7 @@ Window:: pencilSketchFilter()
 void
 Window:: addBackgroundColor()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     BgColorDialog *dlg = new BgColorDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1204,8 +1199,8 @@ Window:: zoomInImage()
     else
         canvas->scale *= (6.0/5);
     canvas->showScaled();
-    if ((canvas->pixmap()->width()>scrollArea->width() or
-            canvas->pixmap()->height()>scrollArea->height()) && not this->isMaximized())
+    if ((canvas->pixmap().width()>scrollArea->width() or
+            canvas->pixmap().height()>scrollArea->height()) && not this->isMaximized())
         this->showMaximized();
     waitFor(30);
     vertical->setValue(vertical->maximum()*relPosV);
@@ -1242,8 +1237,8 @@ Window:: origSizeImage()
     canvas->scale = 1.0;
     canvas->showScaled();
     origSizeBtn->setIcon(QIcon(":/icons/fit-to-screen.png"));
-    if ((canvas->pixmap()->width()>scrollArea->width() or
-            canvas->pixmap()->height()>scrollArea->height()) && not this->isMaximized())
+    if ((canvas->pixmap().width()>scrollArea->width() or
+            canvas->pixmap().height()>scrollArea->height()) && not this->isMaximized())
         this->showMaximized();
 }
 
@@ -1262,7 +1257,7 @@ Window:: rotateRight()
 void
 Window:: rotateAny()
 {
-    QImage img = canvas->pixmap()->toImage();
+    QImage img = canvas->pixmap().toImage();
     RotateDialog *dlg = new RotateDialog(canvas, img, 1.0);
     if (dlg->exec()==QDialog::Accepted) {
         data.image = dlg->getResult(data.image);
@@ -1368,8 +1363,8 @@ Window:: fitToScreenScale(QImage img)
 {
     int max_w, max_h;
     if (isFullScreen()) {
-        max_w = QApplication::desktop()->screenGeometry().width() - 4;
-        max_h = QApplication::desktop()->screenGeometry().height() - 4;
+        max_w = QGuiApplication::primaryScreen()->geometry().width() - 4;
+        max_h = QGuiApplication::primaryScreen()->geometry().height() - 4;
     }
     else {
         max_w = screen_width - (windowdecor_w + btnboxes_w) - 4;
@@ -1392,8 +1387,8 @@ Window:: adjustWindowSize(bool animation)
                canvas->height() + statusbar_h + 4);
     }
     else {
-        resize(canvas->pixmap()->width() + btnboxes_w + 4,
-               canvas->pixmap()->height() + statusbar_h + 15);
+        resize(canvas->pixmap().width() + btnboxes_w + 4,
+               canvas->pixmap().height() + statusbar_h + 15);
     }
     move((screen_width - (width() + windowdecor_w) )/2,
         (screen_height - (height() + windowdecor_h))/2 );
@@ -1516,15 +1511,14 @@ QString getNewFileName(QString filename)
     QString basename = fi.completeBaseName();
     QString ext = fi.suffix().isEmpty()? ".jpg": "."+fi.suffix();
     // extract the num just before the file extension
-    QRegExp rx("(.*\\D)*(\\d*)");
-    int pos = rx.indexIn(basename);
-    if (pos==-1) return getNewFileName(dir + "newimage.jpg");
-
-    int num = rx.cap(2).isEmpty()? 0: rx.cap(2).toInt();
-
+    QRegularExpression rx("(.*\\D)*(\\d*)");
+    auto match = rx.match(basename);
+    if (not match.hasMatch()) return getNewFileName(dir + "newimage.jpg");
+    QString name = match.captured(1);
+    int num = match.captured(2).isEmpty()? 0: match.captured(2).toInt();
     QString path(dir + basename + ext);
     while (QFileInfo(path).exists()){
-        path = dir + rx.cap(1) + QString::number(++num) + ext;
+        path = dir + name + QString::number(++num) + ext;
     }
     return path;
 }

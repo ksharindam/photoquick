@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QColorDialog>// for BgColorDialog
 #include <QDesktopServices>
+#include <QFile>
 #include <QUrl>
 #include <QProcess>
 #include <QPainter>// for LevelsDialog
@@ -534,12 +535,8 @@ LevelsWidget:: mouseMoveEvent(QMouseEvent *ev)
 void
 LevelsWidget:: wheelEvent(QWheelEvent *ev)
 {
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    int inc = ev->delta() > 0 ? 2 : -2;
-#else
     int inc = ev->angleDelta().y() > 0 ? 2 : -2;
-#endif
-    if (ev->pos().x()>127)
+    if (ev->position().toPoint().x()>127)
         setRightValue(right_val+inc);
     else
         setLeftValue(left_val+inc);
@@ -622,7 +619,7 @@ BgColorDialog:: BgColorDialog(QLabel *canvas, QImage img, float scale) : Preview
     vLayout->addWidget(label);
     vLayout->addWidget(combo);
     vLayout->addWidget(btnBox);
-    connect(combo, SIGNAL(activated(const QString&)), this, SLOT(onColorChange(const QString&)));
+    connect(combo, SIGNAL(textActivated(const QString&)), this, SLOT(onColorChange(const QString&)));
     connect(btnBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(btnBox, SIGNAL(rejected()), this, SLOT(reject()));
     preview();

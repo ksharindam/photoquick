@@ -4,7 +4,6 @@
 #include "photogrid.h"
 #include "pdfwriter.h"
 #include <QFileDialog>
-#include <QDesktopWidget>
 #include <QSettings>
 #include <QBuffer>
 #include <QMimeData>
@@ -61,7 +60,7 @@ GridDialog:: GridDialog(QImage img, QWidget *parent) : QDialog(parent)
 
 
     // connect signals
-    connect(pageSizeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onPageSizeChange(QString)));
+    connect(pageSizeCombo, SIGNAL(currentTextChanged(const QString&)), this, SLOT(onPageSizeChange(QString)));
     connect(customWSpin, SIGNAL(valueChanged(double)), this, SLOT(setupGrid()));
     connect(customHSpin, SIGNAL(valueChanged(double)), this, SLOT(setupGrid()));
     connect(customUnitCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(setupGrid()));
@@ -259,7 +258,7 @@ GridView:: setup()
         cells[i].x = marginX + col*(cellW+spacing);
         cells[i].y = marginY + row*(cellH+spacing);
     }
-    float screen_dpi = QApplication::desktop()->logicalDpiX();
+    float screen_dpi = QGuiApplication::primaryScreen()->logicalDotsPerInchX();
     px_factor = screen_dpi/72.0;
     redraw();
 }

@@ -1,5 +1,5 @@
 /*  This file is a part of PhotoQuick project, and is GNU GPLv3 licensed
-    Copyright (C) 2021-2023 Arindam Chaudhuri <ksharindam@gmail.com>
+    Copyright (C) 2021-2026 Arindam Chaudhuri <ksharindam@gmail.com>
 */
 #include "text_tool.h"
 #include <QColorDialog>
@@ -10,10 +10,6 @@
 #define PLUGIN_NAME "Text Tool"
 #define PLUGIN_MENU "Tools/Text Tool"
 #define PLUGIN_VERSION "1.1"
-
-#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
-    Q_EXPORT_PLUGIN2(text-tool, ToolPlugin);
-#endif
 
 
 static void drawTextBox(QPainter &painter, TextBox textbox, bool border)
@@ -173,7 +169,7 @@ TextToolDialog:: onMousePress(QPoint pos)
     mouse_pressed = true;
 
     if (new_textbox){
-        canvas_copy = canvas->pixmap()->copy();
+        canvas_copy = canvas->pixmap();
         tmp_textbox.rect = QRect(pos,pos);
         return;
     }

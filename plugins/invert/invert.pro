@@ -7,7 +7,6 @@ INCLUDEPATH += ../../src
 
 TEMPLATE        = lib
 CONFIG         += plugin
-QMAKE_CXXFLAGS  = -std=c++11
 QMAKE_LFLAGS   += -s
 LIBS           +=
 

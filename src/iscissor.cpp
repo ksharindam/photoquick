@@ -64,7 +64,7 @@ IScissorDialog:: IScissorDialog(QImage &img, int mode, QWidget *parent) : QDialo
     connect(redoBtn, SIGNAL(clicked()), this, SLOT(redo()));
     connect(zoomInBtn, SIGNAL(clicked()), this, SLOT(zoomIn()));
     connect(zoomOutBtn, SIGNAL(clicked()), this, SLOT(zoomOut()));
-    connect(btnGrp, SIGNAL(buttonClicked(int)), this, SLOT(onToolClick(int)));
+    connect(btnGrp, SIGNAL(idClicked(int)), this, SLOT(onToolClick(int)));
     connect(canvas, SIGNAL(mousePressed(QPoint)), this, SLOT(onMousePress(QPoint)));
     connect(canvas, SIGNAL(mouseReleased(QPoint)), this, SLOT(onMouseRelease(QPoint)));
     connect(canvas, SIGNAL(mouseMoved(QPoint)), this, SLOT(onMouseMove(QPoint)));

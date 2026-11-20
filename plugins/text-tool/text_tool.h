@@ -9,9 +9,7 @@ class ToolPlugin : public QObject, Plugin
 {
     Q_OBJECT
     Q_INTERFACES(Plugin)
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     Q_PLUGIN_METADATA(IID Plugin_iid)
-#endif
 
 public:
     QString menuItem();

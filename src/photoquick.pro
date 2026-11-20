@@ -2,7 +2,7 @@ TEMPLATE = app
 TARGET = photoquick
 DEPENDPATH += .
 INCLUDEPATH += .
-QMAKE_CXXFLAGS = -fopenmp -std=c++11
+QMAKE_CXXFLAGS = -fopenmp
 QMAKE_LFLAGS += -s
 LIBS += -lgomp
 
