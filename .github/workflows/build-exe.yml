@@ -22,6 +22,7 @@ jobs:
           host: windows
           target: desktop
           arch: win64_mingw
+          modules: 'qtimageformats'
 
       - name: Install NSIS
         run: choco install nsis -y
