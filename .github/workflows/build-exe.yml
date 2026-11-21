@@ -27,7 +27,7 @@ jobs:
       - name: Inspect Qt print-support plugin
         shell: pwsh
         run: |
-          Get-ChildItem C:\ -Filter "libwebp*.dll" -Recurse -ErrorAction SilentlyContinue
+          Get-ChildItem "${{env.QT_ROOT_DIR}}" -Filter "libwebp*.dll" -Recurse -ErrorAction Stop
 
       - name: Install NSIS
         run: choco install nsis -y
