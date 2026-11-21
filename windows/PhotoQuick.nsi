@@ -73,6 +73,11 @@ Section "MainSection" SEC01
   File "${MINGWBINDIR}\libstdc++-6.dll"
   File "${MINGWBINDIR}\libwinpthread-1.dll"
   File "${MINGWBINDIR}\libgomp-1.dll"
+  ; qwebp.dll dependencies
+  File "C:\Strawberry\c\bin\libwebp-7__.dll"
+  File "C:\Strawberry\c\bin\libwebpdemux-2__.dll"
+  File "C:\Strawberry\c\bin\libwebpmux-3__.dll"
+  File "C:\Strawberry\c\bin\libsharpyuv-0__.dll"
 
   ; Install Qt6 Core Libraries
   File "${QTBINDIR}\Qt6Core.dll"
@@ -138,6 +143,7 @@ Section Uninstall
   ; Remove executable and main files
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\photoquick.exe"
+  Delete "$INSTDIR\*.dll"
   Delete "$INSTDIR\${PROG_ICON}"
 
   ; Remove PhotoQuick plugins
@@ -145,24 +151,10 @@ Section Uninstall
   Delete "$INSTDIR\plugins\text-tool.dll"
   Delete "$INSTDIR\plugins\photo-optimizer.dll"
 
-  ; Remove Qt6 plugins
+  ; Remove Qt plugins
   RMDir /r "$INSTDIR\platforms"
   RMDir /r "$INSTDIR\styles"
   RMDir /r "$INSTDIR\imageformats"
-  RMDir /r "$INSTDIR\printsupport"
-
-  ; Remove Qt6 libraries
-  Delete "$INSTDIR\Qt6Core.dll"
-  Delete "$INSTDIR\Qt6Gui.dll"
-  Delete "$INSTDIR\Qt6Widgets.dll"
-  Delete "$INSTDIR\Qt6PrintSupport.dll"
-  Delete "$INSTDIR\Qt6Svg.dll"
-
-  ; Remove MinGW64 runtime libraries
-  Delete "$INSTDIR\libgcc_s_seh-1.dll"
-  Delete "$INSTDIR\libstdc++-6.dll"
-  Delete "$INSTDIR\libwinpthread-1.dll"
-  Delete "$INSTDIR\libgomp-1.dll"
 
   ; Remove shortcuts
   Delete "$DESKTOP\${PROG_NAME}.lnk"
