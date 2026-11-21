@@ -1,7 +1,7 @@
 name: Build Exe
 on:
   workflow_dispatch:
-  #push:
+  push:
 
 # required for uploading assets
 permissions:
@@ -23,6 +23,11 @@ jobs:
           target: desktop
           arch: win64_mingw
           modules: 'qtimageformats'
+
+      - name: Inspect Qt print-support plugin
+        shell: pwsh
+        run: |
+          Get-ChildItem C:\ -Filter "libwebp*.dll" -Recurse -ErrorAction SilentlyContinue
 
       - name: Install NSIS
         run: choco install nsis -y
