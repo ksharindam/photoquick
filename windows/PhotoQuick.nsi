@@ -76,6 +76,7 @@ Section "MainSection" SEC01
   File "C:\Strawberry\c\bin\libwebp-7__.dll"
   File "C:\Strawberry\c\bin\libwebpdemux-2__.dll"
   File "C:\Strawberry\c\bin\libwebpmux-3__.dll"
+  File "C:\Strawberry\c\bin\libsharpyuv-0__.dll"
 
   ; Install Qt6 Core Libraries
   File "${QTBINDIR}\Qt6Core.dll"
